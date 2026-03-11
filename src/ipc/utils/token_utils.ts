@@ -40,10 +40,12 @@ export async function getTemperature(
 
 /**
  * Calculate the token threshold for triggering context compaction.
- * Returns the minimum of 80% of context window or 180k tokens.
+ * Returns the minimum of 60% of context window or 120k tokens.
+ * This aggressive threshold gives ~80k tokens of headroom so compaction
+ * can summarize safely before hitting the model's hard context limit.
  */
 export function getCompactionThreshold(contextWindow: number): number {
-  return Math.min(Math.floor(contextWindow * 0.8), 180_000);
+  return Math.min(Math.floor(contextWindow * 0.6), 120_000);
 }
 
 /**

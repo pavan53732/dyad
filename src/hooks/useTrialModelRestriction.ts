@@ -9,8 +9,8 @@ export function useTrialModelRestriction() {
   const { userBudget, isLoadingUserBudget } = useUserBudgetInfo();
   const { settings, updateSettings } = useSettings();
 
-  const isTrial =
-    (userBudget?.isTrial && settings && isDyadProEnabled(settings)) ?? false;
+  // Override: never treat as trial — all models are unlocked
+  const isTrial = false;
   const isOnAutoModel =
     settings?.selectedModel?.provider === "auto" &&
     settings?.selectedModel?.name === "auto";

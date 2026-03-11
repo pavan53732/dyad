@@ -78,6 +78,7 @@ import { useCheckProblems } from "@/hooks/useCheckProblems";
 import { LexicalChatInput } from "./LexicalChatInput";
 import { AuxiliaryActionsMenu } from "./AuxiliaryActionsMenu";
 import { useChatModeToggle } from "@/hooks/useChatModeToggle";
+import { AiSuggestionChips } from "./AiSuggestionChips";
 import { VisualEditingChangesDialog } from "@/components/preview_panel/VisualEditingChangesDialog";
 import { useUserBudgetInfo } from "@/hooks/useUserBudgetInfo";
 import { useQueryClient } from "@tanstack/react-query";
@@ -719,6 +720,9 @@ export function ChatInput({ chatId }: { chatId?: number }) {
             attachments={attachments}
             onRemove={removeAttachment}
           />
+
+          {/* AI-generated contextual suggestion chips */}
+          <AiSuggestionChips />
 
           {/* Use the DragDropOverlay component */}
           <DragDropOverlay isDraggingOver={isDraggingOver} />

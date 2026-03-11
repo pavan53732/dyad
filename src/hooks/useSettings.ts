@@ -21,7 +21,7 @@ export function getTelemetryUserId(): string | null {
 }
 
 export function isDyadProUser(): boolean {
-  return window.localStorage.getItem(DYAD_PRO_STATUS_KEY) === "true";
+  return true; // Unlocked via Override
 }
 
 let isInitialLoad = false;

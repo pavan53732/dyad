@@ -579,11 +579,7 @@ Modern dark theme with purple accents for testing.
         };
       }
 
-      if (!settings.enableDyadPro) {
-        throw new Error(
-          "Dyad Pro is required for AI theme generation. Please enable Dyad Pro in Settings.",
-        );
-      }
+      // Override: Pro gate removed — theme generation is unlocked for all users
 
       // Validate inputs - image paths are required
       if (params.imagePaths.length === 0) {
@@ -707,11 +703,7 @@ Modern theme extracted from website for testing.
         };
       }
 
-      if (!settings.enableDyadPro) {
-        throw new Error(
-          "Dyad Pro is required for AI theme generation. Please enable Dyad Pro in Settings.",
-        );
-      }
+      // Override: Pro gate removed — theme generation is unlocked for all users
 
       // Validate URL format and protocol
       let parsedUrl: URL;
@@ -760,37 +752,38 @@ Modern theme extracted from website for testing.
         throw new Error("Invalid model selection");
       }
 
-      // Get API key for Dyad Engine
-      const apiKey = settings.providerSettings?.auto?.apiKey?.value;
-      if (!apiKey) {
-        throw new Error("Dyad Pro API key is required");
-      }
+      // Use the selected model for theme generation
+      const { modelClient } = await getModelClient(selectedModel, settings);
 
-      // Crawl the website
-      logger.log(`Crawling website for theme: ${params.url}`);
+      // --- Local web crawl (replaces Dyad Engine) ---
+      logger.log(`Local-crawling website for theme: ${params.url}`);
 
-      const DYAD_ENGINE_URL =
-        process.env.DYAD_ENGINE_URL ?? "https://engine.dyad.sh/v1";
-
-      // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(
         () => controller.abort(),
         WEB_CRAWL_TIMEOUT_MS,
       );
 
-      let crawlResponse: Response;
+      let crawlHtml: string;
       try {
-        crawlResponse = await fetch(`${DYAD_ENGINE_URL}/tools/web-crawl`, {
-          method: "POST",
+        const crawlResponse = await fetch(params.url, {
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-            "X-Dyad-Request-Id": `theme-crawl-${uuidv4()}`,
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           },
-          body: JSON.stringify({ url: params.url }),
           signal: controller.signal,
+          redirect: "follow",
         });
+
+        if (!crawlResponse.ok) {
+          throw new Error(
+            `Failed to crawl website: ${crawlResponse.status} ${crawlResponse.statusText}`,
+          );
+        }
+
+        crawlHtml = await crawlResponse.text();
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           throw new Error(
@@ -798,46 +791,30 @@ Modern theme extracted from website for testing.
           );
         }
         throw new Error(
-          "Failed to connect to crawl service. Please check your internet connection and try again.",
+          `Failed to crawl website: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       } finally {
         clearTimeout(timeoutId);
       }
 
-      if (!crawlResponse.ok) {
-        const errorText = await crawlResponse.text();
-        throw new Error(
-          `Failed to crawl website: ${crawlResponse.status} - ${errorText}`,
-        );
-      }
+      // Convert HTML to markdown locally
+      let crawlMarkdown = crawlHtml;
+      crawlMarkdown = crawlMarkdown.replace(/<script[\s\S]*?<\/script>/gi, "");
+      crawlMarkdown = crawlMarkdown.replace(/<style[\s\S]*?<\/style>/gi, "");
+      crawlMarkdown = crawlMarkdown.replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_m, level, text) => `\n${"#".repeat(Number(level))} ${text.replace(/<[^>]*>/g, "")}\n`);
+      crawlMarkdown = crawlMarkdown.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)");
+      crawlMarkdown = crawlMarkdown.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n");
+      crawlMarkdown = crawlMarkdown.replace(/<[^>]*>/g, "");
+      crawlMarkdown = crawlMarkdown.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ");
+      crawlMarkdown = crawlMarkdown.replace(/\n{3,}/g, "\n\n").trim();
 
-      // Validate response with Zod schema
-      const rawCrawlResult = await crawlResponse.json();
-      const parseResult = webCrawlResponseSchema.safeParse(rawCrawlResult);
-      if (!parseResult.success) {
-        logger.error("Invalid crawl response structure:", parseResult.error);
-        throw new Error(
-          "Received invalid response from crawl service. Please try again.",
-        );
-      }
-      const crawlResult = parseResult.data;
-
-      if (!crawlResult.screenshot) {
-        throw new Error(
-          "Failed to capture website screenshot. Please try a different URL.",
-        );
-      }
-
-      if (!crawlResult.markdown) {
+      if (!crawlMarkdown) {
         throw new Error(
           "Failed to extract website content. Please try a different URL.",
         );
       }
 
       logger.log(`Website crawled successfully: ${params.url}`);
-
-      // Use the selected model for theme generation
-      const { modelClient } = await getModelClient(selectedModel, settings);
 
       // Select system prompt based on generation mode
       const systemPrompt =
@@ -848,27 +825,22 @@ Modern theme extracted from website for testing.
       // Build the user input prompt (sanitize user-provided keywords)
       const keywordsPart = sanitizeKeywords(params.keywords) || "N/A";
       const userInput = `inspired by: ${keywordsPart}
-source: Live website (screenshot and content provided)`;
+source: Live website (content provided)`;
 
-      // Truncate markdown if too long (consistent with existing web_crawl.ts)
+      // Truncate markdown if too long
       const MAX_MARKDOWN_LENGTH = 16000;
       const truncatedMarkdown =
-        crawlResult.markdown.length > MAX_MARKDOWN_LENGTH
-          ? crawlResult.markdown.slice(0, MAX_MARKDOWN_LENGTH) +
+        crawlMarkdown.length > MAX_MARKDOWN_LENGTH
+          ? crawlMarkdown.slice(0, MAX_MARKDOWN_LENGTH) +
             "\n<!-- truncated -->"
-          : crawlResult.markdown;
+          : crawlMarkdown;
 
       // Sanitize crawled content to prevent prompt injection
       const sanitizedMarkdown = sanitizeForPrompt(truncatedMarkdown);
 
-      // Build content parts
+      // Build content parts (text-only since we don't have a screenshot)
       const contentParts: (TextPart | ImagePart)[] = [
         { type: "text", text: userInput },
-        {
-          type: "image",
-          image: crawlResult.screenshot,
-          mimeType: "image/png",
-        } as ImagePart,
         {
           type: "text",
           text: `Website content (markdown):\n\`\`\`markdown\n${sanitizedMarkdown}\n\`\`\``,

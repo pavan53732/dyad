@@ -6,7 +6,7 @@ import {
   escapeXmlAttr,
   escapeXmlContent,
 } from "./types";
-import { engineFetch } from "./engine_fetch";
+import fetch from "node-fetch";
 
 const logger = log.scope("web_search");
 
@@ -39,120 +39,89 @@ NextJS 14 app router middleware auth
 `;
 
 /**
- * Parse SSE events from a buffer and extract content deltas.
- * Returns the remaining unparsed buffer.
- * Throws an error if an SSE error event is received.
+ * Perform a web search using DuckDuckGo Lite (HTML scraping).
+ * This is a free, no-API-key-required approach that fetches DuckDuckGo's
+ * lite HTML results page and parses out the search results.
  */
-function parseSSEEvents(
-  buffer: string,
-  onContent: (content: string) => void,
-): string {
-  const lines = buffer.split("\n");
-  // Keep the last potentially incomplete line
-  const remaining = lines.pop() ?? "";
+async function performLocalWebSearch(query: string): Promise<string> {
+  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || !trimmed.startsWith("data: ")) {
-      continue;
-    }
-
-    const data = trimmed.slice(6); // Remove "data: " prefix
-
-    // Check for stream end marker
-    if (data === "[DONE]") {
-      continue;
-    }
-
-    try {
-      const json = JSON.parse(data);
-
-      // Check for OpenAI-style SSE error: { error: { message: "...", type: "...", code: "..." } }
-      if (json.error) {
-        const errorMessage =
-          json.error.message || json.error.type || "Unknown SSE error";
-        throw new Error(`Web search SSE error: ${errorMessage}`);
-      }
-
-      // OpenAI-style SSE format: { choices: [{ delta: { content: "..." } }] }
-      const content = json.choices?.[0]?.delta?.content;
-      if (content) {
-        onContent(content);
-      }
-    } catch (e) {
-      // Re-throw SSE errors
-      if (e instanceof Error && e.message.startsWith("Web search SSE error:")) {
-        throw e;
-      }
-      // Skip malformed JSON lines
-      logger.warn("Failed to parse SSE JSON:", data);
-    }
-  }
-
-  return remaining;
-}
-
-/**
- * Call the web search SSE endpoint and stream results
- */
-async function callWebSearchSSE(
-  query: string,
-  ctx: AgentContext,
-): Promise<string> {
-  ctx.onXmlStream(`<dyad-web-search query="${escapeXmlAttr(query)}">`);
-
-  const response = await engineFetch(ctx, "/tools/web-search", {
-    method: "POST",
+  const response = await fetch(url, {
     headers: {
-      Accept: "text/event-stream",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     },
-    body: JSON.stringify({ query }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
     throw new Error(
-      `Web search failed: ${response.status} ${response.statusText} - ${errorText}`,
+      `DuckDuckGo search failed: ${response.status} ${response.statusText}`,
     );
   }
 
-  if (!response.body) {
-    throw new Error("Web search response has no body");
+  const html = await response.text();
+
+  // Parse the DuckDuckGo Lite HTML to extract search results
+  const results: string[] = [];
+
+  // DuckDuckGo Lite returns results in a table format.
+  // Each result has a link in <a class="result-link"> and a snippet in <td class="result-snippet">
+  const linkRegex =
+    /<a[^>]*class="result-link"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  const snippetRegex =
+    /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
+
+  const links: { url: string; title: string }[] = [];
+  let match;
+
+  while ((match = linkRegex.exec(html)) !== null) {
+    const linkUrl = match[1].replace(/&amp;/g, "&");
+    const title = match[2].replace(/<[^>]*>/g, "").trim();
+    links.push({ url: linkUrl, title });
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let accumulated = "";
-  let buffer = "";
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // Parse SSE events and accumulate content
-      buffer = parseSSEEvents(buffer, (content) => {
-        accumulated += content;
-        // Stream intermediate results to UI with dyad-web-search prefix
-        ctx.onXmlStream(
-          `<dyad-web-search query="${escapeXmlAttr(query)}">${escapeXmlContent(accumulated)}`,
-        );
-      });
-    }
-
-    // Handle any remaining buffer content
-    if (buffer.trim()) {
-      parseSSEEvents(buffer + "\n", (content) => {
-        accumulated += content;
-      });
-    }
-  } finally {
-    reader.releaseLock();
+  const snippets: string[] = [];
+  while ((match = snippetRegex.exec(html)) !== null) {
+    const snippet = match[1]
+      .replace(/<[^>]*>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .trim();
+    snippets.push(snippet);
   }
 
-  return accumulated;
+  // Combine links and snippets into formatted results
+  const maxResults = Math.min(links.length, 10);
+  for (let i = 0; i < maxResults; i++) {
+    const link = links[i];
+    const snippet = snippets[i] || "No description available";
+    results.push(`### ${i + 1}. ${link.title}\n**URL:** ${link.url}\n${snippet}\n`);
+  }
+
+  if (results.length === 0) {
+    // Fallback: try to extract any links from the page
+    const fallbackLinkRegex = /<a[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    while ((match = fallbackLinkRegex.exec(html)) !== null) {
+      const linkUrl = match[1];
+      const title = match[2].replace(/<[^>]*>/g, "").trim();
+      if (
+        title &&
+        !linkUrl.includes("duckduckgo.com") &&
+        results.length < 10
+      ) {
+        results.push(`### ${results.length + 1}. ${title}\n**URL:** ${linkUrl}\n`);
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    return "No search results found. Try rephrasing your query.";
+  }
+
+  return `## Search Results for: "${query}"\n\n${results.join("\n---\n\n")}`;
 }
 
 export const webSearchTool: ToolDefinition<z.infer<typeof webSearchSchema>> = {
@@ -161,19 +130,17 @@ export const webSearchTool: ToolDefinition<z.infer<typeof webSearchSchema>> = {
   inputSchema: webSearchSchema,
   defaultConsent: "ask",
 
-  // Requires Dyad Pro engine API
-  isEnabled: (ctx) => ctx.isDyadPro,
+  // Override: enabled for all users (uses free DuckDuckGo Lite)
+  isEnabled: () => true,
 
   getConsentPreview: (args) => `Search the web: "${args.query}"`,
 
   execute: async (args, ctx: AgentContext) => {
     logger.log(`Executing web search: ${args.query}`);
 
-    const result = await callWebSearchSSE(args.query, ctx);
+    ctx.onXmlStream(`<dyad-web-search query="${escapeXmlAttr(args.query)}">`);
 
-    if (!result) {
-      throw new Error("Web search returned no results");
-    }
+    const result = await performLocalWebSearch(args.query);
 
     // Write final result to UI and DB with dyad-web-search wrapper
     ctx.onXmlComplete(

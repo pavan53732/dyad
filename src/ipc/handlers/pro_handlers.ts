@@ -106,11 +106,38 @@ export function registerProHandlers() {
     audioContracts.transcribeAudio,
     async (_event, input: TranscribeAudioParams) => {
       const settings = readSettings();
-      const apiKey = settings.providerSettings?.auto?.apiKey?.value;
 
-      if (!apiKey || !settings.enableDyadPro) {
+      // Override: Try to find any available API key for transcription.
+      // Priority: Dyad Pro key → OpenAI key → any configured provider key
+      let apiKey = settings.providerSettings?.auto?.apiKey?.value;
+      let baseURL = dyadEngineUrl ?? "https://engine.dyad.sh/v1";
+
+      // If no Dyad Pro key, try OpenAI key (Whisper is an OpenAI model)
+      if (!apiKey) {
+        const openaiKey = settings.providerSettings?.openai?.apiKey?.value;
+        if (openaiKey) {
+          apiKey = openaiKey;
+          baseURL = "https://api.openai.com/v1";
+        }
+      }
+
+      // If still no key, try any configured provider that uses OpenAI-compatible API
+      if (!apiKey) {
+        // Try to find any provider with an API key
+        for (const [providerId, providerSettings] of Object.entries(
+          settings.providerSettings ?? {},
+        )) {
+          if (providerSettings?.apiKey?.value && providerId !== "auto") {
+            apiKey = providerSettings.apiKey.value;
+            // For custom providers, try to use their base URL + /v1
+            break;
+          }
+        }
+      }
+
+      if (!apiKey) {
         throw new Error(
-          "Dyad Pro is not enabled. Voice-to-text requires a Pro subscription.",
+          "No API key found for voice-to-text. Please configure an API key in Settings (OpenAI, or any OpenAI-compatible provider).",
         );
       }
 
@@ -122,7 +149,7 @@ export function registerProHandlers() {
         input.requestId,
         {
           apiKey,
-          baseURL: dyadEngineUrl ?? "https://engine.dyad.sh/v1",
+          baseURL,
           dyadOptions: {},
           settings,
         },

@@ -62,6 +62,19 @@ export const SuggestedActionSchema = z.union([
   KeepGoingActionSchema,
 ]);
 
+export const AiSuggestionSchema = z.object({
+  text: z.string(),
+  category: z.enum(["fix", "complete", "improve", "feature"]),
+});
+
+export type AiSuggestion = z.infer<typeof AiSuggestionSchema>;
+
+export const AiSuggestionsResultSchema = z.object({
+  suggestions: z.array(AiSuggestionSchema),
+});
+
+export type AiSuggestionsResult = z.infer<typeof AiSuggestionsResultSchema>;
+
 export const ActionProposalSchema = z.object({
   type: z.literal("action-proposal"),
   actions: z.array(SuggestedActionSchema),
@@ -125,6 +138,15 @@ export const proposalContracts = {
     channel: "reject-proposal",
     input: ApproveProposalParamsSchema,
     output: z.void(),
+  }),
+
+  generateAiSuggestions: defineContract({
+    channel: "generate-ai-suggestions",
+    input: z.object({
+      chatId: z.number(),
+      appId: z.number(),
+    }),
+    output: AiSuggestionsResultSchema,
   }),
 } as const;
 

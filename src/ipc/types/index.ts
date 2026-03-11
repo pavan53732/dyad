@@ -257,7 +257,12 @@ export type {
 } from "./templates";
 
 // Proposal types
-export type { ProposalResult, ApproveProposalResult } from "./proposals";
+export type {
+  ProposalResult,
+  ApproveProposalResult,
+  AiSuggestion,
+  AiSuggestionsResult,
+} from "./proposals";
 
 // Import types
 export type { ImportAppParams, ImportAppResult } from "./import";

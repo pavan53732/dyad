@@ -1,7 +1,7 @@
 import { z } from "zod";
 import log from "electron-log";
 import { ToolDefinition, escapeXmlContent, AgentContext } from "./types";
-import { engineFetch } from "./engine_fetch";
+import fetch from "node-fetch";
 
 const logger = log.scope("web_crawl");
 
@@ -32,9 +32,7 @@ Trigger a crawl ONLY if BOTH conditions are true:
 
 const CLONE_INSTRUCTIONS = `
 
-Replicate the website from the provided screenshot image and markdown.
-
-**Use the screenshot as your primary visual reference** to understand the layout, colors, typography, and overall design of the website. The screenshot shows exactly how the page should look.
+Replicate the website from the provided markdown content.
 
 **IMPORTANT: Image Handling**
 - Do NOT use or reference real external image URLs.
@@ -54,24 +52,87 @@ Replicate the website from the provided screenshot image and markdown.
 Always include the placeholder.svg file in your output file tree.
 `;
 
-async function callWebCrawl(
+/**
+ * Perform a local web crawl using node-fetch.
+ * Fetches the HTML content and converts it to a simplified markdown-like format.
+ * No Dyad Engine dependency — works entirely locally.
+ */
+async function performLocalWebCrawl(
   url: string,
-  ctx: Pick<AgentContext, "dyadRequestId">,
-): Promise<z.infer<typeof webCrawlResponseSchema>> {
-  const response = await engineFetch(ctx, "/tools/web-crawl", {
-    method: "POST",
-    body: JSON.stringify({ url }),
+): Promise<{ rootUrl: string; markdown: string; html: string }> {
+  // Normalize URL
+  let normalizedUrl = url;
+  if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+    normalizedUrl = `https://${normalizedUrl}`;
+  }
+
+  const response = await fetch(normalizedUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+    redirect: "follow",
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
     throw new Error(
-      `Web crawl failed: ${response.status} ${response.statusText} - ${errorText}`,
+      `Web crawl failed: ${response.status} ${response.statusText}`,
     );
   }
 
-  const data = webCrawlResponseSchema.parse(await response.json());
-  return data;
+  const html = await response.text();
+
+  // Convert HTML to a simplified markdown-like format
+  let markdown = html;
+
+  // Remove script and style tags
+  markdown = markdown.replace(/<script[\s\S]*?<\/script>/gi, "");
+  markdown = markdown.replace(/<style[\s\S]*?<\/style>/gi, "");
+  markdown = markdown.replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
+
+  // Convert headings
+  markdown = markdown.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, "\n# $1\n");
+  markdown = markdown.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, "\n## $1\n");
+  markdown = markdown.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, "\n### $1\n");
+  markdown = markdown.replace(/<h4[^>]*>([\s\S]*?)<\/h4>/gi, "\n#### $1\n");
+  markdown = markdown.replace(/<h5[^>]*>([\s\S]*?)<\/h5>/gi, "\n##### $1\n");
+  markdown = markdown.replace(/<h6[^>]*>([\s\S]*?)<\/h6>/gi, "\n###### $1\n");
+
+  // Convert links
+  markdown = markdown.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)");
+
+  // Convert paragraphs
+  markdown = markdown.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n");
+
+  // Convert line breaks
+  markdown = markdown.replace(/<br\s*\/?>/gi, "\n");
+
+  // Convert lists
+  markdown = markdown.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, "- $1\n");
+
+  // Convert bold/strong
+  markdown = markdown.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, "**$2**");
+
+  // Convert italic/em
+  markdown = markdown.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, "*$2*");
+
+  // Remove remaining HTML tags
+  markdown = markdown.replace(/<[^>]*>/g, "");
+
+  // Decode HTML entities
+  markdown = markdown
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&nbsp;/g, " ");
+
+  // Clean up whitespace
+  markdown = markdown.replace(/\n{3,}/g, "\n\n").trim();
+
+  return { rootUrl: normalizedUrl, markdown, html };
 }
 
 export const webCrawlTool: ToolDefinition<z.infer<typeof webCrawlSchema>> = {
@@ -80,8 +141,8 @@ export const webCrawlTool: ToolDefinition<z.infer<typeof webCrawlSchema>> = {
   inputSchema: webCrawlSchema,
   defaultConsent: "ask",
 
-  // Requires Dyad Pro engine API
-  isEnabled: (ctx) => ctx.isDyadPro,
+  // Override: enabled for all users (uses local node-fetch)
+  isEnabled: () => true,
 
   getConsentPreview: (args) => `Crawl URL: "${args.url}"`,
 
@@ -98,7 +159,7 @@ export const webCrawlTool: ToolDefinition<z.infer<typeof webCrawlSchema>> = {
   execute: async (args, ctx) => {
     logger.log(`Executing web crawl: ${args.url}`);
 
-    const result = await callWebCrawl(args.url, ctx);
+    const result = await performLocalWebCrawl(args.url);
 
     if (!result) {
       throw new Error("Web crawl returned no results");
@@ -108,14 +169,10 @@ export const webCrawlTool: ToolDefinition<z.infer<typeof webCrawlSchema>> = {
       throw new Error("No content available from web crawl");
     }
 
-    if (!result.screenshot) {
-      throw new Error("No screenshot available from web crawl");
-    }
     logger.log(`Web crawl completed for URL: ${args.url}`);
 
     ctx.appendUserMessage([
       { type: "text", text: CLONE_INSTRUCTIONS },
-      { type: "image-url", url: result.screenshot },
       {
         type: "text",
         text: formatSnippet("Markdown snapshot:", result.markdown, "markdown"),

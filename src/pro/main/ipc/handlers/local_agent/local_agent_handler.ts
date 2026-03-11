@@ -23,7 +23,7 @@ import { readSettings } from "@/main/settings";
 import { getDyadAppPath } from "@/paths/paths";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { safeSend } from "@/ipc/utils/safe_sender";
-import { getMaxTokens, getTemperature } from "@/ipc/utils/token_utils";
+import { getMaxTokens, getTemperature, getContextWindow, getCompactionThreshold } from "@/ipc/utils/token_utils";
 import {
   getProviderOptions,
   getAiHeaders,
@@ -431,6 +431,26 @@ export async function handleLocalAgentStream(
     return compactionResult.success;
   };
 
+  // ── Proactive Pre-Stream Compaction ──────────────────────────────────
+  // Estimate the current chat history tokens *before* sending to the API.
+  // If the history already exceeds the compaction threshold, forcefully
+  // mark the chat for compaction so maybePerformPendingCompaction() will
+  // compress it right away — preventing the API from crashing.
+  if (settings.enableContextCompaction !== false) {
+    const estimatedTokens = chat.messages.reduce(
+      (acc, msg) => acc + Math.ceil(msg.content.length / 4),
+      0,
+    );
+    const contextWindow = await getContextWindow();
+    const threshold = getCompactionThreshold(contextWindow);
+    if (estimatedTokens >= threshold) {
+      logger.info(
+        `Proactive compaction: estimated ${estimatedTokens} tokens exceeds threshold ${threshold}. Marking chat ${req.chatId} for compaction.`,
+      );
+      await checkAndMarkForCompaction(req.chatId, estimatedTokens);
+    }
+  }
+
   // Check if compaction is pending and enabled before processing the message
   await maybePerformPendingCompaction();
 
@@ -553,9 +573,37 @@ export async function handleLocalAgentStream(
     // Use messageOverride if provided (e.g., for summarization)
     // If a compaction summary exists, only include messages from that point onward
     // (pre-compaction messages are preserved in DB for the user but not sent to LLM)
-    const messageHistory: ModelMessage[] = messageOverride
+    let messageHistory: ModelMessage[] = messageOverride
       ? messageOverride
       : buildChatMessageHistory(chat.messages);
+
+    // ── Emergency Message Truncation (Safety Net) ─────────────────────
+    // If the message history still exceeds the model's context window even
+    // after compaction (e.g., compaction failed or a single massive file),
+    // drop the oldest non-system messages until we're under the limit.
+    if (!messageOverride) {
+      const contextWindow = await getContextWindow();
+      const maxTokenBudget = Math.floor(contextWindow * 0.75); // leave 25% for output
+      let totalTokens = messageHistory.reduce(
+        (acc, msg) => acc + Math.ceil((typeof msg.content === "string" ? msg.content.length : 0) / 4),
+        0,
+      );
+      if (totalTokens > maxTokenBudget) {
+        logger.warn(
+          `Emergency truncation: ${totalTokens} tokens exceeds budget ${maxTokenBudget}. Dropping oldest messages.`,
+        );
+        // Keep the first message (typically system/compaction summary) and the
+        // last few messages (current conversation), drop from the middle.
+        while (messageHistory.length > 2 && totalTokens > maxTokenBudget) {
+          // Remove the second message (oldest non-first)
+          const removed = messageHistory.splice(1, 1)[0];
+          totalTokens -= Math.ceil((typeof removed.content === "string" ? removed.content.length : 0) / 4);
+        }
+        logger.info(
+          `Emergency truncation complete: ${messageHistory.length} messages, ~${totalTokens} tokens remaining.`,
+        );
+      }
+    }
 
     // Used to swap out pre-compaction history while preserving in-flight turn steps.
     let baseMessageHistoryCount = messageHistory.length;

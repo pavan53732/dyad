@@ -78,6 +78,15 @@ export const queryKeys = {
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // AI Suggestions
+  // ─────────────────────────────────────────────────────────────────────────────
+  aiSuggestions: {
+    all: ["ai-suggestions"] as const,
+    forChat: ({ chatId, lastMessageId }: { chatId: number | undefined; lastMessageId: number | undefined }) =>
+      ["ai-suggestions", chatId, lastMessageId] as const,
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // Git / Versions
   // ─────────────────────────────────────────────────────────────────────────────
   versions: {
@@ -361,6 +370,5 @@ export type AppQueryKey =
   | QueryKeyOf<(typeof queryKeys.supabase)[keyof typeof queryKeys.supabase]>
   | QueryKeyOf<(typeof queryKeys.github)[keyof typeof queryKeys.github]>
   | QueryKeyOf<(typeof queryKeys.neon)[keyof typeof queryKeys.neon]>
-  | QueryKeyOf<
-      (typeof queryKeys.appEnvVars)[keyof typeof queryKeys.appEnvVars]
-    >;
+  | QueryKeyOf<(typeof queryKeys.appEnvVars)[keyof typeof queryKeys.appEnvVars]>
+  | QueryKeyOf<(typeof queryKeys.aiSuggestions)[keyof typeof queryKeys.aiSuggestions]>;
