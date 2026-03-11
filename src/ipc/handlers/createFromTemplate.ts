@@ -25,6 +25,25 @@ export async function createFromTemplate({
     return;
   }
 
+  if (templateId === "blank") {
+    logger.info("Blank template selected. Initializing empty directory.");
+    if (fs.existsSync(fullAppPath) && fs.readdirSync(fullAppPath).length > 0) {
+      throw new Error(`Application directory ${fullAppPath} already exists and is not empty.`);
+    }
+    fs.ensureDirSync(fullAppPath);
+    
+    // Initialize git repository for the blank template
+    try {
+      const { execSync } = require("child_process");
+      execSync("git init", { cwd: fullAppPath, stdio: "ignore" });
+      logger.info(`Initialized empty git repository in ${fullAppPath}`);
+    } catch (error) {
+      logger.warn(`Failed to initialize git repository: ${error}`);
+    }
+    
+    return;
+  }
+
   const template = await getTemplateOrThrow(templateId);
   if (!template.githubUrl) {
     throw new Error(`Template ${templateId} has no GitHub URL`);

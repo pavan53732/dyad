@@ -124,8 +124,27 @@ function buildSnippetFromMatch({
   };
 }
 
-function getDefaultCommand(appId: number): string {
+async function getDefaultCommand(appId: number, appPath: string): Promise<string> {
   const port = getAppPort(appId);
+  try {
+    const pkgJsonPath = path.join(appPath, "package.json");
+    if (fs.existsSync(pkgJsonPath)) {
+      const pkgRaw = await fsPromises.readFile(pkgJsonPath, "utf-8");
+      const pkg = JSON.parse(pkgRaw);
+      if (pkg.scripts) {
+        if (pkg.scripts.dev) {
+          return `(pnpm install && pnpm run dev --port ${port}) || (npm install --legacy-peer-deps && npm run dev -- --port ${port})`;
+        } else if (pkg.scripts.start) {
+          // Fallback to start for backends/CRA
+          return `(pnpm install && pnpm run start --port ${port}) || (npm install --legacy-peer-deps && npm run start -- --port ${port})`;
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn(`Failed to parse package.json for app ${appId}:`, err);
+  }
+
+  // Fallback
   return `(pnpm install && pnpm run dev --port ${port}) || (npm install --legacy-peer-deps && npm run dev -- --port ${port})`;
 }
 async function copyDir(
@@ -209,7 +228,7 @@ async function executeAppLocalNode({
   installCommand?: string | null;
   startCommand?: string | null;
 }): Promise<void> {
-  const command = getCommand({ appId, installCommand, startCommand });
+  const command = await getCommand({ appId, appPath, installCommand, startCommand });
   const spawnedProcess = spawn(command, [], {
     cwd: appPath,
     shell: true,
@@ -557,7 +576,7 @@ RUN npm install -g pnpm
       `dyad-app-${appId}`,
       "sh",
       "-c",
-      getCommand({ appId, installCommand, startCommand }),
+      await getCommand({ appId, appPath, installCommand, startCommand }),
     ],
     {
       stdio: "pipe",
@@ -2066,19 +2085,21 @@ export function registerAppHandlers() {
   startAppGarbageCollection();
 }
 
-function getCommand({
+async function getCommand({
   appId,
+  appPath,
   installCommand,
   startCommand,
 }: {
   appId: number;
+  appPath: string;
   installCommand?: string | null;
   startCommand?: string | null;
 }) {
   const hasCustomCommands = !!installCommand?.trim() && !!startCommand?.trim();
   return hasCustomCommands
     ? `${installCommand!.trim()} && ${startCommand!.trim()}`
-    : getDefaultCommand(appId);
+    : await getDefaultCommand(appId, appPath);
 }
 
 async function cleanUpPort(port: number) {

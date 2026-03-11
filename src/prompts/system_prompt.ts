@@ -340,23 +340,42 @@ export const BUILD_SYSTEM_PROMPT = `${BUILD_SYSTEM_PREFIX}
 
 ${BUILD_SYSTEM_POSTFIX}`;
 
-const DEFAULT_AI_RULES = `# Tech Stack
-- You are building a React application.
-- Use TypeScript.
-- Use React Router. KEEP the routes in src/App.tsx
-- Always put source code in the src folder.
-- Put pages into src/pages/
-- Put components into src/components/
-- The main page (default page) is src/pages/Index.tsx
-- UPDATE the main page to include the new components. OTHERWISE, the user can NOT see any components!
-- ALWAYS try to use the shadcn/ui library.
-- Tailwind CSS: always use Tailwind CSS for styling components. Utilize Tailwind classes extensively for layout, spacing, colors, and other design aspects.
+const DEFAULT_AI_RULES = `# Tech Stack and Project Architecture
+You are a highly capable AI agent that can build applications natively from scratch across ANY framework or language.
 
-Available packages and libraries:
-- The lucide-react package is installed for icons.
-- You ALREADY have ALL the shadcn/ui components and their dependencies installed. So you don't need to install them again.
-- You have ALL the necessary Radix UI components installed.
-- Use prebuilt components from the shadcn/ui library after importing them. Note that these files shouldn't be edited, so make new components if you need to change them.
+When asked to create a new project or application:
+1. Identify the requested framework/language from the user's prompt (e.g., React, Vue, Svelte, Electron, Node Express API). IF no framework is specifically requested, default to React.
+2. ALWAYS use the \`execute_command\` tool to run the framework's official scaffolding CLI (like \`npx create-next-app@latest .\` or \`npm create vite@latest . -- --template vue\`). Do NOT build the structural files manually if a standard scaffolding CLI exists.
+3. If instructed to bypass template generation, you must be fully capable of writing the setup files natively via the \`write_file\` and \`execute_command\` tools to perform all \`npm init\` and \`npm install\` operations yourself.
+4. CRITICAL: The \`execute_command\` tool runs in a NON-INTERACTIVE shell. It will hang indefinitely if waiting for input. You MUST use CLI flags to bypass prompts (e.g., \`npm create vite@latest . -- --template svelte-ts\` or \`npx create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm\`).
+
+# Framework-Specific Guidelines
+
+## If building a React Application:
+- Use TypeScript.
+- Use React Router. KEEP the routes in \`src/App.tsx\` (or standard Next.js routing based on the app type).
+- Always put source code in the \`src\` folder.
+- Put pages into \`src/pages/\` and components into \`src/components/\`
+- The main page is usually \`src/pages/Index.tsx\`. UPDATE the main page to include new components. OTHERWISE, the user can NOT see any components!
+- ALWAYS try to use the shadcn/ui library and Tailwind CSS.
+- The \`lucide-react\` package should be used for icons.
+- When scaffolding using existing templates, you may ALREADY have ALL the shadcn/ui components and their dependencies installed. Remember to check what's installed and use prebuilt components from the shadcn/ui library if present.
+
+## If building a Vue or Svelte Application:
+- Use TypeScript and standard setups (Vue CLI/Vite, SvelteKit).
+- Rely on modern component patterns (Vue 3 Composition API with \`<script setup>\`, Svelte 5 snippets).
+- Use internal routing solutions (Vue Router, SvelteKit routing).
+- Prefer Tailwind CSS for styling.
+
+## If building an Electron Application:
+- Strongly separate the Main process (Node.js) and Renderer process (Browser).
+- Strictly adhere to secure IPC patterns: never use \`@electron/remote\`, always use \`contextBridge\` with \`ipcRenderer\` in a preload script.
+- Ensure cross-platform compatibility.
+
+## If building a Backend Node.js API (Express, Fastify, etc.):
+- Use TypeScript.
+- Strictly separate your architectural layers (Routes/Controllers, Business Logic/Services, Data Access).
+- Use proper error handling middleware and graceful shutdown.
 `;
 
 const ASK_MODE_SYSTEM_PROMPT = `

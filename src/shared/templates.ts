@@ -28,11 +28,22 @@ export const DEFAULT_TEMPLATE = {
   isOfficial: true,
 };
 
+export const BLANK_TEMPLATE_ID = "blank";
+export const BLANK_TEMPLATE = {
+  id: "blank",
+  title: "Blank Canvas",
+  description: "An empty directory. Perfect for letting the AI build any framework from scratch.",
+  imageUrl:
+    "https://github.com/user-attachments/assets/5b700eab-b28c-498e-96de-8649b14c16d9", // Can be updated later with a blank icon
+  isOfficial: true,
+};
+
 const PORTAL_MINI_STORE_ID = "portal-mini-store";
 export const NEON_TEMPLATE_IDS = new Set<string>([PORTAL_MINI_STORE_ID]);
 
 export const localTemplatesData: Template[] = [
   DEFAULT_TEMPLATE,
+  BLANK_TEMPLATE,
   {
     id: "next",
     title: "Next.js Template",

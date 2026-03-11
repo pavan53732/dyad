@@ -11,6 +11,8 @@ import { deleteFileTool } from "./tools/delete_file";
 import { renameFileTool } from "./tools/rename_file";
 import { copyFileTool } from "./tools/copy_file";
 import { addDependencyTool } from "./tools/add_dependency";
+import { executeCommandTool } from "./tools/execute_command";
+import { writeEnvVarsTool } from "./tools/write_env_vars";
 import { executeSqlTool } from "./tools/execute_sql";
 
 import { readFileTool } from "./tools/read_file";
@@ -54,6 +56,8 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   deleteFileTool,
   renameFileTool,
   addDependencyTool,
+  executeCommandTool,
+  writeEnvVarsTool,
   executeSqlTool,
   readFileTool,
   listFilesTool,
