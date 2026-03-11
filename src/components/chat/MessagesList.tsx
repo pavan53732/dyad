@@ -157,6 +157,7 @@ function FooterComponent({ context }: { context?: FooterContext }) {
                   const lastMessage = messages[messages.length - 1];
                   let shouldRedo = true;
                   if (
+                    lastVersion?.oid &&
                     lastVersion.oid === lastMessage.commitHash &&
                     lastMessage.role === "assistant"
                   ) {
