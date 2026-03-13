@@ -37,6 +37,7 @@ import { writePlanTool } from "./tools/write_plan";
 import { exitPlanTool } from "./tools/exit_plan";
 import { gitCommitAndPushTool } from "./tools/git_commit_and_push";
 import { autonomousFixLoopTool } from "./tools/autonomous_fix_loop";
+import { autonomousTestGeneratorTool } from "./tools/autonomous_test_generator";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -78,6 +79,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   runTypeChecksTool,
   gitCommitAndPushTool,
   autonomousFixLoopTool,
+  autonomousTestGeneratorTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,
