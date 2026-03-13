@@ -36,8 +36,11 @@ import { planningQuestionnaireTool } from "./tools/planning_questionnaire";
 import { writePlanTool } from "./tools/write_plan";
 import { exitPlanTool } from "./tools/exit_plan";
 import { gitCommitAndPushTool } from "./tools/git_commit_and_push";
+import { autonomousPullRequestTool } from "./tools/autonomous_pull_request";
 import { autonomousFixLoopTool } from "./tools/autonomous_fix_loop";
 import { autonomousTestGeneratorTool } from "./tools/autonomous_test_generator";
+import { autonomousSoftwareEngineerTool } from "./tools/autonomous_software_engineer";
+import { executeProjectPlanTool } from "./tools/execute_project_plan";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -80,6 +83,9 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   gitCommitAndPushTool,
   autonomousFixLoopTool,
   autonomousTestGeneratorTool,
+  autonomousPullRequestTool,
+  autonomousSoftwareEngineerTool,
+  executeProjectPlanTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,
