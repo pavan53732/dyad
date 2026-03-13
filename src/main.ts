@@ -175,23 +175,21 @@ export async function onReady() {
   createWindow();
   createApplicationMenu();
 
-  logger.info("Auto-update enabled=", settings.enableAutoUpdate);
-  if (settings.enableAutoUpdate) {
-    // Technically we could just pass the releaseChannel directly to the host,
-    // but this is more explicit and falls back to stable if there's an unknown
-    // release channel.
-    const postfix = settings.releaseChannel === "beta" ? "beta" : "stable";
-    const host = `https://api.dyad.sh/v1/update/${postfix}`;
-    logger.info("Auto-update release channel=", postfix);
-    updateElectronApp({
-      logger,
-      updateSource: {
-        type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "dyad-sh/dyad",
-        host,
-      },
-    }); // additional configuration options available
-  }
+  // AUTO-UPDATE DISABLED — commented out for local build
+  // logger.info("Auto-update enabled=", settings.enableAutoUpdate);
+  // if (settings.enableAutoUpdate) {
+  //   const postfix = settings.releaseChannel === "beta" ? "beta" : "stable";
+  //   const host = `https://api.dyad.sh/v1/update/${postfix}`;
+  //   logger.info("Auto-update release channel=", postfix);
+  //   updateElectronApp({
+  //     logger,
+  //     updateSource: {
+  //       type: UpdateSourceType.ElectronPublicUpdateService,
+  //       repo: "dyad-sh/dyad",
+  //       host,
+  //     },
+  //   });
+  // }
 }
 
 export async function onFirstRunMaybe(settings: UserSettings) {
