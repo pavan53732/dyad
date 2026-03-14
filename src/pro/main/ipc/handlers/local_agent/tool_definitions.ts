@@ -49,6 +49,10 @@ import { dependencyAnalyzerTool } from "./tools/dependency_analyzer";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
 import { architectureAnalyzerTool } from "./tools/architecture_analyzer";
 import { codeIntelligenceTool } from "./tools/code_intelligence";
+import { intentClassifierTool } from "./tools/intent_classifier";
+import { taskDecomposerTool } from "./tools/task_decomposer";
+import { contextOrchestratorTool } from "./tools/context_orchestrator";
+import { selfVerifierTool } from "./tools/self_verifier";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -102,6 +106,10 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   architectureAnalyzerTool,
   codeIntelligenceTool,
   selfImproverTool,
+  intentClassifierTool,
+  taskDecomposerTool,
+  contextOrchestratorTool,
+  selfVerifierTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,

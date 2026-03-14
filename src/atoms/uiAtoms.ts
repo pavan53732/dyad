@@ -3,6 +3,9 @@ import { atom } from "jotai";
 // Mission Control Panel visibility state
 export const isMissionControlPanelOpenAtom = atom<boolean>(false);
 
+// Dropdown menu state
+export const dropdownOpenAtom = atom<boolean>(false);
+
 // Types for Mission Control Panel data
 export interface AgentThought {
   id: string;
