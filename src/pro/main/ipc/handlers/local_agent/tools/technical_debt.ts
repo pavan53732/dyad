@@ -20,7 +20,15 @@ const AnalyzeDebtArgs = z.object({
   projectPath: z.string().optional(),
   /** Categories to analyze */
   categories: z
-    .enum(["all", "code", "test", "documentation", "dependency", "security", "performance"])
+    .enum([
+      "all",
+      "code",
+      "test",
+      "documentation",
+      "dependency",
+      "security",
+      "performance",
+    ])
     .array()
     .default(["all"]),
   /** Include cost estimation */
@@ -42,7 +50,9 @@ const PrioritizeDebtArgs = z.object({
     }),
   ),
   /** Prioritization strategy */
-  strategy: z.enum(["impact-first", "effort-first", "roi", "critical-path"]).default("roi"),
+  strategy: z
+    .enum(["impact-first", "effort-first", "roi", "critical-path"])
+    .default("roi"),
   /** Maximum items to return */
   limit: z.number().min(1).max(50).default(10),
 });
@@ -63,7 +73,9 @@ const TrackDebtArgs = z.object({
       description: z.string(),
       severity: z.enum(["critical", "high", "medium", "low"]),
       effortHours: z.number().optional(),
-      status: z.enum(["identified", "in-progress", "resolved"]).default("identified"),
+      status: z
+        .enum(["identified", "in-progress", "resolved"])
+        .default("identified"),
       relatedFiles: z.array(z.string()).optional(),
       tags: z.array(z.string()).optional(),
     })
@@ -131,20 +143,40 @@ function analyzeTechnicalDebt(
   includeCostEstimation: boolean,
 ): DebtAnalysis {
   const items: DebtItem[] = [];
-  const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
 
   // Code debt - missing tests
-  if (categories.includes("all") || categories.includes("code") || categories.includes("test")) {
+  if (
+    categories.includes("all") ||
+    categories.includes("code") ||
+    categories.includes("test")
+  ) {
     const sourceFiles = files.filter(
-      (f) => f.endsWith(".ts") || f.endsWith(".tsx") || f.endsWith(".js") || f.endsWith(".jsx"),
+      (f) =>
+        f.endsWith(".ts") ||
+        f.endsWith(".tsx") ||
+        f.endsWith(".js") ||
+        f.endsWith(".jsx"),
     );
     for (const file of sourceFiles) {
       const hasTest =
-        files.some((f) => f.includes(file.replace(/\.(ts|tsx|js|jsx)$/, ".test."))) ||
-        files.some((f) => f.includes(file.replace(/\.(ts|tsx|js|jsx)$/, ".spec."))) ||
-        files.includes(file.replace(/src\//, "src/__tests__/").replace(/\.(ts|tsx|js|jsx)$/, ".test.$1"));
+        files.some((f) =>
+          f.includes(file.replace(/\.(ts|tsx|js|jsx)$/, ".test.")),
+        ) ||
+        files.some((f) =>
+          f.includes(file.replace(/\.(ts|tsx|js|jsx)$/, ".spec.")),
+        ) ||
+        files.includes(
+          file
+            .replace(/src\//, "src/__tests__/")
+            .replace(/\.(ts|tsx|js|jsx)$/, ".test.$1"),
+        );
 
-      if (!hasTest && !file.includes("__tests__") && !file.includes(".test.") && !file.includes(".spec.")) {
+      if (
+        !hasTest &&
+        !file.includes("__tests__") &&
+        !file.includes(".test.") &&
+        !file.includes(".spec.")
+      ) {
         items.push({
           id: `debt-test-${items.length + 1}`,
           category: "test",
@@ -161,7 +193,10 @@ function analyzeTechnicalDebt(
 
   // Code debt - code duplication
   if (categories.includes("all") || categories.includes("code")) {
-    const codeBlocks = new Map<string, { count: number; locations: string[] }>();
+    const codeBlocks = new Map<
+      string,
+      { count: number; locations: string[] }
+    >();
     for (const [file, fileContent] of content) {
       const funcRegex = /(?:function|const|let|var)\s+(\w+)\s*[=:]/g;
       let match;
@@ -173,7 +208,7 @@ function analyzeTechnicalDebt(
         codeBlocks.set(block, existing);
       }
     }
-    for (const [block, info] of codeBlocks) {
+    for (const [_block, info] of codeBlocks) {
       if (info.count > 3) {
         items.push({
           id: `debt-dup-${items.length + 1}`,
@@ -223,7 +258,9 @@ function analyzeTechnicalDebt(
 
     // Check for missing JSDoc in exported functions
     for (const [file, fileContent] of content) {
-      const exports = fileContent.match(/export\s+(?:function|class|const|interface|type)\s+\w+/g);
+      const exports = fileContent.match(
+        /export\s+(?:function|class|const|interface|type)\s+\w+/g,
+      );
       const jsdocs = fileContent.match(/\/\*\*[\s\S]*?\*\//g);
       if (exports && jsdocs && exports.length > jsdocs.length * 1.5) {
         items.push({
@@ -264,7 +301,8 @@ function analyzeTechnicalDebt(
           id: `debt-dep-${items.length + 1}`,
           category: "code",
           title: "Loose equality comparison",
-          description: "Use strict equality (===) instead of loose equality (==)",
+          description:
+            "Use strict equality (===) instead of loose equality (==)",
           severity: "low",
           location: file,
           effortHours: includeCostEstimation ? 0.25 : undefined,
@@ -279,7 +317,9 @@ function analyzeTechnicalDebt(
     for (const [file, fileContent] of content) {
       // Check for hardcoded secrets (simplified)
       if (/api[_-]?key|password|secret|token/i.test(fileContent)) {
-        if (!/example|your_[a-z_]+|replace|xxx|placeholder/i.test(fileContent)) {
+        if (
+          !/example|your_[a-z_]+|replace|xxx|placeholder/i.test(fileContent)
+        ) {
           items.push({
             id: `debt-sec-${items.length + 1}`,
             category: "security",
@@ -299,7 +339,9 @@ function analyzeTechnicalDebt(
   if (categories.includes("all") || categories.includes("performance")) {
     for (const [file, fileContent] of content) {
       // Check for nested loops (simplified performance issue)
-      const nestedLoops = fileContent.match(/(for|while)\s*\([^)]+\)\s*\{[^}]*?(for|while)\s*\(/g);
+      const nestedLoops = fileContent.match(
+        /(for|while)\s*\([^)]+\)\s*\{[^}]*?(for|while)\s*\(/g,
+      );
       if (nestedLoops && nestedLoops.length > 0) {
         items.push({
           id: `debt-perf-${items.length + 1}`,
@@ -316,14 +358,33 @@ function analyzeTechnicalDebt(
   }
 
   // Calculate totals
-  const totalEffortHours = items.reduce((sum, item) => sum + (item.effortHours || 0), 0);
+  const totalEffortHours = items.reduce(
+    (sum, item) => sum + (item.effortHours || 0),
+    0,
+  );
   const monthlyInterestPayment = items.reduce(
-    (sum, item) => sum + (item.severity === "critical" ? 4 : item.severity === "high" ? 2 : item.severity === "medium" ? 1 : 0.25),
+    (sum, item) =>
+      sum +
+      (item.severity === "critical"
+        ? 4
+        : item.severity === "high"
+          ? 2
+          : item.severity === "medium"
+            ? 1
+            : 0.25),
     0,
   );
 
-  const categoryBreakdown: Record<string, { count: number; effortHours: number }> = {};
-  const severityBreakdown: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  const categoryBreakdown: Record<
+    string,
+    { count: number; effortHours: number }
+  > = {};
+  const severityBreakdown: Record<string, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
 
   for (const item of items) {
     if (!categoryBreakdown[item.category]) {
@@ -353,14 +414,19 @@ function prioritizeDebtItems(
   strategy: string,
   limit: number,
 ): PrioritizedDebtItem[] {
-  const severityScores: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
-
   const scored = items.map((item) => {
     // Use impactScore if provided, otherwise default to medium
     const impactScore = item.impactScore || 2;
     const effort = item.effortHours || 1;
     // Derive severity from impactScore if not provided
-    const severity: "critical" | "high" | "medium" | "low" = impactScore >= 4 ? "critical" : impactScore >= 3 ? "high" : impactScore >= 2 ? "medium" : "low";
+    const severity: "critical" | "high" | "medium" | "low" =
+      impactScore >= 4
+        ? "critical"
+        : impactScore >= 3
+          ? "high"
+          : impactScore >= 2
+            ? "medium"
+            : "low";
 
     let priorityScore: number;
     switch (strategy) {
@@ -399,16 +465,16 @@ function prioritizeDebtItems(
       recommendation = "Schedule for next sprint";
     }
 
-    return { 
+    return {
       id: item.id,
       category: item.category,
       title: item.title,
       description: item.description,
       severity: item.severity,
       effortHours: item.effortHours,
-      priorityScore: item.priorityScore, 
-      rank: idx + 1, 
-      recommendation 
+      priorityScore: item.priorityScore,
+      rank: idx + 1,
+      recommendation,
     };
   });
 }
@@ -524,9 +590,18 @@ function trackDebt(
 
       for (const [status, statusItems] of Object.entries(byStatus)) {
         if (statusItems.length > 0) {
-          lines.push(`## ${status.replace("-", " ").toUpperCase()} (${statusItems.length})`);
+          lines.push(
+            `## ${status.replace("-", " ").toUpperCase()} (${statusItems.length})`,
+          );
           for (const i of statusItems) {
-            const severity = i.severity === "critical" ? "🔴" : i.severity === "high" ? "🟠" : i.severity === "medium" ? "🟡" : "🟢";
+            const severity =
+              i.severity === "critical"
+                ? "🔴"
+                : i.severity === "high"
+                  ? "🟠"
+                  : i.severity === "medium"
+                    ? "🟡"
+                    : "🟢";
             lines.push(`- ${severity} **[${i.id}]** ${i.title}`);
             lines.push(`  - ${i.description}`);
             if (i.effortHours) {
@@ -553,10 +628,13 @@ function trackDebt(
         low: items.filter((i) => i.severity === "low").length,
       };
 
-      const byCategory = items.reduce((acc, i) => {
-        acc[i.category] = (acc[i.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const byCategory = items.reduce(
+        (acc, i) => {
+          acc[i.category] = (acc[i.category] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
       const totalEffort = items
         .filter((i) => i.status !== "resolved")
@@ -577,7 +655,9 @@ function trackDebt(
         `- 🟢 Low: ${bySeverity.low}`,
         "",
         "### By Category",
-        ...Object.entries(byCategory).map(([cat, count]) => `- ${cat}: ${count}`),
+        ...Object.entries(byCategory).map(
+          ([cat, count]) => `- ${cat}: ${count}`,
+        ),
         "",
         `**Total estimated effort:** ${totalEffort}h`,
       ];
@@ -594,7 +674,10 @@ function trackDebt(
 // Execute Functions
 // ============================================================================
 
-async function analyzeDebtExecute(args: AnalyzeDebtArgs, ctx: AgentContext): Promise<string> {
+async function analyzeDebtExecute(
+  args: AnalyzeDebtArgs,
+  ctx: AgentContext,
+): Promise<string> {
   const projectPath = args.projectPath
     ? path.isAbsolute(args.projectPath)
       ? args.projectPath
@@ -610,7 +693,12 @@ async function analyzeDebtExecute(args: AnalyzeDebtArgs, ctx: AgentContext): Pro
   );
 
   const { files, content } = await scanProject(projectPath);
-  const analysis = analyzeTechnicalDebt(files, content, args.categories, args.includeCostEstimation);
+  const analysis = analyzeTechnicalDebt(
+    files,
+    content,
+    args.categories,
+    args.includeCostEstimation,
+  );
 
   const lines: string[] = [
     "# Technical Debt Analysis Report",
@@ -625,7 +713,14 @@ async function analyzeDebtExecute(args: AnalyzeDebtArgs, ctx: AgentContext): Pro
   lines.push("### By Severity");
   for (const [severity, count] of Object.entries(analysis.severityBreakdown)) {
     if (count > 0) {
-      const emoji = severity === "critical" ? "🔴" : severity === "high" ? "🟠" : severity === "medium" ? "🟡" : "🟢";
+      const emoji =
+        severity === "critical"
+          ? "🔴"
+          : severity === "high"
+            ? "🟠"
+            : severity === "medium"
+              ? "🟡"
+              : "🟢";
       lines.push(`- ${emoji} ${severity}: ${count}`);
     }
   }
@@ -642,7 +737,14 @@ async function analyzeDebtExecute(args: AnalyzeDebtArgs, ctx: AgentContext): Pro
   if (analysis.items.length > 0) {
     lines.push("### Top Debt Items");
     for (const item of analysis.items.slice(0, 15)) {
-      const emoji = item.severity === "critical" ? "🔴" : item.severity === "high" ? "🟠" : item.severity === "medium" ? "🟡" : "🟢";
+      const emoji =
+        item.severity === "critical"
+          ? "🔴"
+          : item.severity === "high"
+            ? "🟠"
+            : item.severity === "medium"
+              ? "🟡"
+              : "🟢";
       lines.push(`- ${emoji} **[${item.category}]** ${item.title}`);
       lines.push(`  - ${item.description}`);
       if (item.effortHours && args.includeCostEstimation) {
@@ -658,12 +760,19 @@ async function analyzeDebtExecute(args: AnalyzeDebtArgs, ctx: AgentContext): Pro
   return lines.join("\n");
 }
 
-async function prioritizeDebtExecute(args: PrioritizeDebtArgs, ctx: AgentContext): Promise<string> {
+async function prioritizeDebtExecute(
+  args: PrioritizeDebtArgs,
+  ctx: AgentContext,
+): Promise<string> {
   ctx.onXmlStream(
     `<dyad-status title="Debt Prioritization">Calculating priorities...</dyad-status>`,
   );
 
-  const prioritized = prioritizeDebtItems(args.debtItems, args.strategy, args.limit);
+  const prioritized = prioritizeDebtItems(
+    args.debtItems,
+    args.strategy,
+    args.limit,
+  );
 
   const lines: string[] = [
     "# Technical Debt Prioritization",
@@ -694,12 +803,21 @@ async function prioritizeDebtExecute(args: PrioritizeDebtArgs, ctx: AgentContext
   return lines.join("\n");
 }
 
-async function trackDebtExecute(args: TrackDebtArgs, ctx: AgentContext): Promise<string> {
+async function trackDebtExecute(
+  args: TrackDebtArgs,
+  ctx: AgentContext,
+): Promise<string> {
   ctx.onXmlStream(
     `<dyad-status title="Debt Tracking">Processing...</dyad-status>`,
   );
 
-  const result = trackDebt(args.action, args.item, args.itemId, ctx, args.trackingFile);
+  const result = trackDebt(
+    args.action,
+    args.item,
+    args.itemId,
+    ctx,
+    args.trackingFile,
+  );
 
   ctx.onXmlComplete(
     `<dyad-status title="Debt Tracking Complete">${args.action} completed</dyad-status>`,

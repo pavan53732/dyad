@@ -959,7 +959,15 @@ const EvaluateHealthArgs = z.object({
   projectPath: z.string().optional(),
   /** Evaluation dimensions */
   dimensions: z
-    .enum(["all", "modularity", "testability", "maintainability", "scalability", "security", "performance"])
+    .enum([
+      "all",
+      "modularity",
+      "testability",
+      "maintainability",
+      "scalability",
+      "security",
+      "performance",
+    ])
     .array()
     .default(["all"]),
   /** Include recommendations */
@@ -999,9 +1007,17 @@ function evaluateArchitectureHealth(
 
     // File organization
     const hasSrc = files.some((f) => f.includes("/src/"));
-    const hasComponents = files.some((f) => f.includes("/components/") || f.includes("/ui/"));
-    const hasUtils = files.some((f) => f.includes("/utils/") || f.includes("/helpers/"));
-    const modularity = (hasSrc ? 25 : 0) + (hasComponents ? 25 : 0) + (hasUtils ? 25 : 0) + (files.length > 20 ? 25 : 0);
+    const hasComponents = files.some(
+      (f) => f.includes("/components/") || f.includes("/ui/"),
+    );
+    const hasUtils = files.some(
+      (f) => f.includes("/utils/") || f.includes("/helpers/"),
+    );
+    const modularity =
+      (hasSrc ? 25 : 0) +
+      (hasComponents ? 25 : 0) +
+      (hasUtils ? 25 : 0) +
+      (files.length > 20 ? 25 : 0);
     factors.push({ name: "File Organization", score: modularity, weight: 0.4 });
 
     // Directory depth
@@ -1012,8 +1028,13 @@ function evaluateArchitectureHealth(
     // Module cohesion (files per directory)
     const dirs = new Set(files.map((f) => path.dirname(f)));
     const avgFilesPerDir = files.length / Math.max(dirs.size, 1);
-    const cohesionScore = avgFilesPerDir <= 10 ? 100 : avgFilesPerDir <= 20 ? 70 : 40;
-    factors.push({ name: "Module Cohesion", score: cohesionScore, weight: 0.3 });
+    const cohesionScore =
+      avgFilesPerDir <= 10 ? 100 : avgFilesPerDir <= 20 ? 70 : 40;
+    factors.push({
+      name: "Module Cohesion",
+      score: cohesionScore,
+      weight: 0.3,
+    });
 
     const modularityScore = Math.round(
       factors.reduce((sum, f) => sum + f.score * f.weight, 0),
@@ -1023,7 +1044,13 @@ function evaluateArchitectureHealth(
       name: "Modularity",
       score: modularityScore,
       factors,
-      recommendations: modularityScore < 70 ? ["Consider restructuring into clearer module boundaries", "Reduce directory nesting depth"] : [],
+      recommendations:
+        modularityScore < 70
+          ? [
+              "Consider restructuring into clearer module boundaries",
+              "Reduce directory nesting depth",
+            ]
+          : [],
     });
   }
 
@@ -1032,15 +1059,34 @@ function evaluateArchitectureHealth(
     const factors: { name: string; score: number; weight: number }[] = [];
 
     const testFiles = files.filter(
-      (f) => f.includes("/__tests__/") || f.includes("/test/") || f.includes(".spec.") || f.includes(".test."),
+      (f) =>
+        f.includes("/__tests__/") ||
+        f.includes("/test/") ||
+        f.includes(".spec.") ||
+        f.includes(".test."),
     );
-    const sourceFiles = files.filter((f) => f.endsWith(".ts") || f.endsWith(".tsx"));
-    const testCoverage = sourceFiles.length > 0 ? (testFiles.length / sourceFiles.length) * 100 : 0;
-    factors.push({ name: "Test File Coverage", score: Math.min(testCoverage, 100), weight: 0.5 });
+    const sourceFiles = files.filter(
+      (f) => f.endsWith(".ts") || f.endsWith(".tsx"),
+    );
+    const testCoverage =
+      sourceFiles.length > 0
+        ? (testFiles.length / sourceFiles.length) * 100
+        : 0;
+    factors.push({
+      name: "Test File Coverage",
+      score: Math.min(testCoverage, 100),
+      weight: 0.5,
+    });
 
     // Check for test utilities
-    const hasTestUtils = files.some((f) => f.includes("test") && (f.includes("utils") || f.includes("setup")));
-    factors.push({ name: "Test Utilities", score: hasTestUtils ? 100 : 30, weight: 0.2 });
+    const hasTestUtils = files.some(
+      (f) => f.includes("test") && (f.includes("utils") || f.includes("setup")),
+    );
+    factors.push({
+      name: "Test Utilities",
+      score: hasTestUtils ? 100 : 30,
+      weight: 0.2,
+    });
 
     // Mock usage
     let hasMocks = false;
@@ -1050,15 +1096,24 @@ function evaluateArchitectureHealth(
         break;
       }
     }
-    factors.push({ name: "Mock Usage", score: hasMocks ? 100 : 50, weight: 0.3 });
+    factors.push({
+      name: "Mock Usage",
+      score: hasMocks ? 100 : 50,
+      weight: 0.3,
+    });
 
-    const testabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+    const testabilityScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
 
     healthDimensions.push({
       name: "Testability",
       score: testabilityScore,
       factors,
-      recommendations: testabilityScore < 60 ? ["Add more test files", "Create test utilities and setup"] : [],
+      recommendations:
+        testabilityScore < 60
+          ? ["Add more test files", "Create test utilities and setup"]
+          : [],
     });
   }
 
@@ -1067,31 +1122,54 @@ function evaluateArchitectureHealth(
     const factors: { name: string; score: number; weight: number }[] = [];
 
     // Average file size
-    const avgSize = Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) / Math.max(content.size, 1);
+    const avgSize =
+      Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) /
+      Math.max(content.size, 1);
     const sizeScore = avgSize < 3000 ? 100 : avgSize < 5000 ? 70 : 40;
     factors.push({ name: "Average File Size", score: sizeScore, weight: 0.3 });
 
     // Documentation
     const hasReadme = files.some((f) => f.toLowerCase().includes("readme"));
-    const hasDocs = files.some((f) => f.includes("/docs/") || f.includes("/.doc"));
+    const hasDocs = files.some(
+      (f) => f.includes("/docs/") || f.includes("/.doc"),
+    );
     const docScore = hasReadme ? 50 : 20 + (hasDocs ? 30 : 0);
     factors.push({ name: "Documentation", score: docScore, weight: 0.3 });
 
     // Code complexity (simplified)
     let totalComplexity = 0;
     for (const [, fileContent] of content) {
-      totalComplexity += (fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b/g) || []).length;
+      totalComplexity += (
+        fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b/g) || []
+      ).length;
     }
-    const complexityScore = totalComplexity / Math.max(content.size, 1) < 20 ? 100 : totalComplexity / Math.max(content.size, 1) < 40 ? 70 : 40;
-    factors.push({ name: "Code Complexity", score: complexityScore, weight: 0.4 });
+    const complexityScore =
+      totalComplexity / Math.max(content.size, 1) < 20
+        ? 100
+        : totalComplexity / Math.max(content.size, 1) < 40
+          ? 70
+          : 40;
+    factors.push({
+      name: "Code Complexity",
+      score: complexityScore,
+      weight: 0.4,
+    });
 
-    const maintainabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+    const maintainabilityScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
 
     healthDimensions.push({
       name: "Maintainability",
       score: maintainabilityScore,
       factors,
-      recommendations: maintainabilityScore < 60 ? ["Reduce file sizes by splitting modules", "Add README and documentation"] : [],
+      recommendations:
+        maintainabilityScore < 60
+          ? [
+              "Reduce file sizes by splitting modules",
+              "Add README and documentation",
+            ]
+          : [],
     });
   }
 
@@ -1107,19 +1185,37 @@ function evaluateArchitectureHealth(
         hasPackageJson = true;
         try {
           const pkg = JSON.parse(content.get(file) || "{}");
-          depsCount = Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length;
+          depsCount =
+            Object.keys(pkg.dependencies || {}).length +
+            Object.keys(pkg.devDependencies || {}).length;
         } catch {
           // Ignore parse errors
         }
         break;
       }
     }
-    const depScore = hasPackageJson ? (depsCount < 50 ? 100 : depsCount < 100 ? 70 : 40) : 50;
-    factors.push({ name: "Dependency Management", score: depScore, weight: 0.4 });
+    const depScore = hasPackageJson
+      ? depsCount < 50
+        ? 100
+        : depsCount < 100
+          ? 70
+          : 40
+      : 50;
+    factors.push({
+      name: "Dependency Management",
+      score: depScore,
+      weight: 0.4,
+    });
 
     // Configuration patterns
-    const hasEnvConfig = files.some((f) => f.includes(".env") || f.includes("/config/"));
-    factors.push({ name: "Configuration", score: hasEnvConfig ? 100 : 40, weight: 0.3 });
+    const hasEnvConfig = files.some(
+      (f) => f.includes(".env") || f.includes("/config/"),
+    );
+    factors.push({
+      name: "Configuration",
+      score: hasEnvConfig ? 100 : 40,
+      weight: 0.3,
+    });
 
     // Feature flags support (simplified check)
     let hasFeatureFlags = false;
@@ -1129,15 +1225,24 @@ function evaluateArchitectureHealth(
         break;
       }
     }
-    factors.push({ name: "Feature Flags", score: hasFeatureFlags ? 100 : 30, weight: 0.3 });
+    factors.push({
+      name: "Feature Flags",
+      score: hasFeatureFlags ? 100 : 30,
+      weight: 0.3,
+    });
 
-    const scalabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+    const scalabilityScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
 
     healthDimensions.push({
       name: "Scalability",
       score: scalabilityScore,
       factors,
-      recommendations: scalabilityScore < 60 ? ["Consider implementing feature flags", "Review dependency count"] : [],
+      recommendations:
+        scalabilityScore < 60
+          ? ["Consider implementing feature flags", "Review dependency count"]
+          : [],
     });
   }
 
@@ -1149,13 +1254,19 @@ function evaluateArchitectureHealth(
     let hasHardcodedSecrets = false;
     for (const [, fileContent] of content) {
       if (/api[_-]?key|password|secret|token/i.test(fileContent)) {
-        if (!/example|your_[a-z_]+|replace|xxx|placeholder/i.test(fileContent)) {
+        if (
+          !/example|your_[a-z_]+|replace|xxx|placeholder/i.test(fileContent)
+        ) {
           hasHardcodedSecrets = true;
           break;
         }
       }
     }
-    factors.push({ name: "No Hardcoded Secrets", score: hasHardcodedSecrets ? 20 : 100, weight: 0.5 });
+    factors.push({
+      name: "No Hardcoded Secrets",
+      score: hasHardcodedSecrets ? 20 : 100,
+      weight: 0.5,
+    });
 
     // Input validation
     let hasValidation = false;
@@ -1165,20 +1276,36 @@ function evaluateArchitectureHealth(
         break;
       }
     }
-    factors.push({ name: "Input Validation", score: hasValidation ? 100 : 40, weight: 0.3 });
+    factors.push({
+      name: "Input Validation",
+      score: hasValidation ? 100 : 40,
+      weight: 0.3,
+    });
 
     // TypeScript usage
-    const tsFiles = files.filter((f) => f.endsWith(".ts") || f.endsWith(".tsx")).length;
-    const tsScore = tsFiles / Math.max(files.length, 1) > 0.7 ? 100 : tsFiles / Math.max(files.length, 1) > 0.4 ? 70 : 40;
+    const tsFiles = files.filter(
+      (f) => f.endsWith(".ts") || f.endsWith(".tsx"),
+    ).length;
+    const tsScore =
+      tsFiles / Math.max(files.length, 1) > 0.7
+        ? 100
+        : tsFiles / Math.max(files.length, 1) > 0.4
+          ? 70
+          : 40;
     factors.push({ name: "Type Safety", score: tsScore, weight: 0.2 });
 
-    const securityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+    const securityScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
 
     healthDimensions.push({
       name: "Security",
       score: securityScore,
       factors,
-      recommendations: securityScore < 60 ? ["Remove hardcoded secrets", "Add input validation"] : [],
+      recommendations:
+        securityScore < 60
+          ? ["Remove hardcoded secrets", "Add input validation"]
+          : [],
     });
   }
 
@@ -1187,8 +1314,14 @@ function evaluateArchitectureHealth(
     const factors: { name: string; score: number; weight: number }[] = [];
 
     // Bundle size indicators
-    const bundleFiles = files.filter((f) => f.includes("bundle") || f.includes("dist"));
-    factors.push({ name: "Bundle Configuration", score: bundleFiles.length > 0 ? 100 : 50, weight: 0.4 });
+    const bundleFiles = files.filter(
+      (f) => f.includes("bundle") || f.includes("dist"),
+    );
+    factors.push({
+      name: "Bundle Configuration",
+      score: bundleFiles.length > 0 ? 100 : 50,
+      weight: 0.4,
+    });
 
     // Code optimization patterns
     let hasOptimization = false;
@@ -1198,7 +1331,11 @@ function evaluateArchitectureHealth(
         break;
       }
     }
-    factors.push({ name: "Optimization Patterns", score: hasOptimization ? 100 : 40, weight: 0.3 });
+    factors.push({
+      name: "Optimization Patterns",
+      score: hasOptimization ? 100 : 40,
+      weight: 0.3,
+    });
 
     // Async patterns
     let hasAsync = false;
@@ -1208,21 +1345,34 @@ function evaluateArchitectureHealth(
         break;
       }
     }
-    factors.push({ name: "Async/Await Usage", score: hasAsync ? 100 : 50, weight: 0.3 });
+    factors.push({
+      name: "Async/Await Usage",
+      score: hasAsync ? 100 : 50,
+      weight: 0.3,
+    });
 
-    const performanceScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+    const performanceScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
 
     healthDimensions.push({
       name: "Performance",
       score: performanceScore,
       factors,
-      recommendations: performanceScore < 60 ? ["Add code splitting and lazy loading", "Implement caching strategies"] : [],
+      recommendations:
+        performanceScore < 60
+          ? [
+              "Add code splitting and lazy loading",
+              "Implement caching strategies",
+            ]
+          : [],
     });
   }
 
   // Calculate overall score
   const overallScore = Math.round(
-    healthDimensions.reduce((sum, d) => sum + d.score, 0) / Math.max(healthDimensions.length, 1),
+    healthDimensions.reduce((sum, d) => sum + d.score, 0) /
+      Math.max(healthDimensions.length, 1),
   );
 
   // Determine grade
@@ -1269,7 +1419,9 @@ function generateHealthXml(report: HealthReport): string {
 
   lines.push("## Dimension Scores");
   for (const dim of report.dimensions) {
-    const bar = "█".repeat(Math.round(dim.score / 10)) + "░".repeat(10 - Math.round(dim.score / 10));
+    const bar =
+      "█".repeat(Math.round(dim.score / 10)) +
+      "░".repeat(10 - Math.round(dim.score / 10));
     lines.push(`- **${dim.name}**: ${bar} ${dim.score}%`);
   }
   lines.push("");
@@ -1300,7 +1452,10 @@ function generateHealthXml(report: HealthReport): string {
   return lines.join("\n");
 }
 
-async function evaluateHealthExecute(args: EvaluateHealthArgs, ctx: AgentContext): Promise<string> {
+async function evaluateHealthExecute(
+  args: EvaluateHealthArgs,
+  ctx: AgentContext,
+): Promise<string> {
   const projectPath = args.projectPath
     ? path.isAbsolute(args.projectPath)
       ? args.projectPath
@@ -1316,7 +1471,11 @@ async function evaluateHealthExecute(args: EvaluateHealthArgs, ctx: AgentContext
   );
 
   const { files, content } = await analyzeProject(projectPath);
-  const healthReport = evaluateArchitectureHealth(files, content, args.dimensions);
+  const healthReport = evaluateArchitectureHealth(
+    files,
+    content,
+    args.dimensions,
+  );
 
   const reportXml = generateHealthXml(healthReport);
 
@@ -1346,10 +1505,19 @@ const BenchmarkArchArgs = z.object({
   /** Path to the project to benchmark */
   projectPath: z.string().optional(),
   /** Comparison type */
-  comparisonType: z.enum(["standards", "best-practices", "similar-projects"]).default("standards"),
+  comparisonType: z
+    .enum(["standards", "best-practices", "similar-projects"])
+    .default("standards"),
   /** Metrics to benchmark */
   metrics: z
-    .enum(["all", "size", "complexity", "coupling", "cohesion", "documentation"])
+    .enum([
+      "all",
+      "size",
+      "complexity",
+      "coupling",
+      "cohesion",
+      "documentation",
+    ])
     .array()
     .default(["all"]),
 });
@@ -1394,14 +1562,25 @@ function benchmarkArchitecture(
 
   // Size metrics
   if (metrics.includes("all") || metrics.includes("size")) {
-    const avgSize = Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) / Math.max(content.size, 1);
-    const maxSize = Math.max(...Array.from(content.values()).map((c) => c.length));
+    const avgSize =
+      Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) /
+      Math.max(content.size, 1);
+    const maxSize = Math.max(
+      ...Array.from(content.values()).map((c) => c.length),
+    );
 
     benchmarkMetrics.push({
       name: "Average File Size",
       value: Math.round(avgSize),
       unit: "bytes",
-      rating: avgSize < BENCHMARKS.avgFileSize.excellent ? "excellent" : avgSize < BENCHMARKS.avgFileSize.good ? "good" : avgSize < BENCHMARKS.avgFileSize.average ? "average" : "poor",
+      rating:
+        avgSize < BENCHMARKS.avgFileSize.excellent
+          ? "excellent"
+          : avgSize < BENCHMARKS.avgFileSize.good
+            ? "good"
+            : avgSize < BENCHMARKS.avgFileSize.average
+              ? "average"
+              : "poor",
       comparison: `Industry avg: ${BENCHMARKS.avgFileSize.good} bytes`,
     });
 
@@ -1409,7 +1588,14 @@ function benchmarkArchitecture(
       name: "Max File Size",
       value: maxSize,
       unit: "bytes",
-      rating: maxSize < BENCHMARKS.maxFileSize.excellent ? "excellent" : maxSize < BENCHMARKS.maxFileSize.good ? "good" : maxSize < BENCHMARKS.maxFileSize.average ? "average" : "poor",
+      rating:
+        maxSize < BENCHMARKS.maxFileSize.excellent
+          ? "excellent"
+          : maxSize < BENCHMARKS.maxFileSize.good
+            ? "good"
+            : maxSize < BENCHMARKS.maxFileSize.average
+              ? "average"
+              : "poor",
       comparison: `Industry max: ${BENCHMARKS.maxFileSize.good} bytes`,
     });
 
@@ -1417,7 +1603,14 @@ function benchmarkArchitecture(
       name: "Total Files",
       value: files.length,
       unit: "files",
-      rating: files.length < 100 ? "excellent" : files.length < 300 ? "good" : files.length < 500 ? "average" : "poor",
+      rating:
+        files.length < 100
+          ? "excellent"
+          : files.length < 300
+            ? "good"
+            : files.length < 500
+              ? "average"
+              : "poor",
       comparison: "Similar projects: 50-200 files",
     });
   }
@@ -1427,7 +1620,10 @@ function benchmarkArchitecture(
     let totalComplexity = 0;
     let maxComplexity = 0;
     for (const [, fileContent] of content) {
-      const complexity = (fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b|\bcatch\b/g) || []).length;
+      const complexity = (
+        fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b|\bcatch\b/g) ||
+        []
+      ).length;
       totalComplexity += complexity;
       maxComplexity = Math.max(maxComplexity, complexity);
     }
@@ -1437,7 +1633,14 @@ function benchmarkArchitecture(
       name: "Average Complexity",
       value: Math.round(avgComplexity * 10) / 10,
       unit: "statements",
-      rating: avgComplexity < BENCHMARKS.complexity.excellent ? "excellent" : avgComplexity < BENCHMARKS.complexity.good ? "good" : avgComplexity < BENCHMARKS.complexity.average ? "average" : "poor",
+      rating:
+        avgComplexity < BENCHMARKS.complexity.excellent
+          ? "excellent"
+          : avgComplexity < BENCHMARKS.complexity.good
+            ? "good"
+            : avgComplexity < BENCHMARKS.complexity.average
+              ? "average"
+              : "poor",
       comparison: `Industry avg: ${BENCHMARKS.complexity.good}`,
     });
 
@@ -1445,7 +1648,14 @@ function benchmarkArchitecture(
       name: "Max Complexity",
       value: maxComplexity,
       unit: "statements",
-      rating: maxComplexity < 20 ? "excellent" : maxComplexity < 40 ? "good" : maxComplexity < 60 ? "average" : "poor",
+      rating:
+        maxComplexity < 20
+          ? "excellent"
+          : maxComplexity < 40
+            ? "good"
+            : maxComplexity < 60
+              ? "average"
+              : "poor",
       comparison: "Best practice: < 20",
     });
   }
@@ -1463,7 +1673,14 @@ function benchmarkArchitecture(
       name: "Average Imports",
       value: Math.round(avgImports * 10) / 10,
       unit: "imports/file",
-      rating: avgImports < BENCHMARKS.coupling.excellent ? "excellent" : avgImports < BENCHMARKS.coupling.good ? "good" : avgImports < BENCHMARKS.coupling.average ? "average" : "poor",
+      rating:
+        avgImports < BENCHMARKS.coupling.excellent
+          ? "excellent"
+          : avgImports < BENCHMARKS.coupling.good
+            ? "good"
+            : avgImports < BENCHMARKS.coupling.average
+              ? "average"
+              : "poor",
       comparison: `Best practice: < ${BENCHMARKS.coupling.excellent}`,
     });
   }
@@ -1478,7 +1695,14 @@ function benchmarkArchitecture(
       name: "Module Cohesion",
       value: Math.round(cohesionScore),
       unit: "%",
-      rating: cohesionScore >= BENCHMARKS.cohesion.excellent ? "excellent" : cohesionScore >= BENCHMARKS.cohesion.good ? "good" : cohesionScore >= BENCHMARKS.cohesion.average ? "average" : "poor",
+      rating:
+        cohesionScore >= BENCHMARKS.cohesion.excellent
+          ? "excellent"
+          : cohesionScore >= BENCHMARKS.cohesion.good
+            ? "good"
+            : cohesionScore >= BENCHMARKS.cohesion.average
+              ? "average"
+              : "poor",
       comparison: `Best practice: > ${BENCHMARKS.cohesion.excellent}%`,
     });
   }
@@ -1488,36 +1712,57 @@ function benchmarkArchitecture(
     let documentedExports = 0;
     let totalExports = 0;
     for (const [, fileContent] of content) {
-      const exports = fileContent.match(/export\s+(?:function|class|const|interface|type)/g) || [];
+      const exports =
+        fileContent.match(
+          /export\s+(?:function|class|const|interface|type)/g,
+        ) || [];
       const jsdocs = fileContent.match(/\/\*\*[\s\S]*?\*\//g) || [];
       totalExports += exports.length;
       documentedExports += Math.min(exports.length, jsdocs.length);
     }
-    const docCoverage = totalExports > 0 ? (documentedExports / totalExports) * 100 : 0;
+    const docCoverage =
+      totalExports > 0 ? (documentedExports / totalExports) * 100 : 0;
 
     benchmarkMetrics.push({
       name: "Documentation Coverage",
       value: Math.round(docCoverage),
       unit: "%",
-      rating: docCoverage >= BENCHMARKS.docCoverage.excellent ? "excellent" : docCoverage >= BENCHMARKS.docCoverage.good ? "good" : docCoverage >= BENCHMARKS.docCoverage.average ? "average" : "poor",
+      rating:
+        docCoverage >= BENCHMARKS.docCoverage.excellent
+          ? "excellent"
+          : docCoverage >= BENCHMARKS.docCoverage.good
+            ? "good"
+            : docCoverage >= BENCHMARKS.docCoverage.average
+              ? "average"
+              : "poor",
       comparison: `Best practice: > ${BENCHMARKS.docCoverage.excellent}%`,
     });
 
     // Test coverage estimate
-    const testFiles = files.filter((f) => f.includes("test") || f.includes("spec"));
-    const testCoverage = files.length > 0 ? (testFiles.length / files.length) * 100 : 0;
+    const testFiles = files.filter(
+      (f) => f.includes("test") || f.includes("spec"),
+    );
+    const testCoverage =
+      files.length > 0 ? (testFiles.length / files.length) * 100 : 0;
 
     benchmarkMetrics.push({
       name: "Test Coverage",
       value: Math.round(testCoverage),
       unit: "%",
-      rating: testCoverage >= BENCHMARKS.testCoverage.excellent ? "excellent" : testCoverage >= BENCHMARKS.testCoverage.good ? "good" : testCoverage >= BENCHMARKS.testCoverage.average ? "average" : "poor",
+      rating:
+        testCoverage >= BENCHMARKS.testCoverage.excellent
+          ? "excellent"
+          : testCoverage >= BENCHMARKS.testCoverage.good
+            ? "good"
+            : testCoverage >= BENCHMARKS.testCoverage.average
+              ? "average"
+              : "poor",
       comparison: `Best practice: > ${BENCHMARKS.testCoverage.excellent}%`,
     });
   }
 
   // Generate summary
-  const excellent = benchmarkMetrics.filter((m) => m.rating === "excellent").length;
+
   const good = benchmarkMetrics.filter((m) => m.rating === "good").length;
   const average = benchmarkMetrics.filter((m) => m.rating === "average").length;
   const poor = benchmarkMetrics.filter((m) => m.rating === "poor").length;
@@ -1526,7 +1771,8 @@ function benchmarkArchitecture(
   if (poor > 2) {
     summary = "This project needs significant architectural improvements.";
   } else if (average > good) {
-    summary = "This project is on par with industry standards but has room for improvement.";
+    summary =
+      "This project is on par with industry standards but has room for improvement.";
   } else if (good > average) {
     summary = "This project exceeds typical industry standards.";
   } else {
@@ -1537,7 +1783,9 @@ function benchmarkArchitecture(
   const recommendations: string[] = [];
   for (const metric of benchmarkMetrics) {
     if (metric.rating === "poor") {
-      recommendations.push(`Improve ${metric.name.toLowerCase()} (currently ${metric.rating})`);
+      recommendations.push(
+        `Improve ${metric.name.toLowerCase()} (currently ${metric.rating})`,
+      );
     }
   }
 
@@ -1573,7 +1821,9 @@ function generateBenchmarkXml(report: BenchmarkReport): string {
   for (const metric of report.metrics) {
     lines.push(`### ${metric.name}`);
     lines.push(`- **Value:** ${metric.value} ${metric.unit}`);
-    lines.push(`- **Rating:** ${ratingEmoji[metric.rating]} ${metric.rating.charAt(0).toUpperCase() + metric.rating.slice(1)}`);
+    lines.push(
+      `- **Rating:** ${ratingEmoji[metric.rating]} ${metric.rating.charAt(0).toUpperCase() + metric.rating.slice(1)}`,
+    );
     lines.push(`- **Comparison:** ${metric.comparison}`);
     lines.push("");
   }
@@ -1586,7 +1836,10 @@ function generateBenchmarkXml(report: BenchmarkReport): string {
   return lines.join("\n");
 }
 
-async function benchmarkArchExecute(args: BenchmarkArchArgs, ctx: AgentContext): Promise<string> {
+async function benchmarkArchExecute(
+  args: BenchmarkArchArgs,
+  ctx: AgentContext,
+): Promise<string> {
   const projectPath = args.projectPath
     ? path.isAbsolute(args.projectPath)
       ? args.projectPath
@@ -1602,7 +1855,12 @@ async function benchmarkArchExecute(args: BenchmarkArchArgs, ctx: AgentContext):
   );
 
   const { files, content } = await analyzeProject(projectPath);
-  const benchmarkReport = benchmarkArchitecture(projectPath, files, content, args.metrics);
+  const benchmarkReport = benchmarkArchitecture(
+    projectPath,
+    files,
+    content,
+    args.metrics,
+  );
 
   const reportXml = generateBenchmarkXml(benchmarkReport);
 

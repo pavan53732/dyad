@@ -2,7 +2,8 @@
   "mcpServers": {
     "sequentialthinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "alwaysAllow": ["sequentialthinking"]
     },
     "filesystem": {
       "command": "npx",
@@ -18,13 +19,26 @@
         "read_text_file",
         "list_directory",
         "write_file",
-        "edit_file"
+        "edit_file",
+        "read_media_file",
+        "create_directory",
+        "list_directory_with_sizes",
+        "directory_tree",
+        "move_file",
+        "get_file_info",
+        "list_allowed_directories"
       ]
     },
-    "context7": {
+    "tavily": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
-      "env": { "DEFAULT_MINIMUM_TOKENS": "" }
+      "args": ["-y", "tavily-mcp@0.2.3"],
+      "env": { "TAVILY_API_KEY": "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" },
+      "alwaysAllow": [
+        "tavily-search",
+        "tavily-extract",
+        "tavily-crawl",
+        "tavily-map"
+      ]
     }
   }
 }

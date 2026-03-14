@@ -67,6 +67,18 @@ import {
   orphanDepsTool,
   deprecatedCheckTool,
 } from "./tools/dependency_analyzer";
+import {
+  dependencyGraphBuilderTool,
+  dependencyNodeAnalyzerTool,
+  dependencyEdgeAnalyzerTool,
+  dependencyImpactCalculatorTool,
+  dependencyConflictDetectorTool,
+  dependencyVersionResolverTool,
+  dependencyVulnerabilityMapperTool,
+  dependencyEvolutionTrackerTool,
+  dependencyRedundancyFinderTool,
+  dependencyHealthMonitorTool,
+} from "./tools/dependency_knowledge_graph";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
 import {
   detectPatternsTool,
@@ -83,10 +95,21 @@ import { architectureAnalyzerTool } from "./tools/architecture_analyzer";
 import { architectureGraphBuilderTool } from "./tools/architecture_graph_builder";
 import { architectureValidatorTool } from "./tools/architecture_validator";
 import { architectureSimulatorTool } from "./tools/architecture_simulator";
-import { evaluateHealthTool, benchmarkArchTool } from "./tools/architecture_validator";
+import {
+  evaluateHealthTool,
+  benchmarkArchTool,
+} from "./tools/architecture_validator";
 import { patternDetectorTool } from "./tools/pattern_detector";
 import { codeIntelligenceTool } from "./tools/code_intelligence";
-import { intentClassifierTool } from "./tools/intent_classifier";
+import {
+  intentClassifierTool,
+  promptNormalizationTool,
+  contextEnrichmentTool,
+  domainVocabularyExpanderTool,
+  entityExtractionTool,
+  featureRequestExtractorTool,
+  userGoalReconstructorTool,
+} from "./tools/intent_classifier";
 import { taskDecomposerTool } from "./tools/task_decomposer";
 import { contextOrchestratorTool } from "./tools/context_orchestrator";
 import { selfVerifierTool } from "./tools/self_verifier";
@@ -103,6 +126,9 @@ import { cachingStrategiesTool } from "./tools/caching_strategies";
 import { resourceOptimizerTool } from "./tools/resource_optimizer";
 import { queryOptimizerTool } from "./tools/query_optimizer";
 import { teamCoordinatorTool } from "./tools/team_coordinator";
+import { agentRolesTools } from "./tools/agent_roles";
+import { conflictResolutionTools } from "./tools/conflict_resolution";
+import { hierarchicalTeamsTools } from "./tools/hierarchical_teams";
 import { codeReviewerTool } from "./tools/code_reviewer";
 import { knowledgeSharingTool } from "./tools/knowledge_sharing";
 import { collaborationSessionTool } from "./tools/collaboration_session";
@@ -127,6 +153,164 @@ import {
   codeSynthesisTool,
   crossLanguageTool,
 } from "./tools/code_intelligence";
+// Retrieval Intelligence (Capabilities 41-50)
+import {
+  codeRetrievalTool,
+  documentationRetrievalTool,
+  patternRetrievalTool,
+  architectureRetrievalTool,
+  apiReferenceRetrievalTool,
+  semanticSimilarityRankingTool,
+  retrievalReRankingTool,
+  queryRewritingTool,
+  retrievalFallbackStrategyTool,
+  knowledgeSourceValidatorTool,
+} from "./tools/retrieval_intelligence";
+// Specialized Agents (Capabilities 161-170)
+import { specializedAgentsTools } from "./tools/specialized_agents";
+// Basic Inference & Chain-of-Thought (Capabilities 1-22)
+import {
+  directInferenceTool,
+  chainOfThoughtTool,
+  deductiveReasoningTool,
+  inductiveReasoningTool,
+  abductiveReasoningTool,
+  syllogismTool,
+  modalReasoningTool,
+  circularReasoningCheckTool,
+  fallacyDetectionTool,
+  argumentStructureTool,
+  reasoningAuditTool,
+} from "./tools/basic_inference";
+// Uncertainty Quantification (Capabilities 41-60)
+import {
+  quantifyUncertaintyTool,
+  confidenceScoreTool,
+  evidenceStrengthTool,
+  bayesianUpdateTool,
+  entropyMeasureTool,
+  sensitivityAnalysisTool,
+  confidenceIntervalTool,
+  riskAssessmentTool,
+  ambiguityDetectionTool,
+  calibrationCheckTool,
+} from "./tools/uncertainty_quantification";
+// Analogical & Case-Based Reasoning (Capabilities 66-80)
+import {
+  caseRetrievalTool,
+  caseMatchTool,
+  adaptSolutionTool,
+  similarityMetricTool,
+  featureExtractionTool,
+  caseLibraryTool,
+  caseIndexingTool,
+  analogicalTransferTool,
+  schemaMappingTool,
+  caseRevisionTool,
+  cbrCycleTool,
+  nearestNeighborTool,
+  caseValidationTool,
+  caseStorageTool,
+  analogyQualityTool,
+} from "./tools/analogical_reasoning";
+// Program Slicing & Control Flow (Capabilities 221-227)
+import {
+  computeSliceTool,
+  controlFlowGraphTool,
+  dataFlowAnalysisTool,
+  reachabilityTool,
+  dependenceGraphTool,
+  staticAnalysisTool,
+  dynamicAnalysisTool,
+} from "./tools/program_slicing";
+// Formal Verification & Invariants (Capabilities 317-322)
+import {
+  verifyInvariantsTool,
+  assertionCheckingTool,
+  contractVerificationTool,
+  modelCheckingTool,
+  proofAssistantTool,
+  propertyCheckingTool,
+} from "./tools/formal_verification";
+// Runtime Analysis & Memory Profiling (Capabilities 326-332)
+import {
+  memoryProfileTool,
+  performanceTraceTool,
+  bottleneckDetectTool,
+  heapAnalysisTool,
+  cpuProfileTool,
+  leakDetectionTool,
+  threadAnalysisTool,
+} from "./tools/runtime_analysis";
+// Self-Improving Reasoning (Capabilities 61-70)
+import { selfImprovingReasoningTools } from "./tools/self_improving_reasoning";
+// Iterative Reasoning Loops (Capabilities 81-90)
+import {
+  reflectionEngineTool,
+  replanningEngineTool,
+  goalDecompositionTool,
+  progressTrackingTool,
+  checkpointEvaluationTool,
+  failureAnalysisTool,
+  alternativeGenerationTool,
+  convergenceCheckTool,
+  backtrackingEngineTool,
+  iterationOptimizerTool,
+} from "./tools/iterative_reasoning_loops";
+// Monitoring (Capabilities 171-180)
+import {
+  agentHealthCheckTool,
+  performanceMetricsTool,
+  resourceMonitorTool,
+  errorRateTrackerTool,
+  successRateMonitorTool,
+  latencyTrackerTool,
+  throughputMonitorTool,
+  anomalyDetectorTool,
+  alertGeneratorTool,
+  dashboardMetricsTool,
+} from "./tools/monitoring";
+// Runtime Telemetry (Capabilities 421-430)
+import {
+  performanceTelemetryTool,
+  errorTelemetryTool,
+  usageTelemetryTool,
+  latencyTelemetryTool,
+  throughputTelemetryTool,
+  resourceTelemetryTool,
+  customTelemetryTool,
+  telemetryAggregatorTool,
+  telemetryExporterTool,
+  telemetryDashboardTool,
+} from "./tools/runtime_telemetry";
+// Documentation Intelligence (Capabilities 261-270)
+import { documentationIntelligenceTools } from "./tools/documentation_intelligence";
+// Counterfactual Reasoning (Capabilities 101-110)
+import {
+  hypothesisGeneratorTool,
+  counterfactualGeneratorTool,
+  whatIfAnalyzerTool,
+  causalInferenceTool,
+  impactAnalysisTool,
+  scenarioSimulatorTool,
+  alternativeOutcomePredictorTool,
+  decisionImpactEvaluatorTool,
+  assumptionChallengerTool,
+  rootCauseHypothesizerTool,
+} from "./tools/counterfactual_reasoning";
+// Code Representation (Capabilities 231-240)
+import {
+  codeEmbeddingGeneratorTool,
+  functionEmbeddingSystemTool,
+  classEmbeddingSystemTool,
+  fileEmbeddingSystemTool,
+  repositoryEmbeddingSystemTool,
+  codeSimilaritySearchTool,
+  codeClusteringEngineTool,
+  codeIndexingSystemTool,
+  codeMetadataExtractorTool,
+  codeFingerprintGeneratorTool,
+} from "./tools/code_representation";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -202,6 +386,17 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   duplicateDepsTool,
   orphanDepsTool,
   deprecatedCheckTool,
+  // Dependency Knowledge Graph (Capabilities 471-480)
+  dependencyGraphBuilderTool,
+  dependencyNodeAnalyzerTool,
+  dependencyEdgeAnalyzerTool,
+  dependencyImpactCalculatorTool,
+  dependencyConflictDetectorTool,
+  dependencyVersionResolverTool,
+  dependencyVulnerabilityMapperTool,
+  dependencyEvolutionTrackerTool,
+  dependencyRedundancyFinderTool,
+  dependencyHealthMonitorTool,
   architectureAnalyzerTool,
   architectureGraphBuilderTool,
   architectureValidatorTool,
@@ -221,6 +416,12 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   codeIntelligenceTool,
   selfImproverTool,
   intentClassifierTool,
+  promptNormalizationTool,
+  contextEnrichmentTool,
+  domainVocabularyExpanderTool,
+  entityExtractionTool,
+  featureRequestExtractorTool,
+  userGoalReconstructorTool,
   taskDecomposerTool,
   contextOrchestratorTool,
   selfVerifierTool,
@@ -250,15 +451,199 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   monitorReasoningTool,
   theoryOfMindTool,
   abstractReasoningTool,
+  // Basic Inference & Chain-of-Thought (Capabilities 1-22)
+  directInferenceTool,
+  chainOfThoughtTool,
+  deductiveReasoningTool,
+  inductiveReasoningTool,
+  abductiveReasoningTool,
+  syllogismTool,
+  modalReasoningTool,
+  circularReasoningCheckTool,
+  fallacyDetectionTool,
+  argumentStructureTool,
+  reasoningAuditTool,
+  // Uncertainty Quantification (Capabilities 41-60)
+  quantifyUncertaintyTool,
+  confidenceScoreTool,
+  evidenceStrengthTool,
+  bayesianUpdateTool,
+  entropyMeasureTool,
+  sensitivityAnalysisTool,
+  confidenceIntervalTool,
+  riskAssessmentTool,
+  ambiguityDetectionTool,
+  calibrationCheckTool,
+  // Analogical & Case-Based Reasoning (Capabilities 66-80)
+  caseRetrievalTool,
+  caseMatchTool,
+  adaptSolutionTool,
+  similarityMetricTool,
+  featureExtractionTool,
+  caseLibraryTool,
+  caseIndexingTool,
+  analogicalTransferTool,
+  schemaMappingTool,
+  caseRevisionTool,
+  cbrCycleTool,
+  nearestNeighborTool,
+  caseValidationTool,
+  caseStorageTool,
+  analogyQualityTool,
   // Code Intelligence tools
   semanticSearchTool,
   nlQueryTool,
   codeSynthesisTool,
   crossLanguageTool,
+  // Retrieval Intelligence (Capabilities 41-50)
+  codeRetrievalTool,
+  documentationRetrievalTool,
+  patternRetrievalTool,
+  architectureRetrievalTool,
+  apiReferenceRetrievalTool,
+  semanticSimilarityRankingTool,
+  retrievalReRankingTool,
+  queryRewritingTool,
+  retrievalFallbackStrategyTool,
+  knowledgeSourceValidatorTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,
   exitPlanTool,
+  // Role Specialization & Task Allocation (Capabilities 121-126)
+  agentRolesTools.roleSpecializationTool,
+  agentRolesTools.skillMatchingTool,
+  agentRolesTools.taskDecompositionTool,
+  agentRolesTools.workloadBalancingTool,
+  agentRolesTools.capabilityMappingTool,
+  agentRolesTools.roleEvolutionTool,
+  // Conflict Resolution & Resource Allocation (Capabilities 161-166)
+  conflictResolutionTools.detectConflictsTool,
+  conflictResolutionTools.mediateDisputesTool,
+  conflictResolutionTools.resourceArbitrationTool,
+  conflictResolutionTools.priorityNegotiationTool,
+  conflictResolutionTools.deadlockResolutionTool,
+  conflictResolutionTools.fairnessOptimizationTool,
+  // Hierarchical Teams & Role Evolution (Capabilities 171-178)
+  hierarchicalTeamsTools.createTeamTool,
+  hierarchicalTeamsTools.assignLeaderTool,
+  hierarchicalTeamsTools.delegateAuthorityTool,
+  hierarchicalTeamsTools.teamFormationTool,
+  hierarchicalTeamsTools.rolePromotionTool,
+  hierarchicalTeamsTools.teamDissolveTool,
+  hierarchicalTeamsTools.knowledgeHierarchyTool,
+  hierarchicalTeamsTools.escalationPathTool,
+  // Specialized Agents (Capabilities 161-170)
+  specializedAgentsTools.plannerAgentTool,
+  specializedAgentsTools.architectAgentTool,
+  specializedAgentsTools.backendGeneratorAgentTool,
+  specializedAgentsTools.frontendGeneratorAgentTool,
+  specializedAgentsTools.databaseArchitectAgentTool,
+  specializedAgentsTools.securityAgentTool,
+  specializedAgentsTools.testingAgentTool,
+  specializedAgentsTools.deploymentAgentTool,
+  specializedAgentsTools.debuggingAgentTool,
+  specializedAgentsTools.refactoringAgentTool,
+  // Program Slicing & Control Flow (Capabilities 221-227)
+  computeSliceTool,
+  controlFlowGraphTool,
+  dataFlowAnalysisTool,
+  reachabilityTool,
+  dependenceGraphTool,
+  staticAnalysisTool,
+  dynamicAnalysisTool,
+  // Formal Verification & Invariants (Capabilities 317-322)
+  verifyInvariantsTool,
+  assertionCheckingTool,
+  contractVerificationTool,
+  modelCheckingTool,
+  proofAssistantTool,
+  propertyCheckingTool,
+  // Runtime Analysis & Memory Profiling (Capabilities 326-332)
+  memoryProfileTool,
+  performanceTraceTool,
+  bottleneckDetectTool,
+  heapAnalysisTool,
+  cpuProfileTool,
+  leakDetectionTool,
+  threadAnalysisTool,
+  // Self-Improving Reasoning (Capabilities 61-70)
+  selfImprovingReasoningTools.learningFeedbackLoopTool,
+  selfImprovingReasoningTools.performanceEvaluationTool,
+  selfImprovingReasoningTools.strategyRefinementTool,
+  selfImprovingReasoningTools.knowledgeUpdaterTool,
+  selfImprovingReasoningTools.errorPatternLearnerTool,
+  selfImprovingReasoningTools.successPatternExtractorTool,
+  selfImprovingReasoningTools.adaptiveThresholdLearnerTool,
+  selfImprovingReasoningTools.rewardCalculatorTool,
+  selfImprovingReasoningTools.policyUpdaterTool,
+  selfImprovingReasoningTools.selfCorrectionEngineTool,
+  // Iterative Reasoning Loops (Capabilities 81-90)
+  reflectionEngineTool,
+  replanningEngineTool,
+  goalDecompositionTool,
+  progressTrackingTool,
+  checkpointEvaluationTool,
+  failureAnalysisTool,
+  alternativeGenerationTool,
+  convergenceCheckTool,
+  backtrackingEngineTool,
+  iterationOptimizerTool,
+  // Code Representation (Capabilities 231-240)
+  codeEmbeddingGeneratorTool,
+  functionEmbeddingSystemTool,
+  classEmbeddingSystemTool,
+  fileEmbeddingSystemTool,
+  repositoryEmbeddingSystemTool,
+  codeSimilaritySearchTool,
+  codeClusteringEngineTool,
+  codeIndexingSystemTool,
+  codeMetadataExtractorTool,
+  codeFingerprintGeneratorTool,
+  // Monitoring (Capabilities 171-180)
+  agentHealthCheckTool,
+  performanceMetricsTool,
+  resourceMonitorTool,
+  errorRateTrackerTool,
+  successRateMonitorTool,
+  latencyTrackerTool,
+  throughputMonitorTool,
+  anomalyDetectorTool,
+  alertGeneratorTool,
+  dashboardMetricsTool,
+  // Runtime Telemetry (Capabilities 421-430)
+  performanceTelemetryTool,
+  errorTelemetryTool,
+  usageTelemetryTool,
+  latencyTelemetryTool,
+  throughputTelemetryTool,
+  resourceTelemetryTool,
+  customTelemetryTool,
+  telemetryAggregatorTool,
+  telemetryExporterTool,
+  telemetryDashboardTool,
+  // Documentation Intelligence (Capabilities 261-270)
+  documentationIntelligenceTools.autoDocGeneratorTool,
+  documentationIntelligenceTools.apiDocGeneratorTool,
+  documentationIntelligenceTools.readmeGeneratorTool,
+  documentationIntelligenceTools.codeCommentGeneratorTool,
+  documentationIntelligenceTools.changelogGeneratorTool,
+  documentationIntelligenceTools.architectureDocGeneratorTool,
+  documentationIntelligenceTools.docFormatterTool,
+  documentationIntelligenceTools.docConsistencyCheckerTool,
+  documentationIntelligenceTools.docCoverageAnalyzerTool,
+  documentationIntelligenceTools.docUpdaterTool,
+  // Counterfactual Reasoning (Capabilities 101-110)
+  hypothesisGeneratorTool,
+  counterfactualGeneratorTool,
+  whatIfAnalyzerTool,
+  causalInferenceTool,
+  impactAnalysisTool,
+  scenarioSimulatorTool,
+  alternativeOutcomePredictorTool,
+  decisionImpactEvaluatorTool,
+  assumptionChallengerTool,
+  rootCauseHypothesizerTool,
 ];
 // ============================================================================
 // Agent Tool Name Type (derived from TOOL_DEFINITIONS)

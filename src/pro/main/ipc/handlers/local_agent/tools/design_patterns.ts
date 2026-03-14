@@ -159,8 +159,10 @@ const PATTERN_LIBRARY: PatternInfo[] = [
     name: "Singleton",
     category: "creational",
     intent: "Ensure a class only has one instance",
-    problemAddressed: "Need exactly one instance of a class (e.g., configuration, logger)",
-    solution: "Make the constructor private, add a static method to get the instance",
+    problemAddressed:
+      "Need exactly one instance of a class (e.g., configuration, logger)",
+    solution:
+      "Make the constructor private, add a static method to get the instance",
     codeExample: `class Singleton {
   private static instance: Singleton;
   private constructor() {}
@@ -171,14 +173,19 @@ const PATTERN_LIBRARY: PatternInfo[] = [
     return Singleton.instance;
   }
 }`,
-    pros: ["Controlled access to single instance", "Reduced namespace pollution", "Lazy initialization possible"],
+    pros: [
+      "Controlled access to single instance",
+      "Reduced namespace pollution",
+      "Lazy initialization possible",
+    ],
     cons: ["Hard to test", "Creates global state", "Can mask bad design"],
     relatedPatterns: ["Factory Method", "Prototype"],
   },
   {
     name: "Factory Method",
     category: "creational",
-    intent: "Define an interface for creating objects, let subclasses decide the class",
+    intent:
+      "Define an interface for creating objects, let subclasses decide the class",
     problemAddressed: "Need to create objects without specifying exact class",
     solution: "Define a method in base class that subclasses override",
     codeExample: `abstract class Creator {
@@ -237,7 +244,11 @@ class Context {
 class ConcreteDecorator extends Decorator {
   operation() { return \`Decorated(\${super.operation()})\`; }
 }`,
-    pros: ["Flexible than inheritance", "Add/remove at runtime", "Combine behaviors"],
+    pros: [
+      "Flexible than inheritance",
+      "Add/remove at runtime",
+      "Combine behaviors",
+    ],
     cons: ["Hard to remove specific wrapper", "Order matters"],
     relatedPatterns: ["Composite", "Strategy"],
   },
@@ -267,8 +278,17 @@ class ConcreteDecorator extends Decorator {
 // Use Cases - depend only on Domain
 // Interface Adapters - convert data between layers
 // Frameworks/Drivers (outermost) - DB, UI, etc.`,
-    pros: ["Testable", "Independent of frameworks", "Independent of UI", "Independent of DB"],
-    cons: ["Learning curve", "May be overkill for simple apps", "More boilerplate"],
+    pros: [
+      "Testable",
+      "Independent of frameworks",
+      "Independent of UI",
+      "Independent of DB",
+    ],
+    cons: [
+      "Learning curve",
+      "May be overkill for simple apps",
+      "More boilerplate",
+    ],
     relatedPatterns: ["Hexagonal Architecture", "Onion Architecture"],
   },
 ];
@@ -327,7 +347,8 @@ function detectDesignPatterns(
   // Observer detection (event handling patterns)
   if (patterns.includes("all") || patterns.includes("observer")) {
     for (const [file, fileContent] of content) {
-      const hasEventEmitting = /addEventListener|on\(|subscribe|emit|notify/.test(fileContent);
+      const hasEventEmitting =
+        /addEventListener|on\(|subscribe|emit|notify/.test(fileContent);
       const hasCallback = /callbacks|listeners|observers/.test(fileContent);
       if (hasEventEmitting || hasCallback) {
         detected.push({
@@ -343,10 +364,20 @@ function detectDesignPatterns(
   }
 
   // MVC/MVVM detection
-  if (patterns.includes("all") || patterns.includes("mvc") || patterns.includes("mvvm")) {
-    const hasController = files.some((f) => f.includes("/controller") || f.includes("/Controller"));
-    const hasModel = files.some((f) => f.includes("/model") || f.includes("/Model"));
-    const hasView = files.some((f) => f.includes("/view") || f.includes("/View"));
+  if (
+    patterns.includes("all") ||
+    patterns.includes("mvc") ||
+    patterns.includes("mvvm")
+  ) {
+    const hasController = files.some(
+      (f) => f.includes("/controller") || f.includes("/Controller"),
+    );
+    const hasModel = files.some(
+      (f) => f.includes("/model") || f.includes("/Model"),
+    );
+    const hasView = files.some(
+      (f) => f.includes("/view") || f.includes("/View"),
+    );
 
     if (hasController && hasModel && hasView) {
       detected.push({
@@ -402,7 +433,7 @@ function suggestRefactoring(
   // Extract method suggestions
   if (refactoringType === "extract-method" || refactoringType === "SOLID") {
     const longFunctions = fileContent.match(
-      /(?:function|const|let|var)\s+(\w+)\s*[=\(][^{]{100,}/g,
+      /(?:function|const|let|var)\s+(\w+)\s*[=(][^{]{100,}/g,
     );
     if (longFunctions) {
       suggestions.push({
@@ -435,7 +466,9 @@ function suggestRefactoring(
 
   // Remove dead code
   if (refactoringType === "remove-dead-code") {
-    const unusedVars = fileContent.match(/const\s+(\w+)\s*=\s*[^;]+;(?!\s*\1)/g);
+    const unusedVars = fileContent.match(
+      /const\s+(\w+)\s*=\s*[^;]+;(?!\s*\1)/g,
+    );
     if (unusedVars) {
       suggestions.push({
         type: "remove-dead-code",
@@ -450,13 +483,14 @@ function suggestRefactoring(
 
   // Naming improvements
   if (refactoringType === "improve-naming" || refactoringType === "SOLID") {
-    const singleCharVars = fileContent.match(/\b[a-z]\b(?!\s*[\(\{])/g);
+    const singleCharVars = fileContent.match(/\b[a-z]\b(?!\s*[({])/g);
     if (singleCharVars && singleCharVars.length > 3) {
       suggestions.push({
         type: "improve-naming",
         priority: "low",
         title: "Use more descriptive variable names",
-        description: "Found single-letter variables that could be more descriptive",
+        description:
+          "Found single-letter variables that could be more descriptive",
         location: targetPath,
         effort: "low",
       });
@@ -483,7 +517,8 @@ function suggestRefactoring(
         type: "reduce-complexity",
         priority: "medium",
         title: "Too many function parameters",
-        description: "Functions have many parameters. Consider using an options object.",
+        description:
+          "Functions have many parameters. Consider using an options object.",
         location: targetPath,
         effort: "medium",
       });
@@ -518,7 +553,8 @@ function detectAntiPatterns(
           severity: "high",
           location: file,
           description: `File is very large (${Math.round(fileContent.length / 1000)}KB)`,
-          suggestion: "Split into smaller, focused modules following Single Responsibility Principle",
+          suggestion:
+            "Split into smaller, focused modules following Single Responsibility Principle",
         });
       }
     }
@@ -544,7 +580,8 @@ function detectAntiPatterns(
           severity: "critical",
           location: file,
           description: `Excessive indentation depth: ${maxDepth} levels`,
-          suggestion: "Refactor using early returns, guard clauses, or extract methods",
+          suggestion:
+            "Refactor using early returns, guard clauses, or extract methods",
         });
       }
     }
@@ -570,7 +607,10 @@ function detectAntiPatterns(
 
   // Copy-Paste detection
   if (types.includes("all") || types.includes("copy-paste")) {
-    const codeBlocks = new Map<string, { count: number; locations: string[] }>();
+    const codeBlocks = new Map<
+      string,
+      { count: number; locations: string[] }
+    >();
     for (const [file, fileContent] of content) {
       const funcRegex = /(?:function|const|let|var)\s+(\w+)\s*[=:]/g;
       let match;
@@ -582,7 +622,7 @@ function detectAntiPatterns(
         codeBlocks.set(block, existing);
       }
     }
-    for (const [block, info] of codeBlocks) {
+    for (const [_block, info] of codeBlocks) {
       if (info.count > 3) {
         issues.push({
           id: "copy-paste-001",
@@ -600,13 +640,16 @@ function detectAntiPatterns(
   // Circular dependency detection
   if (types.includes("all") || types.includes("circular-dependency")) {
     for (const [file, fileContent] of content) {
-      const imports = fileContent.match(/import\s+.*\s+from\s+['"]([^'"]+)['"]/g) || [];
+      const imports =
+        fileContent.match(/import\s+.*\s+from\s+['"]([^'"]+)['"]/g) || [];
       for (const imp of imports) {
         const match = imp.match(/['"]([^'"]+)['"]/);
         if (match) {
           const impPath = match[1];
           if (impPath.includes("..")) {
-            const reversePath = impPath.replace(/\.\.\//g, "").replace(/\\/g, "/");
+            const reversePath = impPath
+              .replace(/\.\.\//g, "")
+              .replace(/\\/g, "/");
             if (file.includes(reversePath)) {
               issues.push({
                 id: "circular-001",
@@ -615,7 +658,8 @@ function detectAntiPatterns(
                 severity: "high",
                 location: file,
                 description: "File imports from parent that imports it back",
-                suggestion: "Refactor to remove circular imports using dependency injection",
+                suggestion:
+                  "Refactor to remove circular imports using dependency injection",
               });
             }
           }
@@ -730,7 +774,8 @@ async function suggestRefactoringExecute(
     lines.push("No refactoring suggestions for this code.");
   } else {
     for (const s of suggestions) {
-      const priorityEmoji = s.priority === "high" ? "🔴" : s.priority === "medium" ? "🟡" : "🟢";
+      const priorityEmoji =
+        s.priority === "high" ? "🔴" : s.priority === "medium" ? "🟡" : "🟢";
       lines.push(`## ${priorityEmoji} ${s.title} [${s.priority}]`);
       lines.push(`- **Type:** ${s.type}`);
       lines.push(`- **Location:** ${s.location}`);
@@ -789,7 +834,6 @@ async function detectAntiPatternsExecute(
   const critical = issues.filter((i) => i.severity === "critical");
   const high = issues.filter((i) => i.severity === "high");
   const medium = issues.filter((i) => i.severity === "medium");
-  const low = issues.filter((i) => i.severity === "low");
 
   if (critical.length > 0) {
     lines.push("## 🔴 Critical Issues");
@@ -915,7 +959,9 @@ async function patternLibraryExecute(
   }
 
   lines.push("---");
-  lines.push("Use `patternName` to get detailed information on a specific pattern.");
+  lines.push(
+    "Use `patternName` to get detailed information on a specific pattern.",
+  );
 
   ctx.onXmlComplete(
     `<dyad-status title="Pattern Library">${patterns.length} patterns</dyad-status>`,

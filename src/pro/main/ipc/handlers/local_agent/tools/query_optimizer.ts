@@ -181,11 +181,6 @@ function performIndexAnalysis(code: string): IndexAnalysis {
   const suggestions: string[] = [];
 
   // Detect columns used in WHERE but might lack indexes
-  const whereColumns = code.match(/\.eq\(['"](\w+)['"]\)/g) || [];
-  const whereInColumns = code.match(/\.in\(['"](\w+)['"]\)/g) || [];
-  const orderByColumns = code.match(/\.order\(['"](\w+)['"]/g) || [];
-
-  const allColumns = [...whereColumns, ...whereInColumns, ...orderByColumns];
 
   // Check for foreign key patterns
   if (code.includes("_id") || code.includes("Id")) {
