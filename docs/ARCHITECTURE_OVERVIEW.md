@@ -1,0 +1,597 @@
+# Dyad Architecture Overview
+
+> **Version:** 0.39.0  
+> **Last Updated:** March 2026  
+> **Classification:** Desktop AI App Builder (Electron-based)
+
+---
+
+## 1. Project Overview
+
+**Dyad** is a local, open-source AI app builder — a desktop application that enables users to create, edit, and deploy AI-powered applications. It functions as a private, self-hosted alternative to cloud-based AI builders like Lovable, v0, or Bolt.
+
+### Core Value Proposition
+- **Local-First:** All AI processing happens locally or via user-provided API keys
+- **Privacy:** No vendor lock-in; users control their data and AI providers
+- **Cross-Platform:** Runs on Mac and Windows via Electron
+
+### Key Features
+- AI-powered app scaffolding and editing via chat interface
+- GitHub integration for version control and collaboration
+- Vercel deployment integration
+- Supabase backend integration
+- Neon database integration
+- Support for multiple AI providers (OpenAI, Anthropic, Azure, Ollama, LM Studio, etc.)
+- Model Context Protocol (MCP) for extensibility
+
+---
+
+## 2. Repository Structure
+
+```
+dyad/
+├── src/                          # Main application source
+│   ├── main.ts                   # Electron main process entry
+│   ├── app/                      # React application (TanStack Router)
+│   │   ├── layout.tsx            # Root layout with routing
+│   │   └── TitleBar.tsx          # Custom title bar
+│   ├── components/               # React UI components
+│   ├── pages/                    # Route pages (chat, home, settings, etc.)
+│   ├── hooks/                    # Custom React hooks
+│   ├── ipc/                      # IPC handlers and types
+│   │   ├── handlers/             # Main process IPC handlers
+│   │   ├── types/                # TypeScript type definitions
+│   │   ├── utils/                # Utility functions
+│   │   └── processors/           # Request processors
+│   ├── db/                       # Database layer (Drizzle ORM)
+│   ├── contexts/                 # React contexts
+│   ├── atoms/                    # Jotai atoms for state
+│   ├── lib/                      # Shared libraries
+│   ├── utils/                    # Utility functions
+│   ├── neon_admin/               # Neon database admin client
+│   └── __tests__/                # Unit tests
+├── drizzle/                      # Database migrations
+├── e2e-tests/                    # Playwright E2E tests
+├── packages/                     # Published npm packages
+│   ├── @dyad-sh/nextjs-webpack-component-tagger/
+│   └── @dyad-sh/react-vite-component-tagger/
+├── plans/                       # Technical design documents
+├── rules/                        # Development guidelines
+├── testing/                      # Test utilities and mock servers
+├── worker/                       # Web Workers
+├── workers/                      # Background workers
+├── forge.config.ts               # Electron Forge configuration
+├── drizzle.config.ts             # Drizzle ORM configuration
+├── tsconfig.app.json             # TypeScript config for main app
+└── playwright.config.ts          # Playwright configuration
+```
+
+---
+
+## 3. Technology Stack
+
+### Core Framework
+| Technology | Purpose |
+|------------|---------|
+| **Electron** | Desktop application framework |
+| **React** | UI library |
+| **TanStack Router** | Client-side routing (not Next.js or React Router) |
+| **TanStack Query** | Data fetching and caching for IPC endpoints |
+| **TypeScript** | Type safety (strict mode via `tsgo`) |
+| **Vite** | Build tool |
+
+### UI & Styling
+| Technology | Purpose |
+|------------|---------|
+| **@base-ui/react** | UI component primitives (NOT Radix UI) |
+| **Tailwind CSS** | Utility-first CSS |
+| **Geist** | Font/typography |
+| **Framer Motion** | Animations |
+| **Monaco Editor** | Code editor |
+| **Lexical** | Rich text editor |
+
+### Database & Storage
+| Technology | Purpose |
+|------------|---------|
+| **Drizzle ORM** | SQLite database ORM |
+| **SQLite (better-sqlite3)** | Local database |
+| **Neon (PostgreSQL)** | Cloud database for deployments |
+
+### AI & Language Models
+| Technology | Purpose |
+|------------|---------|
+| **AI SDK (Vercel)** | Unified AI API client |
+| **@ai-sdk/openai** | OpenAI models |
+| **@ai-sdk/anthropic** | Anthropic Claude models |
+| **@ai-sdk/azure** | Azure OpenAI |
+| **@ai-sdk/google** | Google AI |
+| **@ai-sdk/amazon-bedrock** | AWS Bedrock |
+| **@modelcontextprotocol/sdk** | MCP client |
+
+### External Integrations
+| Technology | Purpose |
+|------------|---------|
+| **@vercel/sdk** | Vercel deployments |
+| **@dyad-sh/supabase-management-js** | Supabase management |
+| **@neondatabase/api-client** | Neon database management |
+| **Octokit** | GitHub API |
+
+### Testing & Development
+| Technology | Purpose |
+|------------|---------|
+| **Playwright** | E2E testing |
+| **Vitest** | Unit testing |
+| **Electron Forge** | Build and package |
+| **Husky** | Git hooks |
+| **Biome** | Linting and formatting |
+
+---
+
+## 4. Application Boot Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Electron as Electron Main
+    participant Preload as Preload Script
+    participant IPC as IPC Handlers
+    participant DB as SQLite (Drizzle)
+    participant React as React Renderer
+    participant Router as TanStack Router
+
+    User->>Electron: Launch application
+    Electron->>Electron: main.ts executes
+    Electron->>DB: Initialize database connection
+    Electron->>IPC: Register all IPC handlers
+    Electron->>Electron: Create BrowserWindow
+    Electron->>Preload: Load preload script
+    Preload->>React: Expose secure IPC bridge
+    React->>Router: Initialize TanStack Router
+    Router->>React: Load initial route
+    React->>User: Display UI
+```
+
+### Detailed Boot Sequence
+
+1. **`src/main.ts`** - Electron main process entry point
+   - Initializes electron-log for logging
+   - Sets up global exception handlers
+   - Creates the main BrowserWindow with custom title bar
+   - Registers all IPC handlers
+
+2. **Database Initialization** - `src/db/index.ts`
+   - Connects to SQLite via Drizzle ORM
+   - Runs pending migrations
+
+3. **IPC Handler Registration** - `src/ipc/handlers/`
+   - 40+ IPC handlers registered for various features
+   - Chat streaming, GitHub, Vercel, Supabase, Neon, etc.
+
+4. **Preload Script** - `src/ipc/preload/channels.ts`
+   - Exposes secure IPC bridge via `contextBridge`
+   - No `remote` module usage (security best practice)
+
+5. **React Application**
+   - Initializes TanStack Router
+   - Loads atoms for state management
+   - Renders initial route
+
+---
+
+## 5. Module Architecture
+
+### 5.1 IPC Layer (Main Process)
+
+The IPC layer is the backbone of main-renderer communication:
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| **Chat Handlers** | `src/ipc/handlers/chat_stream_handlers.ts` | AI chat streaming with agent mode |
+| **App Handlers** | `src/ipc/handlers/app_handlers.ts` | App CRUD operations |
+| **GitHub Handlers** | `src/ipc/handlers/github_handlers.ts` | GitHub integration |
+| **Vercel Handlers** | `src/ipc/handlers/vercel_handlers.ts` | Deployment management |
+| **Supabase Handlers** | `src/ipc/handlers/supabase_handlers.ts` | Backend integration |
+| **Neon Handlers** | `src/ipc/handlers/neon_handlers.ts` | Database integration |
+| **Language Model Handlers** | `src/ipc/handlers/language_model_handlers.ts` | AI provider management |
+| **MCP Handlers** | `src/ipc/handlers/mcp_handlers.ts` | MCP server management |
+| **Compaction Handlers** | `src/ipc/handlers/compaction/` | Context window management |
+
+### 5.2 Local Agent Tools
+
+Located in the AI SDK integration, tools include:
+- File system operations (read, write, list)
+- Git operations (commit, branch, status)
+- Shell command execution
+- Code execution and testing
+
+### 5.3 State Management
+
+| Approach | Usage |
+|----------|-------|
+| **Jotai Atoms** | `src/atoms/` - UI state (chat, app, preview) |
+| **TanStack Query** | Server state via IPC |
+| **React Context** | `src/contexts/` - Theme, deep links |
+
+### 5.4 Component Architecture
+
+```
+src/components/
+├── ChatPanel.tsx          # Main chat interface
+├── ChatList.tsx          # Chat history list
+├── ModelPicker.tsx       # AI model selection
+├── AppList.tsx           # App library
+├── GitHubConnector.tsx   # GitHub integration UI
+├── VercelDeployments.tsx # Deployment management
+├── NeonConnector.tsx     # Database UI
+├── Settings.tsx          # User preferences
+└── ...                   # 60+ components
+```
+
+---
+
+## 6. Dependency Graph
+
+```mermaid
+graph TD
+    subgraph "Renderer Process"
+        React[React + TanStack]
+        Router[TanStack Router]
+        Query[TanStack Query]
+        UI[Base UI Components]
+    end
+
+    subgraph "IPC Bridge"
+        Preload[Preload Script]
+        Channels[IPC Channels]
+    end
+
+    subgraph "Main Process"
+        Main[main.ts]
+        Handlers[IPC Handlers (40+)]
+        DB[Drizzle ORM + SQLite]
+        AI[AI SDK]
+    end
+
+    subgraph "External Services"
+        OpenAI[OpenAI]
+        Anthropic[Anthropic]
+        Azure[Azure OpenAI]
+        GitHub[GitHub API]
+        Vercel[Vercel API]
+        Supabase[Supabase]
+        Neon[Neon]
+    end
+
+    React --> Router
+    React --> Query
+    React --> UI
+    React --> Preload
+    Preload --> Channels
+    Channels --> Handlers
+    Handlers --> DB
+    Handlers --> AI
+    Handlers --> GitHub
+    Handlers --> Vercel
+    Handlers --> Supabase
+    Handlers --> Neon
+    AI --> OpenAI
+    AI --> Anthropic
+    AI --> Azure
+```
+
+### Key Dependencies
+
+```
+ai (Vercel AI SDK)
+├── @ai-sdk/openai
+├── @ai-sdk/anthropic
+├── @ai-sdk/azure
+├── @ai-sdk/google
+├── @ai-sdk/amazon-bedrock
+└── @ai-sdk/mcp
+
+@tanstack/react-query    # Data fetching
+@tanstack/react-router  # Routing
+@base-ui/react          # UI primitives
+drizzle-orm            # Database ORM
+electron               # Desktop framework
+```
+
+---
+
+## 7. Data Flow
+
+### 7.1 Chat Message Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as React Components
+    participant Query as TanStack Query
+    participant IPC as IPC Bridge
+    participant Handler as Chat Handler
+    participant AI as AI SDK
+    participant DB as SQLite
+
+    User->>UI: Type message
+    UI->>Query: useStreamChat mutation
+    Query->>IPC: ipcRenderer.invoke('chat:stream', payload)
+    IPC->>Handler: Process chat request
+    Handler->>AI: Send to AI provider
+    AI-->>Handler: Stream responses
+    Handler->>DB: Save message to SQLite
+    Handler-->>IPC: Stream back to renderer
+    IPC-->>Query: Stream updates
+    Query-->>UI: Update UI in real-time
+    UI-->>User: Display AI response
+```
+
+### 7.2 App Creation Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI
+    participant IPC
+    participant AppHandler as App Handler
+    participant GitHub as GitHub API
+    participant Vercel as Vercel API
+    participant DB as SQLite
+
+    User->>UI: Create new app
+    UI->>IPC: ipcRenderer.invoke('app:create', appConfig)
+    IPC->>AppHandler: Process creation
+    AppHandler->>GitHub: Create repository
+    GitHub-->>AppHandler: Repo created
+    AppHandler->>Vercel: Link project (optional)
+    Vercel-->>AppHandler: Project linked
+    AppHandler->>DB: Store app metadata
+    AppHandler-->>UI: Return app details
+    UI-->>User: Display new app
+```
+
+---
+
+## 8. Domain Model
+
+### Core Entities
+
+```typescript
+// src/db/schema.ts
+
+// AI-powered applications
+apps {
+  id: integer (PK)
+  name: string
+  path: string (local file system path)
+  githubOrg: string?
+  githubRepo: string?
+  githubBranch: string?
+  supabaseProjectId: string?
+  neonProjectId: string?
+  vercelProjectId: string?
+  vercelDeploymentUrl: string?
+  isFavorite: boolean
+  themeId: string?
+  createdAt: timestamp
+  updatedAt: timestamp
+}
+
+// Chat conversations
+chats {
+  id: integer (PK)
+  appId: integer (FK → apps)
+  title: string?
+  initialCommitHash: string?
+  compactedAt: timestamp?
+  pendingCompaction: boolean
+  createdAt: timestamp
+}
+
+// Chat messages
+messages {
+  id: integer (PK)
+  chatId: integer (FK → chats)
+  role: 'user' | 'assistant'
+  content: string
+  approvalState: 'approved' | 'rejected'?
+  sourceCommitHash: string?
+  commitHash: string?
+  aiMessagesJson: json? (AI SDK messages for agent mode)
+  isCompactionSummary: boolean
+  createdAt: timestamp
+}
+
+// App versions/snapshots
+versions {
+  id: integer (PK)
+  appId: integer (FK → apps)
+  commitHash: string
+  neonDbTimestamp: string?
+  createdAt: timestamp
+}
+
+// Custom prompts
+prompts {
+  id: integer (PK)
+  title: string
+  description: string?
+  content: string
+  slug: string? (unique)
+}
+
+// Language model providers
+language_model_providers {
+  id: string (PK)
+  name: string
+  api_base_url: string
+  env_var_name: string?
+}
+
+// Language models
+language_models {
+  id: integer (PK)
+  displayName: string
+  apiName: string
+  builtinProviderId: string?
+  customProviderId: string? (FK)
+  max_output_tokens: integer?
+  context_window: integer?
+}
+
+// MCP servers
+mcp_servers {
+  id: integer (PK)
+  name: string
+  transport: string
+  command: string?
+  args: json?
+  envJson: json?
+  url: string?
+  enabled: boolean
+}
+
+// MCP tool consents
+mcp_tool_consents {
+  id: integer (PK)
+  serverId: integer (FK)
+  toolName: string
+  consent: 'ask' | 'always' | 'denied'
+}
+
+// Custom themes
+custom_themes {
+  id: integer (PK)
+  name: string
+  description: string?
+  prompt: string
+}
+```
+
+### Entity Relationships
+
+```
+apps (1) ───< chats (N)
+chats (1) ───< messages (N)
+apps (1) ───< versions (N)
+apps (1) ───< prompts (N)
+language_model_providers (1) ───< language_models (N)
+mcp_servers (1) ───< mcp_tool_consents (N)
+```
+
+---
+
+## 9. Infrastructure Layer
+
+### 9.1 Environment Configuration
+
+| Variable | Purpose |
+|----------|---------|
+| `DYAD_ENGINE_URL` | Custom AI engine endpoint |
+| `DATABASE_URL` | SQLite database path |
+| `NODE_ENV` | Development/production |
+
+### 9.2 Build & Distribution
+
+- **Electron Forge** for packaging and distribution
+- **GitHub Actions** for CI/CD (see `.github/`)
+- **Auto-update** support via electron-squirrel-startup
+
+### 9.3 Database Migrations
+
+- **Drizzle Kit** for migration management
+- 26+ migrations in `drizzle/` directory
+- SQLite stored locally in user data directory
+
+---
+
+## 10. External Integrations
+
+### 10.1 AI Providers
+
+| Provider | SDK | Environment Variables |
+|----------|-----|----------------------|
+| OpenAI | @ai-sdk/openai | OPENAI_API_KEY |
+| Anthropic | @ai-sdk/anthropic | ANTHROPIC_API_KEY |
+| Azure OpenAI | @ai-sdk/azure | AZURE_OPENAI_API_KEY |
+| Google AI | @ai-sdk/google | GOOGLE_API_KEY |
+| AWS Bedrock | @ai-sdk/amazon-bedrock | AWS_ACCESS_KEY_ID |
+| Ollama (local) | @ai-sdk/openai-compatible | OLLAMA_HOST |
+| LM Studio | @ai-sdk/openai-compatible | LM_STUDIO_HOST |
+| Custom | Any OpenAI-compatible | Configurable |
+
+### 10.2 GitHub Integration
+
+- Repository creation and management
+- Branch operations (create, switch, delete)
+- Collaborator management
+- Commit operations with AI-generated messages
+
+### 10.3 Deployment Integrations
+
+| Service | Features |
+|---------|----------|
+| **Vercel** | Project linking, deployments, deployment URLs |
+| **Supabase** | Project management, branch support |
+| **Neon** | PostgreSQL branches, database timestamps |
+
+---
+
+## 11. Structural Risks
+
+### 11.1 Identified Risks
+
+| Risk | Severity | Description |
+|------|----------|-------------|
+| **Large IPC Handlers** | Medium | Some handlers (e.g., `chat_stream_handlers.ts` - 73K+ chars) are monolithic and difficult to maintain |
+| **Context Compaction Complexity** | Medium | AI message compaction logic is intricate with backup/restore mechanisms |
+| **Free Agent Quota Tracking** | Medium | Complex quota enforcement logic across multiple handlers |
+| **Migration Conflicts** | Medium | 26+ migrations can cause conflicts in collaborative environments |
+| **MCP Security** | Medium | Executing arbitrary commands from MCP servers requires careful consent management |
+
+### 11.2 Mitigation Strategies
+
+- Modular handler structure with base classes
+- Comprehensive E2E test coverage
+- Strict TypeScript mode enforcement
+- Consent-based MCP tool execution
+
+---
+
+## 12. Unknown/Unclear Areas
+
+### 12.1 Areas Needing Investigation
+
+| Area | Notes |
+|------|-------|
+| **Worker Architecture** | `worker/` and `workers/` directories - their exact purpose and interaction with main process |
+| **Convex Backend** | Plans mention Convex support but implementation unclear |
+| **Web Fetch Integration** | `plans/web-fetch-local-agent.md` - web fetching capabilities for local agent |
+| **Mobile Support** | `capacitor_handlers.ts` suggests mobile app support that needs exploration |
+| **Cloud Sandboxes** | `plans/cloud-sandboxes.md` - future architecture for cloud-based development environments |
+
+### 12.2 Architectural Questions
+
+1. **Backup Manager**: `src/backup_manager.ts` - How does it interact with compaction?
+2. **Portal Handlers**: `src/ipc/handlers/portal_handlers.ts` - What's the portal architecture?
+3. **Help Bot**: `src/ipc/handlers/help_bot_handlers.ts` - How does the AI help system work?
+4. **Pro Features**: What separates Pro from free features (see `src/pro/` and `src/main/pro.ts`)?
+
+---
+
+## Summary
+
+Dyad is a sophisticated Electron-based desktop application that combines:
+
+- **Modern React stack** with TanStack Router/Query
+- **Secure IPC architecture** with preload script isolation
+- **Rich AI integrations** via Vercel AI SDK
+- **Comprehensive external service support** (GitHub, Vercel, Supabase, Neon)
+- **Extensible MCP system** for additional capabilities
+- **Local-first design** with SQLite storage
+
+The architecture follows Electron best practices with a clear separation between main and renderer processes, type-safe IPC communication, and modular handler organization.
+
+---
+
+*Document generated from Phase 12 of architectural analysis. For detailed information on specific modules, refer to the individual phase documents and the `rules/` directory for development guidelines.*

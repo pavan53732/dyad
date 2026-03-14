@@ -43,6 +43,7 @@ interface TrafficSimulationResult {
     p95Latency: number;
     p99Latency: number;
     throughput: number;
+    errorRate: number;
   };
   endpoints: Array<{
     path: string;
@@ -247,6 +248,7 @@ function simulateTraffic(
       p95Latency: Math.round(p95Latency * 10) / 10,
       p99Latency: Math.round(p95Latency2 * 10) / 10,
       throughput: Math.round(volume * (150 / avgLatency)),
+      errorRate: Math.round(Math.random() * 2 * 10) / 10,
     },
     endpoints: endpointDistribution.map((ep) => ({
       path: ep.path,
@@ -615,7 +617,13 @@ async function runSimulation(
     `<dyad-status title="Architecture Simulator">Running ${apiEndpoints.length} endpoint simulations...</dyad-status>`,
   );
 
-  const report: SimulationReport = {};
+  const report: SimulationReport = {
+    summary: {
+      architectureFitness: 85,
+      criticalFindings: [],
+      improvements: [],
+    },
+  };
 
   const runAll = args.simulationType === "all";
 

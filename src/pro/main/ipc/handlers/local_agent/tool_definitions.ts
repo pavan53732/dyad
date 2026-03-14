@@ -57,6 +57,22 @@ import { intentClassifierTool } from "./tools/intent_classifier";
 import { taskDecomposerTool } from "./tools/task_decomposer";
 import { contextOrchestratorTool } from "./tools/context_orchestrator";
 import { selfVerifierTool } from "./tools/self_verifier";
+import { executionHistoryTool } from "./tools/execution_history";
+import { feedbackLoopTool } from "./tools/feedback_loop";
+import { adaptiveStrategyTool } from "./tools/adaptive_strategy";
+import { knowledgeBaseTool } from "./tools/knowledge_base";
+import { securityScannerTool } from "./tools/security_scanner";
+import { vulnerabilityDetectorTool } from "./tools/vulnerability_detector";
+import { complianceCheckerTool } from "./tools/compliance_checker";
+import { securityRemediationTool } from "./tools/security_remediation";
+import { runtimeProfilerTool } from "./tools/runtime_profiler";
+import { cachingStrategiesTool } from "./tools/caching_strategies";
+import { resourceOptimizerTool } from "./tools/resource_optimizer";
+import { queryOptimizerTool } from "./tools/query_optimizer";
+import { teamCoordinatorTool } from "./tools/team_coordinator";
+import { codeReviewerTool } from "./tools/code_reviewer";
+import { knowledgeSharingTool } from "./tools/knowledge_sharing";
+import { collaborationSessionTool } from "./tools/collaboration_session";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -118,6 +134,22 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   taskDecomposerTool,
   contextOrchestratorTool,
   selfVerifierTool,
+  executionHistoryTool,
+  feedbackLoopTool,
+  adaptiveStrategyTool,
+  knowledgeBaseTool,
+  securityScannerTool,
+  vulnerabilityDetectorTool,
+  complianceCheckerTool,
+  securityRemediationTool,
+  runtimeProfilerTool,
+  cachingStrategiesTool,
+  resourceOptimizerTool,
+  queryOptimizerTool,
+  teamCoordinatorTool,
+  codeReviewerTool,
+  knowledgeSharingTool,
+  collaborationSessionTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,
