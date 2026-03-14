@@ -15,6 +15,9 @@ import { VersionPane } from "./chat/VersionPane";
 import { ChatError } from "./chat/ChatError";
 import { FreeAgentQuotaBanner } from "./chat/FreeAgentQuotaBanner";
 import { NotificationBanner } from "./chat/NotificationBanner";
+import {
+  MissionControlPanel,
+} from "./chat/MissionControlPanel";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -30,12 +33,16 @@ interface ChatPanelProps {
   chatId?: number;
   isPreviewOpen: boolean;
   onTogglePreview: () => void;
+  isMissionControlOpen?: boolean;
+  onToggleMissionControl?: () => void;
 }
 
 export function ChatPanel({
   chatId,
   isPreviewOpen,
   onTogglePreview,
+  isMissionControlOpen = false,
+  onToggleMissionControl,
 }: ChatPanelProps) {
   const { t } = useTranslation("chat");
   const messagesById = useAtomValue(chatMessagesByIdAtom);
@@ -185,6 +192,8 @@ export function ChatPanel({
         isPreviewOpen={isPreviewOpen}
         onTogglePreview={onTogglePreview}
         onVersionClick={() => setIsVersionPaneOpen(!isVersionPaneOpen)}
+        onMissionControlClick={onToggleMissionControl}
+        isMissionControlOpen={isMissionControlOpen}
       />
       <div className="flex flex-1 overflow-hidden">
         {!isVersionPaneOpen && (
@@ -235,6 +244,7 @@ export function ChatPanel({
           isVisible={isVersionPaneOpen}
           onClose={() => setIsVersionPaneOpen(false)}
         />
+        <MissionControlPanel />
       </div>
     </div>
   );

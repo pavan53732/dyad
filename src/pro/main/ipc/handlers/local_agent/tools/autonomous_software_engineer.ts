@@ -27,9 +27,19 @@ import { listFilesTool } from "./list_files";
 import { codeSearchTool } from "./code_search";
 
 const autonomousSoftwareEngineerSchema = z.object({
-  goal: z.string().describe("The high-level goal or feature request to implement."),
-  planPath: z.string().optional().default("TODO.md").describe("Path to the project plan file (default: TODO.md)."),
-  maxTasks: z.number().optional().default(5).describe("Maximum number of tasks to execute from the plan."),
+  goal: z
+    .string()
+    .describe("The high-level goal or feature request to implement."),
+  planPath: z
+    .string()
+    .optional()
+    .default("TODO.md")
+    .describe("Path to the project plan file (default: TODO.md)."),
+  maxTasks: z
+    .number()
+    .optional()
+    .default(5)
+    .describe("Maximum number of tasks to execute from the plan."),
 });
 
 export const autonomousSoftwareEngineerTool: ToolDefinition<
@@ -41,52 +51,69 @@ export const autonomousSoftwareEngineerTool: ToolDefinition<
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) => `Execute Autonomous Software Engineer pipeline for: "${args.goal}"`,
+  getConsentPreview: (args) =>
+    `Execute Autonomous Software Engineer pipeline for: "${args.goal}"`,
 
   execute: async (args, ctx: AgentContext) => {
     const { goal, planPath, maxTasks } = args;
     const fullPlanPath = path.join(ctx.appPath, planPath);
-    
-    ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Starting pipeline for: ${escapeXmlAttr(goal)}</dyad-status>`);
+
+    ctx.onXmlStream(
+      `<dyad-status title="Autonomous Software Engineer">Starting pipeline for: ${escapeXmlAttr(goal)}</dyad-status>`,
+    );
 
     const settings = readSettings();
-    const { modelClient } = await getModelClient(settings.selectedModel || "gpt-4o", settings);
+    const { modelClient } = await getModelClient(
+      settings.selectedModel || "gpt-4o",
+      settings,
+    );
 
     // 1. Planning Phase
     let planContent = "";
     if (fs.existsSync(fullPlanPath)) {
       planContent = fs.readFileSync(fullPlanPath, "utf-8");
-      ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Found existing plan at ${planPath}</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Autonomous Software Engineer">Found existing plan at ${planPath}</dyad-status>`,
+      );
     } else {
-      ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Generating project plan...</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Autonomous Software Engineer">Generating project plan...</dyad-status>`,
+      );
       const planningPrompt = `Generate a detailed TODO.md plan for the following goal: ${goal}. 
 Return ONLY the markdown task list (e.g. - [ ] Task).`;
-      
+
       const { text } = await generateText({
         model: modelClient.model,
         prompt: planningPrompt,
       });
       planContent = text;
       fs.writeFileSync(fullPlanPath, planContent, "utf-8");
-      ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Plan generated and saved to ${planPath}</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Autonomous Software Engineer">Plan generated and saved to ${planPath}</dyad-status>`,
+      );
     }
 
     // Parse tasks
-    const tasks = planContent.split("\n")
-      .filter(line => line.trim().startsWith("- [ ]"))
-      .map(line => line.replace("- [ ]", "").trim())
+    const tasks = planContent
+      .split("\n")
+      .filter((line) => line.trim().startsWith("- [ ]"))
+      .map((line) => line.replace("- [ ]", "").trim())
       .slice(0, maxTasks);
 
     if (tasks.length === 0) {
-       return "No pending tasks found in the plan.";
+      return "No pending tasks found in the plan.";
     }
 
-    ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Executing ${tasks.length} tasks sequence...</dyad-status>`);
+    ctx.onXmlStream(
+      `<dyad-status title="Autonomous Software Engineer">Executing ${tasks.length} tasks sequence...</dyad-status>`,
+    );
 
     // 2. Execution Loop
     for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i];
-      ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Implementing: ${escapeXmlAttr(task)}</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Task ${i + 1}/${tasks.length}">Implementing: ${escapeXmlAttr(task)}</dyad-status>`,
+      );
 
       // Inner Loop: Implement Task
       // We use generateText with tools to act as a sub-agent for this specific task
@@ -132,22 +159,31 @@ You MUST use your tools to complete this task. When finished, provide a brief su
       });
 
       // 2b. Run Type Checks explicitly after writing code
-      ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Running type checks...</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Task ${i + 1}/${tasks.length}">Running type checks...</dyad-status>`,
+      );
       await runTypeChecksTool.execute({}, ctx);
-      
+
       // 3. Heal Phase - Fix any type errors found
-      ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Healing (Autonomous Fix Loop)...</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Task ${i + 1}/${tasks.length}">Healing (Autonomous Fix Loop)...</dyad-status>`,
+      );
       await autonomousFixLoopTool.execute({ maxIterations: 3 }, ctx);
 
       // 4. Verify Phase
-      ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Verifying (Autonomous Test Generator)...</dyad-status>`);
+      ctx.onXmlStream(
+        `<dyad-status title="Task ${i + 1}/${tasks.length}">Verifying (Autonomous Test Generator)...</dyad-status>`,
+      );
       // We need to decide which file to test. For now, we'll try to find a file modified in this task.
       // (This is a simplified approach)
-      await autonomousTestGeneratorTool.execute({
-        testName: `verify_task_${i+1}`,
-        componentPath: "src/App.tsx", // Fallback or derived
-        behaviorToTest: task,
-      }, ctx);
+      await autonomousTestGeneratorTool.execute(
+        {
+          testName: `verify_task_${i + 1}`,
+          componentPath: "src/App.tsx", // Fallback or derived
+          behaviorToTest: task,
+        },
+        ctx,
+      );
 
       // Update TODO.md
       planContent = planContent.replace(`- [ ] ${task}`, `- [x] ${task}`);
@@ -155,19 +191,26 @@ You MUST use your tools to complete this task. When finished, provide a brief su
     }
 
     // 5. Submission Phase
-    ctx.onXmlStream(`<dyad-status title="Autonomous Software Engineer">Submitting changes...</dyad-status>`);
-    
-    const commitMsg = `feat: ${goal}\n\nTasks implemented:\n${tasks.map(t => `- ${t}`).join("\n")}`;
+    ctx.onXmlStream(
+      `<dyad-status title="Autonomous Software Engineer">Submitting changes...</dyad-status>`,
+    );
+
+    const commitMsg = `feat: ${goal}\n\nTasks implemented:\n${tasks.map((t) => `- ${t}`).join("\n")}`;
     await gitCommitAndPushTool.execute({ message: commitMsg }, ctx);
 
-    const prResult = await autonomousPullRequestTool.execute({
-      title: `Feature: ${goal}`,
-      body: `This PR implements the following goal: ${goal}\n\nAutomated Verification Passed.`,
-    }, ctx);
+    const prResult = await autonomousPullRequestTool.execute(
+      {
+        title: `Feature: ${goal}`,
+        body: `This PR implements the following goal: ${goal}\n\nAutomated Verification Passed.`,
+      },
+      ctx,
+    );
 
     const finalSummary = `Autonomous Software Engineer successfully completed the goal: ${goal}. \nPR: ${prResult}`;
-    ctx.onXmlComplete(`<dyad-status title="Goal Achieved">${escapeXmlContent(finalSummary)}</dyad-status>`);
-    
+    ctx.onXmlComplete(
+      `<dyad-status title="Goal Achieved">${escapeXmlContent(finalSummary)}</dyad-status>`,
+    );
+
     return finalSummary;
   },
 };

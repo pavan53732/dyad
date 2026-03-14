@@ -38,9 +38,17 @@ import { exitPlanTool } from "./tools/exit_plan";
 import { gitCommitAndPushTool } from "./tools/git_commit_and_push";
 import { autonomousPullRequestTool } from "./tools/autonomous_pull_request";
 import { autonomousFixLoopTool } from "./tools/autonomous_fix_loop";
+import { selfImproverTool } from "./tools/self_improver";
 import { autonomousTestGeneratorTool } from "./tools/autonomous_test_generator";
 import { autonomousSoftwareEngineerTool } from "./tools/autonomous_software_engineer";
+import { autonomousCodeReviewTool } from "./tools/autonomous_code_review";
+import { memoryStoreTool } from "./tools/memory_store";
+import { multiAgentCoordinatorTool } from "./tools/multi_agent_coordinator";
 import { executeProjectPlanTool } from "./tools/execute_project_plan";
+import { dependencyAnalyzerTool } from "./tools/dependency_analyzer";
+import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
+import { architectureAnalyzerTool } from "./tools/architecture_analyzer";
+import { codeIntelligenceTool } from "./tools/code_intelligence";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -85,7 +93,15 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   autonomousTestGeneratorTool,
   autonomousPullRequestTool,
   autonomousSoftwareEngineerTool,
+  autonomousCodeReviewTool,
+  memoryStoreTool,
+  multiAgentCoordinatorTool,
   executeProjectPlanTool,
+  dependencyAnalyzerTool,
+  dependencyUpgraderTool,
+  architectureAnalyzerTool,
+  codeIntelligenceTool,
+  selfImproverTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,

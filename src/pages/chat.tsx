@@ -15,6 +15,7 @@ import { isPreviewOpenAtom, isChatPanelHiddenAtom } from "@/atoms/viewAtoms";
 import { useChats } from "@/hooks/useChats";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { usePlanImplementation } from "@/hooks/usePlanImplementation";
+import { isMissionControlPanelOpenAtom } from "@/atoms/uiAtoms";
 
 const DEFAULT_CHAT_PANEL_SIZE = 50;
 
@@ -22,6 +23,9 @@ export default function ChatPage() {
   const { id: chatId } = useSearch({ from: "/chat" });
   const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
+  const [isMissionControlOpen, setIsMissionControlOpen] = useAtom(
+    isMissionControlPanelOpenAtom,
+  );
   const [isChatPanelHidden, setIsChatPanelHidden] = useAtom(
     isChatPanelHiddenAtom,
   );
@@ -90,6 +94,7 @@ export default function ChatPage() {
             <ChatPanel
               chatId={chatId}
               isPreviewOpen={isPreviewOpen}
+              isMissionControlOpen={isMissionControlOpen}
               onTogglePreview={() => {
                 setIsPreviewOpen(!isPreviewOpen);
                 if (isPreviewOpen) {
@@ -97,6 +102,9 @@ export default function ChatPage() {
                 } else {
                   ref.current?.expand();
                 }
+              }}
+              onToggleMissionControl={() => {
+                setIsMissionControlOpen(!isMissionControlOpen);
               }}
             />
           )}

@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlContent } from "./types";
 import {
   gitAddAll,
   gitCommit,
@@ -48,7 +44,7 @@ export const gitCommitAndPushTool: ToolDefinition<
       // 4. Retrieve access token and push
       const settings = readSettings();
       const accessToken = settings.githubAccessToken?.value;
-      
+
       await gitPush({
         path: ctx.appPath,
         branch: currentBranch || "main",
@@ -56,7 +52,7 @@ export const gitCommitAndPushTool: ToolDefinition<
       });
 
       const result = `Successfully committed (Hash: ${commitHash}) and pushed to origin/${currentBranch || "main"}.`;
-      
+
       ctx.onXmlComplete(
         `<dyad-status title="Pushed to GitHub">\n${escapeXmlContent(result)}\n</dyad-status>`,
       );

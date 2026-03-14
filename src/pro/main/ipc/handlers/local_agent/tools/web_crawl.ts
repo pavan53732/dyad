@@ -62,7 +62,10 @@ async function performLocalWebCrawl(
 ): Promise<{ rootUrl: string; markdown: string; html: string }> {
   // Normalize URL
   let normalizedUrl = url;
-  if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+  if (
+    !normalizedUrl.startsWith("http://") &&
+    !normalizedUrl.startsWith("https://")
+  ) {
     normalizedUrl = `https://${normalizedUrl}`;
   }
 
@@ -100,7 +103,10 @@ async function performLocalWebCrawl(
   markdown = markdown.replace(/<h6[^>]*>([\s\S]*?)<\/h6>/gi, "\n###### $1\n");
 
   // Convert links
-  markdown = markdown.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)");
+  markdown = markdown.replace(
+    /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+    "[$2]($1)",
+  );
 
   // Convert paragraphs
   markdown = markdown.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n");

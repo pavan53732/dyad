@@ -7,12 +7,19 @@ import { safeJoin } from "@/ipc/utils/path_utils";
 const logger = log.scope("write_env_vars");
 
 const writeEnvVarsSchema = z.object({
-  envVars: z.record(z.string(), z.string()).describe("A record of environment variable keys and their corresponding values"),
+  envVars: z
+    .record(z.string(), z.string())
+    .describe(
+      "A record of environment variable keys and their corresponding values",
+    ),
 });
 
-export const writeEnvVarsTool: ToolDefinition<z.infer<typeof writeEnvVarsSchema>> = {
+export const writeEnvVarsTool: ToolDefinition<
+  z.infer<typeof writeEnvVarsSchema>
+> = {
   name: "write_env_vars",
-  description: "Securely write environment variables to the .env file in the app root directory.",
+  description:
+    "Securely write environment variables to the .env file in the app root directory.",
   inputSchema: writeEnvVarsSchema,
   defaultConsent: "ask",
   modifiesState: true,
@@ -29,7 +36,7 @@ export const writeEnvVarsTool: ToolDefinition<z.infer<typeof writeEnvVarsSchema>
 
   execute: async (args, ctx: AgentContext) => {
     const envPath = safeJoin(ctx.appPath, ".env");
-    
+
     let currentContent = "";
     if (fs.existsSync(envPath)) {
       currentContent = fs.readFileSync(envPath, "utf-8");
@@ -41,12 +48,14 @@ export const writeEnvVarsTool: ToolDefinition<z.infer<typeof writeEnvVarsSchema>
 
     // Process each variable
     for (const [key, value] of Object.entries(args.envVars || {})) {
-      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`^${escapedKey}=.*$`, 'm');
-      
-      const escapedValue = String(value).replace(/"/g, '\\"').replace(/\n/g, '\\n');
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`^${escapedKey}=.*$`, "m");
+
+      const escapedValue = String(value)
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n");
       const newEntry = `${key}="${escapedValue}"`;
-      
+
       if (regex.test(currentContent)) {
         // Replace existing
         currentContent = currentContent.replace(regex, newEntry);
@@ -61,7 +70,9 @@ export const writeEnvVarsTool: ToolDefinition<z.infer<typeof writeEnvVarsSchema>
       logger.log(`Successfully wrote to .env file in ${ctx.appPath}`);
     } catch (error: any) {
       logger.error(`Failed to write .env file: ${error.message}`, error);
-      throw new Error(`Failed to write environment variables: ${error.message}`);
+      throw new Error(
+        `Failed to write environment variables: ${error.message}`,
+      );
     }
 
     return `Successfully updated .env file with ${Object.keys(args.envVars || {}).length} variables.`;

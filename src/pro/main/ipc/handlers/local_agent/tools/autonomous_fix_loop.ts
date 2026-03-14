@@ -2,18 +2,18 @@ import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { generateText } from "ai";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlContent } from "./types";
 import { generateProblemReport } from "@/ipc/processors/tsc";
 import { applySearchReplace } from "@/pro/main/ipc/processors/search_replace_processor";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { readSettings } from "@/main/settings";
 
 const autonomousFixLoopSchema = z.object({
-  maxIterations: z.number().optional().default(3).describe("Maximum number of fix-and-check iterations."),
+  maxIterations: z
+    .number()
+    .optional()
+    .default(3)
+    .describe("Maximum number of fix-and-check iterations."),
 });
 
 export const autonomousFixLoopTool: ToolDefinition<
@@ -25,7 +25,8 @@ export const autonomousFixLoopTool: ToolDefinition<
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) => `Run autonomous TSC fix loop (max ${args.maxIterations} iterations)`,
+  getConsentPreview: (args) =>
+    `Run autonomous TSC fix loop (max ${args.maxIterations} iterations)`,
 
   execute: async (args, ctx: AgentContext) => {
     let currentIteration = 1;
@@ -51,7 +52,9 @@ export const autonomousFixLoopTool: ToolDefinition<
 
       if (report.problems.length === 0) {
         const successMsg = `No type errors found. Project is clean after ${currentIteration - 1} iterations.`;
-        ctx.onXmlComplete(`<dyad-status title="Autonomous Fix Loop: Success">${escapeXmlContent(successMsg)}</dyad-status>`);
+        ctx.onXmlComplete(
+          `<dyad-status title="Autonomous Fix Loop: Success">${escapeXmlContent(successMsg)}</dyad-status>`,
+        );
         return successMsg;
       }
 
@@ -70,11 +73,13 @@ export const autonomousFixLoopTool: ToolDefinition<
 
       let iterationFixed = 0;
       for (const [file, errors] of problemsByFile.entries()) {
-        const fullPath = path.isAbsolute(file) ? file : path.join(ctx.appPath, file);
+        const fullPath = path.isAbsolute(file)
+          ? file
+          : path.join(ctx.appPath, file);
         if (!fs.existsSync(fullPath)) continue;
 
         const content = fs.readFileSync(fullPath, "utf-8");
-        
+
         const systemPrompt = `You are an autonomous senior developer tasked with fixing TypeScript errors.
 Apply fixes using SEARCH/REPLACE blocks.
 
@@ -106,7 +111,9 @@ Keep fixes minimal and correct. Do not use placeholders.`;
 
       if (iterationFixed === 0) {
         const failMsg = `Failed to make any progress in iteration ${currentIteration}. Stopping.`;
-        ctx.onXmlComplete(`<dyad-status title="Autonomous Fix Loop: Stalled">${escapeXmlContent(failMsg)}</dyad-status>`);
+        ctx.onXmlComplete(
+          `<dyad-status title="Autonomous Fix Loop: Stalled">${escapeXmlContent(failMsg)}</dyad-status>`,
+        );
         return failMsg;
       }
 
@@ -114,7 +121,9 @@ Keep fixes minimal and correct. Do not use placeholders.`;
     }
 
     const finalMsg = `Reached max iterations (${maxIterations}). Fixed ${totalFixed} files total. Remaining errors may exist.`;
-    ctx.onXmlComplete(`<dyad-status title="Autonomous Fix Loop: Completed">${escapeXmlContent(finalMsg)}</dyad-status>`);
+    ctx.onXmlComplete(
+      `<dyad-status title="Autonomous Fix Loop: Completed">${escapeXmlContent(finalMsg)}</dyad-status>`,
+    );
     return finalMsg;
   },
 };

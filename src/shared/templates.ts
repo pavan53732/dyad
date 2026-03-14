@@ -32,7 +32,8 @@ export const BLANK_TEMPLATE_ID = "blank";
 export const BLANK_TEMPLATE = {
   id: "blank",
   title: "Blank Canvas",
-  description: "An empty directory. Perfect for letting the AI build any framework from scratch.",
+  description:
+    "An empty directory. Perfect for letting the AI build any framework from scratch.",
   imageUrl:
     "https://github.com/user-attachments/assets/5b700eab-b28c-498e-96de-8649b14c16d9", // Can be updated later with a blank icon
   isOfficial: true,

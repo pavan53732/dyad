@@ -4,6 +4,7 @@ import {
   PlusCircle,
   GitBranch,
   Info,
+  Sparkles,
 } from "lucide-react";
 import { PanelRightClose } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -31,12 +32,16 @@ import { useRenameBranch } from "@/hooks/useRenameBranch";
 import { isAnyCheckoutVersionInProgressAtom } from "@/store/appAtoms";
 import { LoadingBar } from "../ui/LoadingBar";
 import { UncommittedFilesBanner } from "./UncommittedFilesBanner";
+import { isMissionControlPanelOpenAtom } from "@/atoms/uiAtoms";
+import { useSetAtom } from "jotai";
 
 interface ChatHeaderProps {
   isVersionPaneOpen: boolean;
   isPreviewOpen: boolean;
   onTogglePreview: () => void;
   onVersionClick: () => void;
+  isMissionControlOpen?: boolean;
+  onMissionControlClick?: () => void;
 }
 
 export function ChatHeader({
@@ -44,6 +49,8 @@ export function ChatHeader({
   isPreviewOpen,
   onTogglePreview,
   onVersionClick,
+  isMissionControlOpen = false,
+  onMissionControlClick,
 }: ChatHeaderProps) {
   const { t } = useTranslation("chat");
   const appId = useAtomValue(selectedAppIdAtom);
@@ -56,6 +63,7 @@ export function ChatHeader({
   const isAnyCheckoutVersionInProgress = useAtomValue(
     isAnyCheckoutVersionInProgressAtom,
   );
+  const setMissionControlOpen = useSetAtom(isMissionControlPanelOpenAtom);
 
   const {
     branchInfo,
@@ -219,6 +227,22 @@ export function ChatHeader({
           ) : (
             <PanelRightOpen size={20} />
           )}
+        </button>
+        <button
+          data-testid="toggle-mission-control-button"
+          onClick={
+            onMissionControlClick ||
+            (() => setMissionControlOpen((prev) => !prev))
+          }
+          className={`cursor-pointer p-2 hover:bg-(--background-lightest) rounded-md ${
+            isMissionControlOpen ? "bg-muted" : ""
+          }`}
+          title="Mission Control"
+        >
+          <Sparkles
+            size={20}
+            className={isMissionControlOpen ? "text-cyan-400" : ""}
+          />
         </button>
       </div>
     </div>

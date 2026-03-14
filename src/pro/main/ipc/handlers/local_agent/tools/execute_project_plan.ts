@@ -28,7 +28,9 @@ const executeProjectPlanSchema = z.object({
     .boolean()
     .optional()
     .default(true)
-    .describe("Automatically fix TypeScript errors after each task (default: true)"),
+    .describe(
+      "Automatically fix TypeScript errors after each task (default: true)",
+    ),
   generateTests: z
     .boolean()
     .optional()
@@ -163,7 +165,7 @@ export const executeProjectPlanTool: ToolDefinition<
     `Execute project plan from ${args.planPath} (max ${args.maxIterations} tasks)`,
 
   execute: async (args, ctx: AgentContext) => {
-    const { planPath, maxIterations, } = args;
+    const { planPath, maxIterations } = args;
     const fullPlanPath = path.isAbsolute(planPath)
       ? planPath
       : path.join(ctx.appPath, planPath);

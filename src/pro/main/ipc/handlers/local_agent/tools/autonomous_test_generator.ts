@@ -3,18 +3,20 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawn } from "node:child_process";
 import { generateText } from "ai";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlContent } from "./types";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { readSettings } from "@/main/settings";
 
 const autonomousTestGeneratorSchema = z.object({
-  testName: z.string().describe("Unique name for the test file (e.g., 'counter_verification')"),
-  componentPath: z.string().describe("Relative path to the component or file to be tested"),
-  behaviorToTest: z.string().describe("Description of the behavior the test should verify"),
+  testName: z
+    .string()
+    .describe("Unique name for the test file (e.g., 'counter_verification')"),
+  componentPath: z
+    .string()
+    .describe("Relative path to the component or file to be tested"),
+  behaviorToTest: z
+    .string()
+    .describe("Description of the behavior the test should verify"),
 });
 
 export const autonomousTestGeneratorTool: ToolDefinition<
@@ -26,25 +28,38 @@ export const autonomousTestGeneratorTool: ToolDefinition<
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) => `Generate and run E2E test '${args.testName}' for ${args.componentPath}`,
+  getConsentPreview: (args) =>
+    `Generate and run E2E test '${args.testName}' for ${args.componentPath}`,
 
   execute: async (args, ctx: AgentContext) => {
     const { testName, componentPath, behaviorToTest } = args;
-    const fixturePath = path.join(ctx.appPath, "e2e-tests", "fixtures", "engine", "local-agent", `${testName}.ts`);
+    const fixturePath = path.join(
+      ctx.appPath,
+      "e2e-tests",
+      "fixtures",
+      "engine",
+      "local-agent",
+      `${testName}.ts`,
+    );
     const specPath = path.join(ctx.appPath, "e2e-tests", `${testName}.spec.ts`);
 
     ctx.onXmlStream(
       `<dyad-status title="Autonomous Test Generator">Analyzing ${componentPath}...</dyad-status>`,
     );
 
-    const fullComponentPath = path.isAbsolute(componentPath) ? componentPath : path.join(ctx.appPath, componentPath);
+    const fullComponentPath = path.isAbsolute(componentPath)
+      ? componentPath
+      : path.join(ctx.appPath, componentPath);
     if (!fs.existsSync(fullComponentPath)) {
       throw new Error(`File not found: ${componentPath}`);
     }
 
     const componentContent = fs.readFileSync(fullComponentPath, "utf-8");
     const settings = readSettings();
-    const { modelClient } = await getModelClient(settings.selectedModel || "gpt-4o", settings);
+    const { modelClient } = await getModelClient(
+      settings.selectedModel || "gpt-4o",
+      settings,
+    );
 
     // 1. Generate the Fixture and Spec
     ctx.onXmlStream(
@@ -91,8 +106,14 @@ ${componentContent}
       temperature: 0.2,
     });
 
-    const fixtureMatch = text.match(/```(?:typescript|ts)?\s*[\s\S]*?FIXTURE[\s\S]*?\n([\s\S]*?)```/i) || text.match(/FIXTURE[\s\S]*?```(?:typescript|ts)?\n([\s\S]*?)```/i);
-    const specMatch = text.match(/```(?:typescript|ts)?\s*[\s\S]*?SPEC[\s\S]*?\n([\s\S]*?)```/i) || text.match(/SPEC[\s\S]*?```(?:typescript|ts)?\n([\s\S]*?)```/i);
+    const fixtureMatch =
+      text.match(
+        /```(?:typescript|ts)?\s*[\s\S]*?FIXTURE[\s\S]*?\n([\s\S]*?)```/i,
+      ) || text.match(/FIXTURE[\s\S]*?```(?:typescript|ts)?\n([\s\S]*?)```/i);
+    const specMatch =
+      text.match(
+        /```(?:typescript|ts)?\s*[\s\S]*?SPEC[\s\S]*?\n([\s\S]*?)```/i,
+      ) || text.match(/SPEC[\s\S]*?```(?:typescript|ts)?\n([\s\S]*?)```/i);
 
     const fixtureContent = fixtureMatch ? fixtureMatch[1] : null;
     const specContent = specMatch ? specMatch[1] : null;
@@ -101,10 +122,12 @@ ${componentContent}
       // Fallback: try to just find code blocks if the labels failed
       const codeBlocks = text.match(/```(?:typescript|ts)?\n([\s\S]*?)```/g);
       if (codeBlocks && codeBlocks.length >= 2) {
-         // Assume first is fixture, second is spec if labels missed
-         // (Risky, but better than instant fail)
+        // Assume first is fixture, second is spec if labels missed
+        // (Risky, but better than instant fail)
       } else {
-        throw new Error("Failed to generate valid test fixture and spec. LLM output was incomplete.");
+        throw new Error(
+          "Failed to generate valid test fixture and spec. LLM output was incomplete.",
+        );
       }
     }
 
@@ -123,21 +146,31 @@ ${componentContent}
       const child = spawn("npx", ["playwright", "test", specPath], {
         cwd: ctx.appPath,
         shell: true,
-        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: `${testName}-results.json` }
+        env: {
+          ...process.env,
+          PLAYWRIGHT_JSON_OUTPUT_NAME: `${testName}-results.json`,
+        },
       });
 
       let stdout = "";
       let stderr = "";
 
-      child.stdout.on("data", (data) => { stdout += data.toString(); });
-      child.stderr.on("data", (data) => { stderr += data.toString(); });
+      child.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+      child.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
 
       child.on("close", (code) => {
-        const resultMsg = code === 0 
-          ? `Test '${testName}' PASSED.` 
-          : `Test '${testName}' FAILED with exit code ${code}.\n\nSTDOUT:\n${stdout}\n\nSTDERR:\n${stderr}`;
-        
-        ctx.onXmlComplete(`<dyad-status title="Autonomous Test Result">${escapeXmlContent(resultMsg)}</dyad-status>`);
+        const resultMsg =
+          code === 0
+            ? `Test '${testName}' PASSED.`
+            : `Test '${testName}' FAILED with exit code ${code}.\n\nSTDOUT:\n${stdout}\n\nSTDERR:\n${stderr}`;
+
+        ctx.onXmlComplete(
+          `<dyad-status title="Autonomous Test Result">${escapeXmlContent(resultMsg)}</dyad-status>`,
+        );
         resolve(resultMsg);
       });
 

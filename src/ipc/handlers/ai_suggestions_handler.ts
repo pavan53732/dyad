@@ -9,9 +9,7 @@ import { getDyadAppPath } from "../../paths/paths";
 import path from "node:path";
 import fs from "node:fs";
 import { createLoggedHandler } from "./safe_handle";
-import {
-  AiSuggestionSchema,
-} from "../types/proposals";
+import { AiSuggestionSchema } from "../types/proposals";
 import { z } from "zod";
 
 const logger = log.scope("ai_suggestions_handler");
@@ -76,14 +74,7 @@ function readFileSafe(filePath: string, maxLines = 200): string {
 function extractTodos(appPath: string, files: string[]): string[] {
   const todos: string[] = [];
   const TODO_REGEX = /\/\/\s*(TODO|FIXME|HACK|XXX|BUG)[:\s](.+)/gi;
-  const CODE_EXTS = new Set([
-    ".ts",
-    ".tsx",
-    ".js",
-    ".jsx",
-    ".vue",
-    ".svelte",
-  ]);
+  const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte"]);
   for (const rel of files) {
     if (!CODE_EXTS.has(path.extname(rel))) continue;
     const fullPath = path.join(appPath, rel);
@@ -155,7 +146,9 @@ function pickKeyFiles(appPath: string, files: string[]): string[] {
   }
   // Then: recently modified TypeScript component files (heuristic: shortest path = most root-level = most important)
   const remaining = files
-    .filter((f) => [".tsx", ".ts"].includes(path.extname(f)) && !picked.includes(f))
+    .filter(
+      (f) => [".tsx", ".ts"].includes(path.extname(f)) && !picked.includes(f),
+    )
     .sort((a, b) => a.split("/").length - b.split("/").length);
   for (const f of remaining) {
     if (picked.length >= 6) break;
@@ -196,15 +189,21 @@ function detectFramework(appPath: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Returns list of files changed in last 3 commits and a short diff summary */
-function getGitContext(appPath: string): { recentFiles: string[]; diffSummary: string } {
+function getGitContext(appPath: string): {
+  recentFiles: string[];
+  diffSummary: string;
+} {
   try {
     const { execSync } = require("node:child_process");
     // Get list of files changed in last 3 commits
-    const filesRaw: string = execSync("git diff --name-only HEAD~3 HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ''", {
-      cwd: appPath,
-      timeout: 3000,
-      encoding: "utf-8",
-    });
+    const filesRaw: string = execSync(
+      "git diff --name-only HEAD~3 HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ''",
+      {
+        cwd: appPath,
+        timeout: 3000,
+        encoding: "utf-8",
+      },
+    );
     const recentFiles = filesRaw
       .split("\n")
       .map((f: string) => f.trim())
@@ -212,11 +211,14 @@ function getGitContext(appPath: string): { recentFiles: string[]; diffSummary: s
       .slice(0, 10);
 
     // Get a short diff stat (lines changed per file)
-    const statRaw: string = execSync("git diff --stat HEAD~3 HEAD 2>/dev/null || git diff --stat HEAD~1 HEAD 2>/dev/null || echo ''", {
-      cwd: appPath,
-      timeout: 3000,
-      encoding: "utf-8",
-    });
+    const statRaw: string = execSync(
+      "git diff --stat HEAD~3 HEAD 2>/dev/null || git diff --stat HEAD~1 HEAD 2>/dev/null || echo ''",
+      {
+        cwd: appPath,
+        timeout: 3000,
+        encoding: "utf-8",
+      },
+    );
     const diffSummary = statRaw.split("\n").slice(0, 8).join("\n").trim();
 
     return { recentFiles, diffSummary };
@@ -243,13 +245,18 @@ function getBuildErrors(appPath: string): string[] {
     for (const f of errorFiles) {
       if (fs.existsSync(f)) {
         const content = fs.readFileSync(f, "utf-8");
-        const lines = content.split("\n").filter((l) => /error|Error|ERROR/.test(l));
+        const lines = content
+          .split("\n")
+          .filter((l) => /error|Error|ERROR/.test(l));
         errors.push(...lines.slice(0, 5));
       }
     }
 
     // Also try running tsc --noEmit briefly to detect type errors
-    if (errors.length === 0 && fs.existsSync(path.join(appPath, "tsconfig.json"))) {
+    if (
+      errors.length === 0 &&
+      fs.existsSync(path.join(appPath, "tsconfig.json"))
+    ) {
       try {
         const { execSync } = require("node:child_process");
         const tscOut: string = execSync("npx tsc --noEmit 2>&1 | head -20", {
@@ -305,14 +312,19 @@ function getDbSchemaSummary(appPath: string, allFiles: string[]): string {
     const fullPath = path.join(appPath, candidate);
     if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
       try {
-        const files = fs.readdirSync(fullPath).filter((f) => f.endsWith(".sql")).slice(-2);
+        const files = fs
+          .readdirSync(fullPath)
+          .filter((f) => f.endsWith(".sql"))
+          .slice(-2);
         if (files.length > 0) {
           const content = files
             .map((f) => readFileSafe(path.join(fullPath, f), 40))
             .join("\n");
           return `[Supabase migrations]\n${content.slice(0, 800)}`;
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
     // File-based schemas
     if (allFiles.includes(candidate)) {
@@ -322,8 +334,8 @@ function getDbSchemaSummary(appPath: string, allFiles: string[]): string {
   }
 
   // Fallback: find any file named schema.*
-  const schemaFile = allFiles.find((f) =>
-    /schema\.(ts|prisma|sql)$/.test(f) && !f.includes("node_modules")
+  const schemaFile = allFiles.find(
+    (f) => /schema\.(ts|prisma|sql)$/.test(f) && !f.includes("node_modules"),
   );
   if (schemaFile) {
     const content = readFileSafe(path.join(appPath, schemaFile), 60);
@@ -359,7 +371,9 @@ function detectDeveloperIntent(
 
     // ── SaaS detection ──
     const isSaas =
-      depNames.some((d) => ["stripe", "@stripe/stripe-js", "lemonsqueezy", "paddle"].includes(d)) ||
+      depNames.some((d) =>
+        ["stripe", "@stripe/stripe-js", "lemonsqueezy", "paddle"].includes(d),
+      ) ||
       fileStr.includes("subscription") ||
       fileStr.includes("billing") ||
       fileStr.includes("pricing");
@@ -376,7 +390,16 @@ function detectDeveloperIntent(
 
     // ── Blog/CMS detection ──
     const isBlog =
-      depNames.some((d) => ["contentlayer", "@sanity/client", "@prismic/client", "gray-matter", "remark", "rehype"].includes(d)) ||
+      depNames.some((d) =>
+        [
+          "contentlayer",
+          "@sanity/client",
+          "@prismic/client",
+          "gray-matter",
+          "remark",
+          "rehype",
+        ].includes(d),
+      ) ||
       fileStr.includes("blog") ||
       fileStr.includes("post") ||
       fileStr.includes("cms");
@@ -394,7 +417,9 @@ function detectDeveloperIntent(
     // ── API / backend detection ──
     const isApiFirst =
       (fileStr.includes("api/") || fileStr.includes("routes/")) &&
-      depNames.some((d) => ["express", "fastify", "hono", "koa", "@hono/node-server"].includes(d));
+      depNames.some((d) =>
+        ["express", "fastify", "hono", "koa", "@hono/node-server"].includes(d),
+      );
 
     if (isApiFirst && !isSaas && !isBlog) {
       appType = "API server";
@@ -407,26 +432,36 @@ function detectDeveloperIntent(
     }
 
     // ── Mobile detection ──
-    const isMobile =
-      depNames.some((d) => ["@capacitor/core", "react-native", "expo"].includes(d));
+    const isMobile = depNames.some((d) =>
+      ["@capacitor/core", "react-native", "expo"].includes(d),
+    );
     if (isMobile) {
       appType = "mobile app";
       if (!fileStr.includes("push") && !fileStr.includes("notification"))
         missingFeatures.push("push notifications");
-      if (!fileStr.includes("offline"))
-        missingFeatures.push("offline support");
+      if (!fileStr.includes("offline")) missingFeatures.push("offline support");
     }
 
     // ── Common missing features regardless of type ──
     const hasAuth =
-      depNames.some((d) => ["next-auth", "@auth/core", "lucia", "clerk", "@clerk/nextjs", "supabase"].includes(d)) ||
+      depNames.some((d) =>
+        [
+          "next-auth",
+          "@auth/core",
+          "lucia",
+          "clerk",
+          "@clerk/nextjs",
+          "supabase",
+        ].includes(d),
+      ) ||
       fileStr.includes("signin") ||
       fileStr.includes("login");
     if (!hasAuth) missingFeatures.push("user authentication");
 
-    const hasEnvValidation = depNames.includes("zod") && fileStr.includes("env");
-    if (!hasEnvValidation) missingFeatures.push("env variable validation (Zod)");
-
+    const hasEnvValidation =
+      depNames.includes("zod") && fileStr.includes("env");
+    if (!hasEnvValidation)
+      missingFeatures.push("env variable validation (Zod)");
   } catch {
     // ignore
   }
@@ -447,18 +482,12 @@ const FALLBACK_SUGGESTIONS = [
 export function registerAiSuggestionsHandlers() {
   handle(
     "generate-ai-suggestions",
-    async (
-      _event,
-      { chatId, appId }: { chatId: number; appId: number },
-    ) => {
+    async (_event, { chatId, appId }: { chatId: number; appId: number }) => {
       const settings = readSettings();
 
       // ── 1. Get recent chat messages ──────────────────────────────────────
       const recentMessages = await db.query.messages.findMany({
-        where: and(
-          eq(messages.chatId, chatId),
-          eq(messages.role, "assistant"),
-        ),
+        where: and(eq(messages.chatId, chatId), eq(messages.role, "assistant")),
         orderBy: [desc(messages.id)],
         limit: 5,
         columns: { content: true, role: true },
@@ -507,9 +536,7 @@ export function registerAiSuggestionsHandlers() {
       const keyFileContents = keyFiles
         .map((rel) => {
           const content = readFileSafe(path.join(appPath, rel), 150);
-          return content
-            ? `\n### ${rel}\n\`\`\`\n${content}\n\`\`\``
-            : "";
+          return content ? `\n### ${rel}\n\`\`\`\n${content}\n\`\`\`` : "";
         })
         .filter(Boolean)
         .join("\n");

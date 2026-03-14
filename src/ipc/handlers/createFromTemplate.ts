@@ -28,10 +28,12 @@ export async function createFromTemplate({
   if (templateId === "blank") {
     logger.info("Blank template selected. Initializing empty directory.");
     if (fs.existsSync(fullAppPath) && fs.readdirSync(fullAppPath).length > 0) {
-      throw new Error(`Application directory ${fullAppPath} already exists and is not empty.`);
+      throw new Error(
+        `Application directory ${fullAppPath} already exists and is not empty.`,
+      );
     }
     fs.ensureDirSync(fullAppPath);
-    
+
     // Initialize git repository for the blank template
     try {
       const { execSync } = require("child_process");
@@ -40,7 +42,7 @@ export async function createFromTemplate({
     } catch (error) {
       logger.warn(`Failed to initialize git repository: ${error}`);
     }
-    
+
     return;
   }
 

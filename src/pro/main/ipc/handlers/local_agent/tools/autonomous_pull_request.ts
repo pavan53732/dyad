@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { generateText } from "ai";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlContent } from "./types";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { readSettings } from "@/main/settings";
 import {
@@ -28,11 +24,28 @@ const logger = log.scope("autonomous_pull_request");
 const GITHUB_API_BASE = "https://api.github.com";
 
 const autonomousPullRequestSchema = z.object({
-  title: z.string().optional().describe("PR title (optional, will be auto-generated if not provided)"),
-  body: z.string().optional().describe("PR description body (optional, will be auto-generated if not provided)"),
-  labels: z.array(z.string()).optional().describe("Labels to add to the PR (optional)"),
-  baseBranch: z.string().optional().describe("Base branch to merge into (default: main)"),
-  commitMessage: z.string().optional().describe("Commit message if there are uncommitted changes"),
+  title: z
+    .string()
+    .optional()
+    .describe("PR title (optional, will be auto-generated if not provided)"),
+  body: z
+    .string()
+    .optional()
+    .describe(
+      "PR description body (optional, will be auto-generated if not provided)",
+    ),
+  labels: z
+    .array(z.string())
+    .optional()
+    .describe("Labels to add to the PR (optional)"),
+  baseBranch: z
+    .string()
+    .optional()
+    .describe("Base branch to merge into (default: main)"),
+  commitMessage: z
+    .string()
+    .optional()
+    .describe("Commit message if there are uncommitted changes"),
 });
 
 interface PullRequestResult {
@@ -81,32 +94,42 @@ async function createPullRequest({
   base: string;
   accessToken: string;
 }): Promise<{ number: number; html_url: string }> {
-  const response = await fetch(`${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        body,
+        head,
+        base,
+      }),
     },
-    body: JSON.stringify({
-      title,
-      body,
-      head,
-      base,
-    }),
-  });
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     // Check if PR already exists (422 - branch already exists)
     if (response.status === 422 && errorData.errors) {
       // Try to get existing PR
-      const existingPr = await getExistingPullRequest({ owner, repo, head, accessToken });
+      const existingPr = await getExistingPullRequest({
+        owner,
+        repo,
+        head,
+        accessToken,
+      });
       if (existingPr) {
         return existingPr;
       }
     }
-    throw new Error(`Failed to create PR: ${errorData.message || response.statusText}`);
+    throw new Error(
+      `Failed to create PR: ${errorData.message || response.statusText}`,
+    );
   }
 
   return response.json();
@@ -200,17 +223,19 @@ async function generatePRDescription({
 }): Promise<{ title: string; body: string }> {
   // Get recent commits on this branch
   const commits = await gitLog({ path: appPath, depth: 10 });
-  
+
   // Get uncommitted files
-  const uncommittedFiles = await getGitUncommittedFilesWithStatus({ path: appPath });
+  const uncommittedFiles = await getGitUncommittedFilesWithStatus({
+    path: appPath,
+  });
 
   const commitMessages = commits
     .slice(0, 5)
-    .map(c => `- ${c.commit.message.trim()}`)
+    .map((c) => `- ${c.commit.message.trim()}`)
     .join("\n");
 
   const changedFiles = uncommittedFiles
-    .map(f => `- ${f.status}: ${f.path}`)
+    .map((f) => `- ${f.status}: ${f.path}`)
     .join("\n");
 
   const systemPrompt = `You are a GitHub Pull Request assistant. Generate a concise, informative PR title and description based on the provided git commit history and changed files.
@@ -253,13 +278,15 @@ ${changedFiles || "No uncommitted changes"}`;
         body: parsed.body || "No description provided.",
       };
     }
-  } catch  {
+  } catch {
     logger.warn("Failed to parse AI response as JSON, using fallback");
   }
 
   // Fallback if AI response can't be parsed
   return {
-    title: commits[0]?.commit.message.split("\n")[0].slice(0, 50) || `Update ${branchName}`,
+    title:
+      commits[0]?.commit.message.split("\n")[0].slice(0, 50) ||
+      `Update ${branchName}`,
     body: `## Summary\n\nRecent changes on branch \`${branchName}\`.\n\n### Commits\n${commitMessages || "No commits"}\n\n### Changed Files\n${changedFiles || "None"}`,
   };
 }
@@ -275,7 +302,7 @@ export const autonomousPullRequestTool: ToolDefinition<
 
   getConsentPreview: (args) => {
     const branch = args.baseBranch || "main";
-    return `Create PR: ${args.title || '[auto-generated]'} -> ${branch}`;
+    return `Create PR: ${args.title || "[auto-generated]"} -> ${branch}`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -284,10 +311,15 @@ export const autonomousPullRequestTool: ToolDefinition<
     );
 
     const settings = readSettings();
-    const { modelClient } = await getModelClient(settings.selectedModel || "gpt-4o", settings);
+    const { modelClient } = await getModelClient(
+      settings.selectedModel || "gpt-4o",
+      settings,
+    );
 
     // Get app info from database
-    const app = await db.query.apps.findFirst({ where: eq(apps.id, ctx.appId) });
+    const app = await db.query.apps.findFirst({
+      where: eq(apps.id, ctx.appId),
+    });
     if (!app || !app.githubOrg || !app.githubRepo) {
       throw new Error("App is not connected to a GitHub repository.");
     }
@@ -296,7 +328,9 @@ export const autonomousPullRequestTool: ToolDefinition<
     const accessToken = getGitHubAccessToken();
 
     if (!accessToken) {
-      throw new Error("GitHub is not authenticated. Please connect GitHub in settings.");
+      throw new Error(
+        "GitHub is not authenticated. Please connect GitHub in settings.",
+      );
     }
 
     // Get current branch
@@ -310,17 +344,21 @@ export const autonomousPullRequestTool: ToolDefinition<
     );
 
     // Check for uncommitted changes and commit if needed
-    const uncommittedFiles = await getGitUncommittedFilesWithStatus({ path: appPath });
+    const uncommittedFiles = await getGitUncommittedFilesWithStatus({
+      path: appPath,
+    });
     if (uncommittedFiles.length > 0) {
       ctx.onXmlStream(
         `<dyad-status title="Creating Pull Request">Committing uncommitted changes...</dyad-status>`,
       );
 
-      const commitMessage = args.commitMessage || `chore: auto-commit before creating PR for ${currentBranch}`;
-      
+      const commitMessage =
+        args.commitMessage ||
+        `chore: auto-commit before creating PR for ${currentBranch}`;
+
       await gitAddAll({ path: appPath });
       await gitCommit({ path: appPath, message: commitMessage });
-      
+
       // Push the branch
       await gitPush({
         path: appPath,
@@ -328,7 +366,9 @@ export const autonomousPullRequestTool: ToolDefinition<
         accessToken,
       });
 
-      logger.info(`Auto-committed and pushed changes for branch ${currentBranch}`);
+      logger.info(
+        `Auto-committed and pushed changes for branch ${currentBranch}`,
+      );
     } else {
       // Just push the branch to ensure it's up to date
       try {
@@ -344,7 +384,7 @@ export const autonomousPullRequestTool: ToolDefinition<
     }
 
     // Get base branch
-    const baseBranch = args.baseBranch || await getBaseBranch(appPath);
+    const baseBranch = args.baseBranch || (await getBaseBranch(appPath));
 
     ctx.onXmlStream(
       `<dyad-status title="Creating Pull Request">Generating PR description...</dyad-status>`,
@@ -361,7 +401,7 @@ export const autonomousPullRequestTool: ToolDefinition<
         baseBranch,
         modelClient,
       });
-      
+
       prTitle = prTitle || generated.title;
       prBody = prBody || generated.body;
     }
@@ -405,9 +445,12 @@ export const autonomousPullRequestTool: ToolDefinition<
       }
     } catch (prError: any) {
       const errorMsg = prError.message || String(prError);
-      
+
       // Check if error indicates PR already exists
-      if (errorMsg.includes("A pull request already exists") || errorMsg.includes("branch already exists")) {
+      if (
+        errorMsg.includes("A pull request already exists") ||
+        errorMsg.includes("branch already exists")
+      ) {
         // Try to get existing PR one more time
         const existingPr = await getExistingPullRequest({
           owner: app.githubOrg,
@@ -415,7 +458,7 @@ export const autonomousPullRequestTool: ToolDefinition<
           head: currentBranch,
           accessToken,
         });
-        
+
         if (existingPr) {
           prResult = existingPr;
           prStatus = "updated";
@@ -443,12 +486,13 @@ export const autonomousPullRequestTool: ToolDefinition<
       prNumber: prResult.number,
       title: prTitle,
       status: prStatus,
-      message: prStatus === "created" 
-        ? `Successfully created pull request #${prResult.number}`
-        : `Pull request #${prResult.number} already exists`,
+      message:
+        prStatus === "created"
+          ? `Successfully created pull request #${prResult.number}`
+          : `Pull request #${prResult.number} already exists`,
     };
 
-    const resultXml = `<dyad-status title="Pull Request ${prStatus === 'created' ? 'Created' : 'Updated'}">
+    const resultXml = `<dyad-status title="Pull Request ${prStatus === "created" ? "Created" : "Updated"}">
 - PR URL: ${result.prUrl}
 - PR Number: #${result.prNumber}
 - Title: ${escapeXmlContent(result.title)}
@@ -457,6 +501,6 @@ export const autonomousPullRequestTool: ToolDefinition<
 
     ctx.onXmlComplete(resultXml);
 
-    return `Pull Request ${prStatus === 'created' ? 'created' : 'updated'}: ${result.prUrl}`;
+    return `Pull Request ${prStatus === "created" ? "created" : "updated"}: ${result.prUrl}`;
   },
 };

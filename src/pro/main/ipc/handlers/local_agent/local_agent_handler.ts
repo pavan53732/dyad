@@ -23,7 +23,12 @@ import { readSettings } from "@/main/settings";
 import { getDyadAppPath } from "@/paths/paths";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { safeSend } from "@/ipc/utils/safe_sender";
-import { getMaxTokens, getTemperature, getContextWindow, getCompactionThreshold } from "@/ipc/utils/token_utils";
+import {
+  getMaxTokens,
+  getTemperature,
+  getContextWindow,
+  getCompactionThreshold,
+} from "@/ipc/utils/token_utils";
 import {
   getProviderOptions,
   getAiHeaders,
@@ -585,7 +590,11 @@ export async function handleLocalAgentStream(
       const contextWindow = await getContextWindow();
       const maxTokenBudget = Math.floor(contextWindow * 0.75); // leave 25% for output
       let totalTokens = messageHistory.reduce(
-        (acc, msg) => acc + Math.ceil((typeof msg.content === "string" ? msg.content.length : 0) / 4),
+        (acc, msg) =>
+          acc +
+          Math.ceil(
+            (typeof msg.content === "string" ? msg.content.length : 0) / 4,
+          ),
         0,
       );
       if (totalTokens > maxTokenBudget) {
@@ -597,7 +606,10 @@ export async function handleLocalAgentStream(
         while (messageHistory.length > 2 && totalTokens > maxTokenBudget) {
           // Remove the second message (oldest non-first)
           const removed = messageHistory.splice(1, 1)[0];
-          totalTokens -= Math.ceil((typeof removed.content === "string" ? removed.content.length : 0) / 4);
+          totalTokens -= Math.ceil(
+            (typeof removed.content === "string" ? removed.content.length : 0) /
+              4,
+          );
         }
         logger.info(
           `Emergency truncation complete: ${messageHistory.length} messages, ~${totalTokens} tokens remaining.`,

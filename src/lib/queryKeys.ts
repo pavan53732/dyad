@@ -82,8 +82,13 @@ export const queryKeys = {
   // ─────────────────────────────────────────────────────────────────────────────
   aiSuggestions: {
     all: ["ai-suggestions"] as const,
-    forChat: ({ chatId, lastMessageId }: { chatId: number | undefined; lastMessageId: number | undefined }) =>
-      ["ai-suggestions", chatId, lastMessageId] as const,
+    forChat: ({
+      chatId,
+      lastMessageId,
+    }: {
+      chatId: number | undefined;
+      lastMessageId: number | undefined;
+    }) => ["ai-suggestions", chatId, lastMessageId] as const,
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -371,4 +376,6 @@ export type AppQueryKey =
   | QueryKeyOf<(typeof queryKeys.github)[keyof typeof queryKeys.github]>
   | QueryKeyOf<(typeof queryKeys.neon)[keyof typeof queryKeys.neon]>
   | QueryKeyOf<(typeof queryKeys.appEnvVars)[keyof typeof queryKeys.appEnvVars]>
-  | QueryKeyOf<(typeof queryKeys.aiSuggestions)[keyof typeof queryKeys.aiSuggestions]>;
+  | QueryKeyOf<
+      (typeof queryKeys.aiSuggestions)[keyof typeof queryKeys.aiSuggestions]
+    >;

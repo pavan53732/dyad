@@ -10,8 +10,17 @@ const logger = log.scope("execute_command");
 const execAsync = promisify(exec);
 
 const executeCommandSchema = z.object({
-  command: z.string().describe("The shell command to execute (e.g., 'npm install', 'npx create-next-app@latest .', 'npm run build')"),
-  cwd: z.string().optional().describe("Optional working directory relative to the app root to execute the command in. Defaults to the app root."),
+  command: z
+    .string()
+    .describe(
+      "The shell command to execute (e.g., 'npm install', 'npx create-next-app@latest .', 'npm run build')",
+    ),
+  cwd: z
+    .string()
+    .optional()
+    .describe(
+      "Optional working directory relative to the app root to execute the command in. Defaults to the app root.",
+    ),
 });
 
 export const executeCommandTool: ToolDefinition<
@@ -24,7 +33,7 @@ export const executeCommandTool: ToolDefinition<
   modifiesState: true,
 
   getConsentPreview: (args) => {
-    return args.cwd 
+    return args.cwd
       ? `Run '${args.command}' in ${args.cwd}`
       : `Run '${args.command}'`;
   },
@@ -36,24 +45,23 @@ export const executeCommandTool: ToolDefinition<
 
   execute: async (args, ctx: AgentContext) => {
     const cwd = args.cwd ? safeJoin(ctx.appPath, args.cwd) : ctx.appPath;
-    
+
     logger.info(`Executing command: ${args.command} in ${cwd}`);
 
     // Basic safety check for path traversal
-    if (
-      !cwd.startsWith(ctx.appPath + path.sep) &&
-      cwd !== ctx.appPath
-    ) {
-      throw new Error(`Cannot execute commands outside of app directory: ${ctx.appPath}`);
+    if (!cwd.startsWith(ctx.appPath + path.sep) && cwd !== ctx.appPath) {
+      throw new Error(
+        `Cannot execute commands outside of app directory: ${ctx.appPath}`,
+      );
     }
 
     try {
-      const { stdout, stderr } = await execAsync(args.command, { 
+      const { stdout, stderr } = await execAsync(args.command, {
         cwd,
         timeout: 120000, // 2 minutes timeout for scaffolding commands
-        maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
       });
-      
+
       let result = "Command executed successfully.\\n";
       if (stdout.trim()) {
         result += `\\nSTDOUT:\\n${stdout}`;
@@ -64,7 +72,7 @@ export const executeCommandTool: ToolDefinition<
       return result;
     } catch (error: any) {
       logger.error(`Command failed: ${args.command}`, error);
-      let result = `Command failed with exit code ${error.code || 'unknown'}.\\n`;
+      let result = `Command failed with exit code ${error.code || "unknown"}.\\n`;
       if (error.stdout) {
         result += `\\nSTDOUT:\\n${error.stdout}`;
       }

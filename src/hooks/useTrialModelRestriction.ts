@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useUserBudgetInfo } from "./useUserBudgetInfo";
 import { useSettings } from "./useSettings";
 
-
 const AUTO_MODEL = { name: "auto", provider: "auto" };
 
 export function useTrialModelRestriction() {

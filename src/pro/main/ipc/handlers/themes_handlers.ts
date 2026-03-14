@@ -28,7 +28,6 @@ import type {
   CleanupThemeImagesParams,
 } from "@/ipc/types";
 
-
 const logger = log.scope("themes_handlers");
 const handle = createLoggedHandler(logger);
 
@@ -801,11 +800,26 @@ Modern theme extracted from website for testing.
       let crawlMarkdown = crawlHtml;
       crawlMarkdown = crawlMarkdown.replace(/<script[\s\S]*?<\/script>/gi, "");
       crawlMarkdown = crawlMarkdown.replace(/<style[\s\S]*?<\/style>/gi, "");
-      crawlMarkdown = crawlMarkdown.replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_m, level, text) => `\n${"#".repeat(Number(level))} ${text.replace(/<[^>]*>/g, "")}\n`);
-      crawlMarkdown = crawlMarkdown.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)");
-      crawlMarkdown = crawlMarkdown.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n");
+      crawlMarkdown = crawlMarkdown.replace(
+        /<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi,
+        (_m, level, text) =>
+          `\n${"#".repeat(Number(level))} ${text.replace(/<[^>]*>/g, "")}\n`,
+      );
+      crawlMarkdown = crawlMarkdown.replace(
+        /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+        "[$2]($1)",
+      );
+      crawlMarkdown = crawlMarkdown.replace(
+        /<p[^>]*>([\s\S]*?)<\/p>/gi,
+        "\n$1\n",
+      );
       crawlMarkdown = crawlMarkdown.replace(/<[^>]*>/g, "");
-      crawlMarkdown = crawlMarkdown.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ");
+      crawlMarkdown = crawlMarkdown
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&nbsp;/g, " ");
       crawlMarkdown = crawlMarkdown.replace(/\n{3,}/g, "\n\n").trim();
 
       if (!crawlMarkdown) {
@@ -831,8 +845,7 @@ source: Live website (content provided)`;
       const MAX_MARKDOWN_LENGTH = 16000;
       const truncatedMarkdown =
         crawlMarkdown.length > MAX_MARKDOWN_LENGTH
-          ? crawlMarkdown.slice(0, MAX_MARKDOWN_LENGTH) +
-            "\n<!-- truncated -->"
+          ? crawlMarkdown.slice(0, MAX_MARKDOWN_LENGTH) + "\n<!-- truncated -->"
           : crawlMarkdown;
 
       // Sanitize crawled content to prevent prompt injection

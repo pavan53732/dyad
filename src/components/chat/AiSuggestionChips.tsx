@@ -40,7 +40,8 @@ function SuggestionChip({
   suggestion: AiSuggestion;
   onSelect: (text: string) => void;
 }) {
-  const config = CATEGORY_CONFIG[suggestion.category] ?? CATEGORY_CONFIG.feature;
+  const config =
+    CATEGORY_CONFIG[suggestion.category] ?? CATEGORY_CONFIG.feature;
   const Icon = config.icon;
 
   return (
@@ -63,9 +64,7 @@ function SuggestionChip({
 }
 
 function SkeletonChip() {
-  return (
-    <div className="h-7 w-36 rounded-full bg-muted/50 animate-pulse" />
-  );
+  return <div className="h-7 w-36 rounded-full bg-muted/50 animate-pulse" />;
 }
 
 /**

@@ -124,7 +124,10 @@ function buildSnippetFromMatch({
   };
 }
 
-async function getDefaultCommand(appId: number, appPath: string): Promise<string> {
+async function getDefaultCommand(
+  appId: number,
+  appPath: string,
+): Promise<string> {
   const port = getAppPort(appId);
   try {
     const pkgJsonPath = path.join(appPath, "package.json");
@@ -228,7 +231,12 @@ async function executeAppLocalNode({
   installCommand?: string | null;
   startCommand?: string | null;
 }): Promise<void> {
-  const command = await getCommand({ appId, appPath, installCommand, startCommand });
+  const command = await getCommand({
+    appId,
+    appPath,
+    installCommand,
+    startCommand,
+  });
   const spawnedProcess = spawn(command, [], {
     cwd: appPath,
     shell: true,

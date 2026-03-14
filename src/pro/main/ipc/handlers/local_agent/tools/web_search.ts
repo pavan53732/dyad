@@ -68,8 +68,7 @@ async function performLocalWebSearch(query: string): Promise<string> {
   // Each result has a link in <a class="result-link"> and a snippet in <td class="result-snippet">
   const linkRegex =
     /<a[^>]*class="result-link"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-  const snippetRegex =
-    /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
+  const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([\s\S]*?)<\/td>/gi;
 
   const links: { url: string; title: string }[] = [];
   let match;
@@ -98,21 +97,22 @@ async function performLocalWebSearch(query: string): Promise<string> {
   for (let i = 0; i < maxResults; i++) {
     const link = links[i];
     const snippet = snippets[i] || "No description available";
-    results.push(`### ${i + 1}. ${link.title}\n**URL:** ${link.url}\n${snippet}\n`);
+    results.push(
+      `### ${i + 1}. ${link.title}\n**URL:** ${link.url}\n${snippet}\n`,
+    );
   }
 
   if (results.length === 0) {
     // Fallback: try to extract any links from the page
-    const fallbackLinkRegex = /<a[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    const fallbackLinkRegex =
+      /<a[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
     while ((match = fallbackLinkRegex.exec(html)) !== null) {
       const linkUrl = match[1];
       const title = match[2].replace(/<[^>]*>/g, "").trim();
-      if (
-        title &&
-        !linkUrl.includes("duckduckgo.com") &&
-        results.length < 10
-      ) {
-        results.push(`### ${results.length + 1}. ${title}\n**URL:** ${linkUrl}\n`);
+      if (title && !linkUrl.includes("duckduckgo.com") && results.length < 10) {
+        results.push(
+          `### ${results.length + 1}. ${title}\n**URL:** ${linkUrl}\n`,
+        );
       }
     }
   }

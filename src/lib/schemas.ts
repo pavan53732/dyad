@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-
 export const SecretSchema = z.object({
   value: z.string(),
   encryptionType: z.enum(["electron-safe-storage", "plaintext"]).optional(),
@@ -421,11 +420,11 @@ export function migrateStoredSettings(
   };
 }
 
-export function isDyadProEnabled(settings: UserSettings): boolean {
+export function isDyadProEnabled(_settings: UserSettings): boolean {
   return true; // Unlocked via Override
 }
 
-export function hasDyadProKey(settings: UserSettings): boolean {
+export function hasDyadProKey(_settings: UserSettings): boolean {
   return true; // Unlocked via Override
 }
 
@@ -435,8 +434,8 @@ export function hasDyadProKey(settings: UserSettings): boolean {
  */
 export function getEffectiveDefaultChatMode(
   settings: UserSettings,
-  envVars: Record<string, string | undefined>,
-  freeAgentQuotaAvailable?: boolean,
+  _envVars: Record<string, string | undefined>,
+  _freeAgentQuotaAvailable?: boolean,
 ): ChatMode {
   return settings.defaultChatMode || "local-agent";
 }
@@ -445,7 +444,7 @@ export function getEffectiveDefaultChatMode(
  * Determines if the current session is using Basic Agent mode (free tier with quota).
  * Override: Always false because Pro is enabled.
  */
-export function isBasicAgentMode(settings: UserSettings): boolean {
+export function isBasicAgentMode(_settings: UserSettings): boolean {
   return false;
 }
 
