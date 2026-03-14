@@ -77,9 +77,34 @@ import {
   dependencyVulnerabilityMapperTool,
   dependencyEvolutionTrackerTool,
   dependencyRedundancyFinderTool,
-  dependencyHealthMonitorTool,
+  dependencyHealthMonitorTool as depKgHealthMonitorTool,
 } from "./tools/dependency_knowledge_graph";
+// Dependency Governance (Capabilities 491-520)
+import {
+  dependencyOptimizationTool,
+  dependencyPolicyTool,
+  dependencyGovernanceHealthMonitorTool,
+  vulnerabilityScannerTool,
+  dependencyComplianceCheckerTool,
+  licenseManagerTool,
+  updatePlannerTool,
+  conflictResolverTool,
+  environmentCompatibilityTool,
+  platformValidationTool,
+} from "./tools/dependency_governance";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
+import {
+  architectureReasoningEngineTool,
+  architectureDecisionScoringTool,
+  architectureTradeoffAnalyzerTool,
+  architectureConstraintSolverTool,
+  architectureOptimizationSearchTool,
+  architectureMultiObjectivePlannerTool,
+  architectureHeuristicEngineTool,
+  architectureReinforcementLearningTool,
+  architectureSolutionRankingTool,
+  architectureRecommendationEngineTool,
+} from "./tools/architecture_knowledge_graph";
 import {
   detectPatternsTool,
   suggestRefactoringTool,
@@ -298,6 +323,21 @@ import {
   assumptionChallengerTool,
   rootCauseHypothesizerTool,
 } from "./tools/counterfactual_reasoning";
+// Reasoning Infrastructure (Capabilities 111-120)
+import {
+  reasoningGraphBuilderTool,
+  reasoningNodeEvaluatorTool,
+  reasoningEdgeDependencyTrackerTool,
+  reasoningStatePersistenceTool,
+  reasoningCacheEngineTool,
+  reasoningTraceVisualizationTool,
+  reasoningPerformanceProfilerTool,
+  reasoningMemoryStorageTool,
+  reasoningVersionTrackingTool,
+  reasoningReproducibilityEngineTool,
+} from "./tools/reasoning_infrastructure";
+// Advanced Coordination (Capabilities 201-210)
+import { advancedCoordinationTools } from "./tools/advanced_coordination";
 // Code Representation (Capabilities 231-240)
 import {
   codeEmbeddingGeneratorTool,
@@ -396,7 +436,18 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   dependencyVulnerabilityMapperTool,
   dependencyEvolutionTrackerTool,
   dependencyRedundancyFinderTool,
-  dependencyHealthMonitorTool,
+  depKgHealthMonitorTool,
+  // Dependency Governance (Capabilities 491-520)
+  dependencyOptimizationTool,
+  dependencyPolicyTool,
+  dependencyGovernanceHealthMonitorTool,
+  vulnerabilityScannerTool,
+  dependencyComplianceCheckerTool,
+  licenseManagerTool,
+  updatePlannerTool,
+  conflictResolverTool,
+  environmentCompatibilityTool,
+  platformValidationTool,
   architectureAnalyzerTool,
   architectureGraphBuilderTool,
   architectureValidatorTool,
@@ -644,6 +695,38 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   decisionImpactEvaluatorTool,
   assumptionChallengerTool,
   rootCauseHypothesizerTool,
+  // Reasoning Infrastructure (Capabilities 111-120)
+  reasoningGraphBuilderTool,
+  reasoningNodeEvaluatorTool,
+  reasoningEdgeDependencyTrackerTool,
+  reasoningStatePersistenceTool,
+  reasoningCacheEngineTool,
+  reasoningTraceVisualizationTool,
+  reasoningPerformanceProfilerTool,
+  reasoningMemoryStorageTool,
+  reasoningVersionTrackingTool,
+  reasoningReproducibilityEngineTool,
+  // Advanced Coordination (Capabilities 201-210)
+  advancedCoordinationTools.agentCloningTool,
+  advancedCoordinationTools.swarmCoordinationTool,
+  advancedCoordinationTools.distributedAgentClusterTool,
+  advancedCoordinationTools.crossAgentReasoningTool,
+  advancedCoordinationTools.agentDelegationTool,
+  advancedCoordinationTools.agentRedundancyTool,
+  advancedCoordinationTools.agentFailoverMechanismTool,
+  advancedCoordinationTools.emergentCoordinationTool,
+  advancedCoordinationTools.agentTopologyOptimizerTool,
+  // Architecture Knowledge Graph (Capabilities 391-400)
+  architectureReasoningEngineTool,
+  architectureDecisionScoringTool,
+  architectureTradeoffAnalyzerTool,
+  architectureConstraintSolverTool,
+  architectureOptimizationSearchTool,
+  architectureMultiObjectivePlannerTool,
+  architectureHeuristicEngineTool,
+  architectureReinforcementLearningTool,
+  architectureSolutionRankingTool,
+  architectureRecommendationEngineTool,
 ];
 // ============================================================================
 // Agent Tool Name Type (derived from TOOL_DEFINITIONS)

@@ -10,7 +10,7 @@ const reasoningGraphBuilderSchema = z.object({
     id: z.string().describe("Unique identifier for the reasoning node"),
     type: z.string().describe("Type of reasoning node (e.g., 'hypothesis', 'evidence', 'conclusion')"),
     content: z.string().describe("Content of the reasoning node"),
-    metadata: z.record(z.any()).optional().describe("Additional metadata for the node")
+    metadata: z.record(z.string(), z.any()).optional().describe("Additional metadata for the node")
   })).describe("Array of reasoning nodes to include in the graph"),
   edges: z.array(z.object({
     source: z.string().describe("Source node ID"),
@@ -28,10 +28,11 @@ export const reasoningGraphBuilderTool: ToolDefinition<z.infer<typeof reasoningG
   defaultConsent: "always",
   modifiesState: false,
 
-  getConsentPreview: (args) => `Build reasoning graph with ${args.nodes.length} nodes`,
+  getConsentPreview: (args) => `Build reasoning graph with ${args.nodes?.length ?? 0} nodes`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-graph-builder nodes="${escapeXmlAttr(args.nodes.length.toString())}" graph-type="${escapeXmlAttr(args.graphType)}"></dyad-reasoning-graph-builder>`;
+    if (!args.nodes) return undefined;
+    return `<dyad-reasoning-graph-builder nodes="${escapeXmlAttr(args.nodes.length.toString())}" graph-type="${escapeXmlAttr(args.graphType ?? "dag")}"></dyad-reasoning-graph-builder>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -75,11 +76,11 @@ export const reasoningNodeEvaluatorTool: ToolDefinition<z.infer<typeof reasoning
   getConsentPreview: (args) => `Evaluate reasoning node ${args.nodeId} for ${args.evaluationMode}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-node-evaluator node-id="${escapeXmlAttr(args.nodeId)}" mode="${escapeXmlAttr(args.evaluationMode)}"></dyad-reasoning-node-evaluator>`;
+    return `<dyad-reasoning-node-evaluator node-id="${escapeXmlAttr(args.nodeId)}" mode="${escapeXmlAttr(args.evaluationMode ?? "quality")}"></dyad-reasoning-node-evaluator>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
-    const node = args.contextGraph?.nodes.find(n => n.id === args.nodeId);
+    const node = args.contextGraph?.nodes.find((n: { id: string }) => n.id === args.nodeId);
     if (!node) {
       throw new Error(`Node ${args.nodeId} not found in context graph`);
     }
@@ -118,7 +119,7 @@ export const reasoningEdgeDependencyTrackerTool: ToolDefinition<z.infer<typeof r
   getConsentPreview: (args) => `Track ${args.trackingMode} dependencies in graph ${args.graphId}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-edge-tracker graph-id="${escapeXmlAttr(args.graphId)}" mode="${escapeXmlAttr(args.trackingMode)}"></dyad-reasoning-edge-tracker>`;
+    return `<dyad-reasoning-edge-tracker graph-id="${escapeXmlAttr(args.graphId)}" mode="${escapeXmlAttr(args.trackingMode ?? "direct")}"></dyad-reasoning-edge-tracker>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -127,7 +128,7 @@ export const reasoningEdgeDependencyTrackerTool: ToolDefinition<z.infer<typeof r
       graphId: args.graphId,
       mode: args.trackingMode,
       dependencies: {
-        direct: [],
+        direct: [] as string[],
         transitive: args.trackingMode === "transitive" ? [] : undefined,
         circular: args.trackingMode === "circular" ? [] : undefined,
         criticalPath: args.trackingMode === "critical_path" ? [] : undefined
@@ -141,9 +142,9 @@ export const reasoningEdgeDependencyTrackerTool: ToolDefinition<z.infer<typeof r
 
 const reasoningStatePersistenceSchema = z.object({
   graphId: z.string().describe("ID of the reasoning graph to persist"),
-  stateData: z.record(z.any()).describe("Reasoning state data to persist"),
+  stateData: z.record(z.string(), z.any()).describe("Reasoning state data to persist"),
   persistenceMode: z.enum(["full", "incremental", "snapshot"]).default("full").describe("How to persist the state"),
-  metadata: z.record(z.any()).optional().describe("Additional metadata to store with the state")
+  metadata: z.record(z.string(), z.any()).optional().describe("Additional metadata to store with the state")
 });
 
 export const reasoningStatePersistenceTool: ToolDefinition<z.infer<typeof reasoningStatePersistenceSchema>> = {
@@ -156,7 +157,7 @@ export const reasoningStatePersistenceTool: ToolDefinition<z.infer<typeof reason
   getConsentPreview: (args) => `Persist ${args.persistenceMode} state for graph ${args.graphId}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-state-persistence graph-id="${escapeXmlAttr(args.graphId)}" mode="${escapeXmlAttr(args.persistenceMode)}"></dyad-reasoning-state-persistence>`;
+    return `<dyad-reasoning-state-persistence graph-id="${escapeXmlAttr(args.graphId)}" mode="${escapeXmlAttr(args.persistenceMode ?? "full")}"></dyad-reasoning-state-persistence>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -188,17 +189,16 @@ export const reasoningCacheEngineTool: ToolDefinition<z.infer<typeof reasoningCa
   defaultConsent: "always",
   modifiesState: false,
 
-  getConsentPreview: (args) => `Search ${args.cacheScope} cache for: ${args.query.slice(0, 50)}...`,
+  getConsentPreview: (args) => `Search ${args.cacheScope} cache for: ${(args.query ?? "").slice(0, 50)}...`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-cache query="${escapeXmlAttr(args.query.slice(0, 100))}" scope="${escapeXmlAttr(args.cacheScope)}"></dyad-reasoning-cache>`;
+    if (!args.query) return undefined;
+    return `<dyad-reasoning-cache query="${escapeXmlAttr(args.query.slice(0, 100))}" scope="${escapeXmlAttr(args.cacheScope ?? "local")}"></dyad-reasoning-cache>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
     // Placeholder for cache search logic
-    const cachedResults = [
-      // Mock cached results
-    ];
+    const cachedResults: Array<{ query: string; result: unknown }> = [];
 
     const results = cachedResults.filter(result =>
       // Simple text similarity check
@@ -227,7 +227,7 @@ export const reasoningTraceVisualizationTool: ToolDefinition<z.infer<typeof reas
   getConsentPreview: (args) => `Visualize ${args.visualizationType} trace for ${args.traceId}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-trace-viz trace-id="${escapeXmlAttr(args.traceId)}" type="${escapeXmlAttr(args.visualizationType)}"></dyad-reasoning-trace-viz>`;
+    return `<dyad-reasoning-trace-viz trace-id="${escapeXmlAttr(args.traceId)}" type="${escapeXmlAttr(args.visualizationType ?? "timeline")}"></dyad-reasoning-trace-viz>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -262,9 +262,10 @@ export const reasoningPerformanceProfilerTool: ToolDefinition<z.infer<typeof rea
   defaultConsent: "always",
   modifiesState: false,
 
-  getConsentPreview: (args) => `Profile performance for ${args.profileTarget} with ${args.metrics.length} metrics`,
+  getConsentPreview: (args) => `Profile performance for ${args.profileTarget} with ${args.metrics?.length ?? 1} metrics`,
 
   buildXml: (args, _isComplete) => {
+    if (!args.metrics) return undefined;
     return `<dyad-reasoning-profiler target="${escapeXmlAttr(args.profileTarget)}" metrics="${escapeXmlAttr(args.metrics.join(','))}"></dyad-reasoning-profiler>`;
   },
 
@@ -289,9 +290,9 @@ export const reasoningPerformanceProfilerTool: ToolDefinition<z.infer<typeof rea
 const reasoningMemoryStorageSchema = z.object({
   operation: z.enum(["store", "retrieve", "delete", "list"]).describe("Memory operation to perform"),
   memoryId: z.string().optional().describe("ID of the memory item (required for retrieve/delete)"),
-  content: z.record(z.any()).optional().describe("Content to store (required for store operation)"),
+  content: z.record(z.string(), z.any()).optional().describe("Content to store (required for store operation)"),
   tags: z.array(z.string()).optional().describe("Tags for categorizing the memory"),
-  context: z.record(z.any()).optional().describe("Context information for the memory")
+  context: z.record(z.string(), z.any()).optional().describe("Context information for the memory")
 });
 
 export const reasoningMemoryStorageTool: ToolDefinition<z.infer<typeof reasoningMemoryStorageSchema>> = {
@@ -301,10 +302,10 @@ export const reasoningMemoryStorageTool: ToolDefinition<z.infer<typeof reasoning
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) => `${args.operation} reasoning memory ${args.memoryId || ''}`,
+  getConsentPreview: (args) => `${args.operation} reasoning memory ${args.memoryId ?? ''}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-memory operation="${escapeXmlAttr(args.operation)}" memory-id="${escapeXmlAttr(args.memoryId || '')}"></dyad-reasoning-memory>`;
+    return `<dyad-reasoning-memory operation="${escapeXmlAttr(args.operation)}" memory-id="${escapeXmlAttr(args.memoryId ?? '')}"></dyad-reasoning-memory>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -312,7 +313,7 @@ export const reasoningMemoryStorageTool: ToolDefinition<z.infer<typeof reasoning
       case "store":
         if (!args.content) throw new Error("Content required for store operation");
         // Store memory logic would go here
-        return `Stored reasoning memory with ID: ${args.memoryId || `memory-${Date.now()}`}`;
+        return `Stored reasoning memory with ID: ${args.memoryId ?? `memory-${Date.now()}`}`;
 
       case "retrieve":
         if (!args.memoryId) throw new Error("Memory ID required for retrieve operation");
@@ -338,7 +339,7 @@ const reasoningVersionTrackingSchema = z.object({
   entityId: z.string().describe("ID of the entity to track versions for (graph, node, trace, etc.)"),
   operation: z.enum(["create_version", "get_version", "list_versions", "compare_versions"]).describe("Version tracking operation"),
   versionId: z.string().optional().describe("Specific version ID (for get/compare operations)"),
-  changes: z.record(z.any()).optional().describe("Changes to record in new version (for create_version)"),
+  changes: z.record(z.string(), z.any()).optional().describe("Changes to record in new version (for create_version)"),
   compareWith: z.string().optional().describe("Version ID to compare with (for compare_versions)")
 });
 
@@ -383,7 +384,7 @@ const reasoningReproducibilityEngineSchema = z.object({
   targetId: z.string().describe("ID of the reasoning process to ensure reproducibility for"),
   reproducibilityLevel: z.enum(["exact", "functional", "approximate"]).default("exact").describe("Level of reproducibility required"),
   seedValue: z.string().optional().describe("Random seed for reproducible random operations"),
-  environmentSnapshot: z.record(z.any()).optional().describe("Snapshot of environment state"),
+  environmentSnapshot: z.record(z.string(), z.any()).optional().describe("Snapshot of environment state"),
   includeDependencies: z.boolean().default(true).describe("Whether to include dependency versions and states")
 });
 
@@ -397,7 +398,7 @@ export const reasoningReproducibilityEngineTool: ToolDefinition<z.infer<typeof r
   getConsentPreview: (args) => `Ensure ${args.reproducibilityLevel} reproducibility for ${args.targetId}`,
 
   buildXml: (args, _isComplete) => {
-    return `<dyad-reasoning-reproducibility target-id="${escapeXmlAttr(args.targetId)}" level="${escapeXmlAttr(args.reproducibilityLevel)}"></dyad-reasoning-reproducibility>`;
+    return `<dyad-reasoning-reproducibility target-id="${escapeXmlAttr(args.targetId)}" level="${escapeXmlAttr(args.reproducibilityLevel ?? "exact")}"></dyad-reasoning-reproducibility>`;
   },
 
   execute: async (args, ctx: AgentContext) => {
@@ -405,8 +406,8 @@ export const reasoningReproducibilityEngineTool: ToolDefinition<z.infer<typeof r
     const reproducibilityData = {
       targetId: args.targetId,
       level: args.reproducibilityLevel,
-      seed: args.seedValue || `seed-${Date.now()}`,
-      environment: args.environmentSnapshot || {},
+      seed: args.seedValue ?? `seed-${Date.now()}`,
+      environment: args.environmentSnapshot ?? {},
       dependencies: args.includeDependencies,
       timestamp: new Date().toISOString(),
       checksum: `checksum-${Math.random().toString(36).substr(2, 9)}`
