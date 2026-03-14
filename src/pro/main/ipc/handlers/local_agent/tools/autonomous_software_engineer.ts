@@ -16,6 +16,7 @@ import { autonomousFixLoopTool } from "./autonomous_fix_loop";
 import { autonomousTestGeneratorTool } from "./autonomous_test_generator";
 import { gitCommitAndPushTool } from "./git_commit_and_push";
 import { autonomousPullRequestTool } from "./autonomous_pull_request";
+import { runTypeChecksTool } from "./run_type_checks";
 
 // Core editing tools for the inner loop
 import { writeFileTool } from "./write_file";
@@ -99,39 +100,42 @@ You MUST use your tools to complete this task. When finished, provide a brief su
         tools: {
           write_file: {
             description: writeFileTool.description,
-            parameters: writeFileTool.inputSchema as any,
+            inputSchema: writeFileTool.inputSchema as any,
             execute: async (args: any) => writeFileTool.execute(args, ctx),
           },
           edit_file: {
             description: editFileTool.description,
-            parameters: editFileTool.inputSchema as any,
+            inputSchema: editFileTool.inputSchema as any,
             execute: async (args: any) => editFileTool.execute(args, ctx),
           },
           search_replace: {
             description: searchReplaceTool.description,
-            parameters: searchReplaceTool.inputSchema as any,
+            inputSchema: searchReplaceTool.inputSchema as any,
             execute: async (args: any) => searchReplaceTool.execute(args, ctx),
           },
           read_file: {
             description: readFileTool.description,
-            parameters: readFileTool.inputSchema as any,
+            inputSchema: readFileTool.inputSchema as any,
             execute: async (args: any) => readFileTool.execute(args, ctx),
           },
           list_files: {
             description: listFilesTool.description,
-            parameters: listFilesTool.inputSchema as any,
+            inputSchema: listFilesTool.inputSchema as any,
             execute: async (args: any) => listFilesTool.execute(args, ctx),
           },
           code_search: {
             description: codeSearchTool.description,
-            parameters: codeSearchTool.inputSchema as any,
+            inputSchema: codeSearchTool.inputSchema as any,
             execute: async (args: any) => codeSearchTool.execute(args, ctx),
           },
         },
-        maxSteps: 10,
       });
 
-      // 3. Heal Phase
+      // 2b. Run Type Checks explicitly after writing code
+      ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Running type checks...</dyad-status>`);
+      await runTypeChecksTool.execute({}, ctx);
+      
+      // 3. Heal Phase - Fix any type errors found
       ctx.onXmlStream(`<dyad-status title="Task ${i+1}/${tasks.length}">Healing (Autonomous Fix Loop)...</dyad-status>`);
       await autonomousFixLoopTool.execute({ maxIterations: 3 }, ctx);
 

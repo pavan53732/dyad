@@ -12,7 +12,7 @@ import { streamText, TextPart, ImagePart } from "ai";
 import { readSettings } from "../../../../main/settings";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import { getModelClient } from "../../../../ipc/utils/get_model_client";
-import { v4 as uuidv4 } from "uuid";
+
 import type {
   SetAppThemeParams,
   GetAppThemeParams,
@@ -27,7 +27,7 @@ import type {
   SaveThemeImageResult,
   CleanupThemeImagesParams,
 } from "@/ipc/types";
-import { webCrawlResponseSchema } from "./local_agent/tools/web_crawl";
+
 
 const logger = log.scope("themes_handlers");
 const handle = createLoggedHandler(logger);

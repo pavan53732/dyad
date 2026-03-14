@@ -163,7 +163,7 @@ export const executeProjectPlanTool: ToolDefinition<
     `Execute project plan from ${args.planPath} (max ${args.maxIterations} tasks)`,
 
   execute: async (args, ctx: AgentContext) => {
-    const { planPath, maxIterations, autoFixErrors, generateTests } = args;
+    const { planPath, maxIterations, } = args;
     const fullPlanPath = path.isAbsolute(planPath)
       ? planPath
       : path.join(ctx.appPath, planPath);

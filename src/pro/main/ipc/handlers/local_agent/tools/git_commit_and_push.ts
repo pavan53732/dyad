@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   ToolDefinition,
   AgentContext,
-  escapeXmlAttr,
   escapeXmlContent,
 } from "./types";
 import {

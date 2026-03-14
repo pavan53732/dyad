@@ -1,6 +1,6 @@
 import { z } from "zod";
 import log from "electron-log";
-import { ToolDefinition, escapeXmlContent, AgentContext } from "./types";
+import { ToolDefinition, escapeXmlContent } from "./types";
 import fetch from "node-fetch";
 
 const logger = log.scope("web_crawl");

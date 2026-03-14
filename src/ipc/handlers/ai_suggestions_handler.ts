@@ -1,6 +1,6 @@
 import log from "electron-log";
 import { db } from "../../db";
-import { messages, chats, apps } from "../../db/schema";
+import { messages, chats } from "../../db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { readSettings } from "@/main/settings";
 import { getModelClient } from "../utils/get_model_client";
@@ -11,7 +11,6 @@ import fs from "node:fs";
 import { createLoggedHandler } from "./safe_handle";
 import {
   AiSuggestionSchema,
-  proposalContracts,
 } from "../types/proposals";
 import { z } from "zod";
 
@@ -172,8 +171,8 @@ function detectFramework(appPath: string): string {
     if (!fs.existsSync(pkgPath)) return "Unknown";
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
     const deps = {
-      ...(pkg.dependencies ?? {}),
-      ...(pkg.devDependencies ?? {}),
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
     };
     const parts: string[] = [];
     if (deps["next"]) parts.push(`Next.js ${deps["next"]}`);
@@ -354,7 +353,7 @@ function detectDeveloperIntent(
     if (!fs.existsSync(pkgPath)) return { appType, missingFeatures };
 
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
-    const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     const depNames = Object.keys(deps);
     const fileStr = allFiles.join(" ").toLowerCase();
 

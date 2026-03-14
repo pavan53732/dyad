@@ -1,6 +1,4 @@
 import { z } from "zod";
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { generateText } from "ai";
 import {
   ToolDefinition,
@@ -255,7 +253,7 @@ ${changedFiles || "No uncommitted changes"}`;
         body: parsed.body || "No description provided.",
       };
     }
-  } catch (e) {
+  } catch  {
     logger.warn("Failed to parse AI response as JSON, using fallback");
   }
 

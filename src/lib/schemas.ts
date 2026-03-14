@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isOpenAIOrAnthropicSetup } from "./providerUtils";
+
 
 export const SecretSchema = z.object({
   value: z.string(),
