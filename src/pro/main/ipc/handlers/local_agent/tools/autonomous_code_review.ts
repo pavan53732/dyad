@@ -154,7 +154,7 @@ Be thorough but practical. Only report real issues.`;
       if (jsonMatch) {
         reviewResult = JSON.parse(jsonMatch[0]);
       }
-    } catch  {
+    } catch {
       // If JSON parsing fails, create a basic result
       reviewResult = {
         summary: "Review completed but could not parse detailed findings.",
@@ -236,7 +236,6 @@ Be thorough but practical. Only report real issues.`;
     const finalResult = lines.join("\n");
 
     // Send structured XML for UI
-    
 
     const completeXml = `<dyad-status title="Code Review Complete">${escapeXmlContent(finalResult)}</dyad-status>`;
     ctx.onXmlComplete(completeXml);

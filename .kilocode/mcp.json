@@ -1,16 +1,1 @@
-{
-  "mcpServers": {
-    "sequentialthinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "C:\\Users\\pavan\\PROJECTS\\dyad"
-      ]
-    }
-  }
-}
+{"mcpServers":{"sequentialthinking":{"command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"]},"filesystem":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","C:\\Users\\pavan\\PROJECTS\\dyad"],"alwaysAllow":["search_files","read_file"]}}}

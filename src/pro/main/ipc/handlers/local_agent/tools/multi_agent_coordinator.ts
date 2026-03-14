@@ -113,7 +113,7 @@ Return a JSON array of subtask objects with "id", "description", and "approach" 
       if (jsonMatch) {
         subtasks = JSON.parse(jsonMatch[0]);
       }
-    } catch  {
+    } catch {
       // Fallback: create simple subtasks
       subtasks = Array.from({ length: numAgents }, (_, i) => ({
         id: i + 1,

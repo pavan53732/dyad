@@ -9,7 +9,11 @@ import {
   type AgentThought,
   type TSCError,
 } from "@/atoms/uiAtoms";
-import { isStreamingByIdAtom, chatMessagesByIdAtom, selectedChatIdAtom } from "@/atoms/chatAtoms";
+import {
+  isStreamingByIdAtom,
+  chatMessagesByIdAtom,
+  selectedChatIdAtom,
+} from "@/atoms/chatAtoms";
 import {
   X,
   ChevronRight,
@@ -169,8 +173,6 @@ export function MissionControlPanel({ className }: MissionControlPanelProps) {
 
   const messages = chatId ? (messagesById.get(chatId) ?? []) : [];
   const isStreaming = chatId ? (isStreamingById.get(chatId) ?? false) : false;
-
-  
 
   // Parse messages for dyad-status content
   useEffect(() => {

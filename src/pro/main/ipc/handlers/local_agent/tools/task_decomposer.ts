@@ -26,7 +26,9 @@ const TaskDecomposerArgs = z.object({
   /** Whether to generate milestones */
   generateMilestones: z.boolean().default(true),
   /** Task complexity level (auto-detected if not specified) */
-  complexity: z.enum(["simple", "medium", "complex", "very_complex"]).optional(),
+  complexity: z
+    .enum(["simple", "medium", "complex", "very_complex"])
+    .optional(),
 });
 
 type TaskDecomposerArgs = z.infer<typeof TaskDecomposerArgs>;
@@ -105,13 +107,21 @@ interface DecompositionResult {
 // ============================================================================
 
 /** Detect task complexity from description */
-function detectComplexity(task: string): "simple" | "medium" | "complex" | "very_complex" {
+function detectComplexity(
+  task: string,
+): "simple" | "medium" | "complex" | "very_complex" {
   const lowerTask = task.toLowerCase();
 
   // Indicators of complexity
   const complexityIndicators = {
     simple: ["add", "create simple", "update", "fix small", "change color"],
-    medium: ["add feature", "implement", "refactor", "create component", "add validation"],
+    medium: [
+      "add feature",
+      "implement",
+      "refactor",
+      "create component",
+      "add validation",
+    ],
     complex: [
       "build system",
       "implement authentication",
@@ -172,14 +182,27 @@ function getSubtaskTemplates(
   const templates: Partial<Subtask>[] = [];
 
   // Common task type detection
-  const isBuild = lowerTask.includes("build") || lowerTask.includes("create") || lowerTask.includes("add");
+  const isBuild =
+    lowerTask.includes("build") ||
+    lowerTask.includes("create") ||
+    lowerTask.includes("add");
   const _isDebug = lowerTask.includes("debug") || lowerTask.includes("fix");
-  const _isRefactor = lowerTask.includes("refactor") || lowerTask.includes("rewrite");
+  const _isRefactor =
+    lowerTask.includes("refactor") || lowerTask.includes("rewrite");
   const _isTest = lowerTask.includes("test") || lowerTask.includes("verify");
   const isApi = lowerTask.includes("api") || lowerTask.includes("endpoint");
-  const isDb = lowerTask.includes("database") || lowerTask.includes("db") || lowerTask.includes("schema");
-  const isUi = lowerTask.includes("ui") || lowerTask.includes("interface") || lowerTask.includes("component");
-  const isAuth = lowerTask.includes("auth") || lowerTask.includes("login") || lowerTask.includes("permission");
+  const isDb =
+    lowerTask.includes("database") ||
+    lowerTask.includes("db") ||
+    lowerTask.includes("schema");
+  const isUi =
+    lowerTask.includes("ui") ||
+    lowerTask.includes("interface") ||
+    lowerTask.includes("component");
+  const isAuth =
+    lowerTask.includes("auth") ||
+    lowerTask.includes("login") ||
+    lowerTask.includes("permission");
 
   if (complexity === "simple") {
     templates.push({
@@ -219,7 +242,8 @@ function getSubtaskTemplates(
     // Initial analysis
     templates.push({
       title: "Analyze requirements and context",
-      description: "Understand task requirements, existing codebase, and constraints",
+      description:
+        "Understand task requirements, existing codebase, and constraints",
       priority: "critical",
       estimatedComplexity: 2,
       requiredCapabilities: ["code_analysis", "code_search"],
@@ -349,7 +373,11 @@ function createSubtasks(
 
     // Determine dependencies
     let dependsOn: string[] = [];
-    if (i > 0 && templates[i - 1]?.estimatedComplexity && (templates[i - 1]?.estimatedComplexity || 0) >= 3) {
+    if (
+      i > 0 &&
+      templates[i - 1]?.estimatedComplexity &&
+      (templates[i - 1]?.estimatedComplexity || 0) >= 3
+    ) {
       // If previous task is complex, current depends on it
       dependsOn = [generateSubtaskId(i)];
     }
@@ -362,7 +390,9 @@ function createSubtasks(
       priority: template.priority || "medium",
       estimatedComplexity: template.estimatedComplexity || 1,
       dependsOn,
-      requiredCapabilities: template.requiredCapabilities || ["code_generation"],
+      requiredCapabilities: template.requiredCapabilities || [
+        "code_generation",
+      ],
       estimatedTokens: (template.estimatedComplexity || 1) * 500,
     });
   }
@@ -499,7 +529,11 @@ function findCriticalPath(subtasks: Subtask[]): string[] {
           subtask.dependsOn.length > 0
             ? Math.max(
                 ...subtask.dependsOn.map(
-                  (depId) => earliestStart[depId] || 0 + (subtasks.find((t) => t.id === depId)?.estimatedComplexity || 1),
+                  (depId) =>
+                    earliestStart[depId] ||
+                    0 +
+                      (subtasks.find((t) => t.id === depId)
+                        ?.estimatedComplexity || 1),
                 ),
               )
             : 0;
@@ -563,7 +597,9 @@ function findParallelizableGroups(subtasks: Subtask[]): string[][] {
       if (assigned.has(subtask.id)) continue;
 
       // Check if all dependencies are assigned
-      const depsAssigned = subtask.dependsOn.every((depId) => assigned.has(depId));
+      const depsAssigned = subtask.dependsOn.every((depId) =>
+        assigned.has(depId),
+      );
 
       if (depsAssigned) {
         currentRound.push(subtask.id);
@@ -611,15 +647,28 @@ function validatePlan(subtasks: Subtask[]): ValidationResult {
   }
 
   for (const task of subtasks) {
-    if (task.dependsOn.length === 0 && !allDeps.has(task.id) && subtasks.length > 1) {
-      warnings.push(`Task "${task.title}" has no dependencies - may be isolated`);
+    if (
+      task.dependsOn.length === 0 &&
+      !allDeps.has(task.id) &&
+      subtasks.length > 1
+    ) {
+      warnings.push(
+        `Task "${task.title}" has no dependencies - may be isolated`,
+      );
     }
   }
 
   // Check for high complexity concentration
-  const highComplexityTasks = subtasks.filter((t) => t.estimatedComplexity >= 3);
-  if (highComplexityTasks.length > subtasks.length * 0.5 && subtasks.length > 3) {
-    warnings.push("Too many high-complexity tasks - consider breaking down further");
+  const highComplexityTasks = subtasks.filter(
+    (t) => t.estimatedComplexity >= 3,
+  );
+  if (
+    highComplexityTasks.length > subtasks.length * 0.5 &&
+    subtasks.length > 3
+  ) {
+    warnings.push(
+      "Too many high-complexity tasks - consider breaking down further",
+    );
   }
 
   // Check for missing verification
@@ -630,7 +679,9 @@ function validatePlan(subtasks: Subtask[]): ValidationResult {
       t.title.toLowerCase().includes("check"),
   );
   if (!hasVerification && subtasks.length > 2) {
-    warnings.push("No verification task found - consider adding testing/validation");
+    warnings.push(
+      "No verification task found - consider adding testing/validation",
+    );
   }
 
   // Calculate completeness score
@@ -638,7 +689,8 @@ function validatePlan(subtasks: Subtask[]): ValidationResult {
 
   if (issues.length > 0) completenessScore -= 0.3;
   if (!hasVerification && subtasks.length > 2) completenessScore -= 0.1;
-  if (highComplexityTasks.length > subtasks.length * 0.5) completenessScore -= 0.1;
+  if (highComplexityTasks.length > subtasks.length * 0.5)
+    completenessScore -= 0.1;
 
   return {
     isValid: issues.length === 0,
@@ -711,7 +763,9 @@ async function decomposeTask(
   const milestones = doGenerateMilestones ? generateMilestones(subtasks) : [];
 
   // Create dependency graph
-  const dependencyGraph = generateDependencies ? createDependencyGraph(subtasks) : { nodes: [], edges: [] };
+  const dependencyGraph = generateDependencies
+    ? createDependencyGraph(subtasks)
+    : { nodes: [], edges: [] };
 
   // Find critical path
   const criticalPath = findCriticalPath(subtasks);
@@ -723,7 +777,10 @@ async function decomposeTask(
   const validation = validatePlan(subtasks);
 
   // Calculate total estimated tokens
-  const estimatedTotalTokens = subtasks.reduce((sum, t) => sum + t.estimatedTokens, 0);
+  const estimatedTotalTokens = subtasks.reduce(
+    (sum, t) => sum + t.estimatedTokens,
+    0,
+  );
 
   return {
     originalTask: task,
@@ -786,7 +843,10 @@ function generateDecompositionXml(result: DecompositionResult): string {
   // Subtasks
   lines.push(`## Subtasks`);
   for (const subtask of result.subtasks) {
-    const deps = subtask.dependsOn.length > 0 ? ` (depends on: ${subtask.dependsOn.join(", ")})` : "";
+    const deps =
+      subtask.dependsOn.length > 0
+        ? ` (depends on: ${subtask.dependsOn.join(", ")})`
+        : "";
     lines.push(
       `- **[${subtask.id}]** ${subtask.title} [${subtask.priority}]${deps}`,
     );
@@ -804,7 +864,9 @@ function generateDecompositionXml(result: DecompositionResult): string {
   if (result.metadata.parallelizableGroups.length > 1) {
     lines.push(`## Parallelizable Tasks`);
     for (let i = 0; i < result.metadata.parallelizableGroups.length; i++) {
-      lines.push(`- Round ${i + 1}: ${result.metadata.parallelizableGroups[i].join(", ")}`);
+      lines.push(
+        `- Round ${i + 1}: ${result.metadata.parallelizableGroups[i].join(", ")}`,
+      );
     }
   }
 

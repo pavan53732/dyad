@@ -64,7 +64,11 @@ interface DetectedIssue {
 /** Consistency check result */
 interface ConsistencyResult {
   isConsistent: boolean;
-  contradictions: { statement1: string; statement2: string; resolution: string }[];
+  contradictions: {
+    statement1: string;
+    statement2: string;
+    resolution: string;
+  }[];
   assumptions: string[];
   dependencies: { satisfied: boolean; description: string }[];
 }
@@ -123,7 +127,8 @@ function detectSyntaxIssues(output: string): DetectedIssue[] {
 
   for (const { open, close } of brackets) {
     const openCount = (output.match(new RegExp(`\\${open}`, "g")) || []).length;
-    const closeCount = (output.match(new RegExp(`\\${close}`, "g")) || []).length;
+    const closeCount = (output.match(new RegExp(`\\${close}`, "g")) || [])
+      .length;
 
     if (openCount !== closeCount) {
       issues.push({
@@ -166,11 +171,31 @@ function detectSyntaxIssues(output: string): DetectedIssue[] {
 
   // Check for common typos in keywords
   const keywordTypos = [
-    { pattern: /\bfunctio\b/, correct: "function", severity: "high" as IssueSeverity },
-    { pattern: /\bretrun\b/, correct: "return", severity: "high" as IssueSeverity },
-    { pattern: /\bdefintion\b/, correct: "definition", severity: "high" as IssueSeverity },
-    { pattern: /\bvarible\b/, correct: "variable", severity: "medium" as IssueSeverity },
-    { pattern: /\bparamater\b/, correct: "parameter", severity: "medium" as IssueSeverity },
+    {
+      pattern: /\bfunctio\b/,
+      correct: "function",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bretrun\b/,
+      correct: "return",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bdefintion\b/,
+      correct: "definition",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bvarible\b/,
+      correct: "variable",
+      severity: "medium" as IssueSeverity,
+    },
+    {
+      pattern: /\bparamater\b/,
+      correct: "parameter",
+      severity: "medium" as IssueSeverity,
+    },
   ];
 
   for (const { pattern, correct, severity } of keywordTypos) {
@@ -196,7 +221,10 @@ function detectSecurityIssues(output: string): DetectedIssue[] {
     { pattern: /api[_-]?key\s*=\s*["'][^"']+["']/i, desc: "Hardcoded API key" },
     { pattern: /secret\s*=\s*["'][^"']+["']/i, desc: "Hardcoded secret" },
     { pattern: /token\s*=\s*["'][^"']+["']/i, desc: "Hardcoded token" },
-    { pattern: /private[_-]?key\s*=\s*["'][^"']+["']/i, desc: "Hardcoded private key" },
+    {
+      pattern: /private[_-]?key\s*=\s*["'][^"']+["']/i,
+      desc: "Hardcoded private key",
+    },
   ];
 
   for (const { pattern, desc } of secretPatterns) {
@@ -231,7 +259,11 @@ function detectSecurityIssues(output: string): DetectedIssue[] {
   }
 
   // Check for innerHTML usage without sanitization
-  if (/innerHTML\s*=/.test(output) && !output.includes("sanitize") && !output.includes("DOMPurify")) {
+  if (
+    /innerHTML\s*=/.test(output) &&
+    !output.includes("sanitize") &&
+    !output.includes("DOMPurify")
+  ) {
     issues.push({
       type: "security_issue",
       severity: "medium",
@@ -244,20 +276,36 @@ function detectSecurityIssues(output: string): DetectedIssue[] {
 }
 
 /** Check logical consistency */
-function checkConsistency(output: string, task: string, _requirements?: string): ConsistencyResult {
-  const contradictions: { statement1: string; statement2: string; resolution: string }[] = [];
+function checkConsistency(
+  output: string,
+  task: string,
+  _requirements?: string,
+): ConsistencyResult {
+  const contradictions: {
+    statement1: string;
+    statement2: string;
+    resolution: string;
+  }[] = [];
   const assumptions: string[] = [];
   const dependencies: { satisfied: boolean; description: string }[] = [];
 
   // Check for contradictory statements in the output
-  const _conditionalStatements = output.match(/if\s*\([^)]+\)\s*{[^}]*}/g) || [];
+  const _conditionalStatements =
+    output.match(/if\s*\([^)]+\)\s*{[^}]*}/g) || [];
 
   // Check if task mentions specific requirements
   const taskLower = task.toLowerCase();
-  const requiresAsync = taskLower.includes("async") || taskLower.includes("promise");
-  const requiresErrorHandling = taskLower.includes("error") || taskLower.includes("catch");
+  const requiresAsync =
+    taskLower.includes("async") || taskLower.includes("promise");
+  const requiresErrorHandling =
+    taskLower.includes("error") || taskLower.includes("catch");
 
-  if (requiresAsync && !output.includes("async") && !output.includes("await") && !output.includes("Promise")) {
+  if (
+    requiresAsync &&
+    !output.includes("async") &&
+    !output.includes("await") &&
+    !output.includes("Promise")
+  ) {
     dependencies.push({
       satisfied: false,
       description: "Task requires async operation but code is synchronous",
@@ -270,7 +318,11 @@ function checkConsistency(output: string, task: string, _requirements?: string):
   }
 
   if (requiresErrorHandling) {
-    if (!output.includes("catch") && !output.includes("try") && !output.includes("error")) {
+    if (
+      !output.includes("catch") &&
+      !output.includes("try") &&
+      !output.includes("error")
+    ) {
       dependencies.push({
         satisfied: false,
         description: "Task requires error handling but no error handling found",
@@ -288,7 +340,10 @@ function checkConsistency(output: string, task: string, _requirements?: string):
     { pattern: /TODO/, desc: "Incomplete implementation (TODO found)" },
     { pattern: /FIXME/, desc: "Known issue not resolved (FIXME found)" },
     { pattern: /NotImplementedError/, desc: "Feature not implemented" },
-    { pattern: /throw\s+new\s+Error\(\)/, desc: "Error thrown without message" },
+    {
+      pattern: /throw\s+new\s+Error\(\)/,
+      desc: "Error thrown without message",
+    },
   ];
 
   for (const { pattern, desc } of incompletePatterns) {
@@ -303,8 +358,14 @@ function checkConsistency(output: string, task: string, _requirements?: string):
   // Check for common logical errors
   const logicalErrors = [
     { pattern: /if\s*\(\s*true\s*\)/, desc: "Always-true condition" },
-    { pattern: /if\s*\(\s*false\s*\)/, desc: "Always-false condition (dead code)" },
-    { pattern: /for\s*\([^)]*;\s*;\s*\)/, desc: "Infinite loop (empty condition)" },
+    {
+      pattern: /if\s*\(\s*false\s*\)/,
+      desc: "Always-false condition (dead code)",
+    },
+    {
+      pattern: /for\s*\([^)]*;\s*;\s*\)/,
+      desc: "Infinite loop (empty condition)",
+    },
   ];
 
   for (const { pattern, desc } of logicalErrors) {
@@ -319,16 +380,23 @@ function checkConsistency(output: string, task: string, _requirements?: string):
 
   // Identify assumptions
   if (output.includes("assume") || output.includes("assuming")) {
-    const assumptionMatches = output.match(/(?:assume|assuming)[^.]+\./gi) || [];
+    const assumptionMatches =
+      output.match(/(?:assume|assuming)[^.]+\./gi) || [];
     assumptions.push(...assumptionMatches);
   }
 
-  if (output.includes("should") || output.includes("might") || output.includes("may")) {
-    const potentialAssumptions = output.match(/[^.]*(?:should|might|may)[^.]+\./gi) || [];
+  if (
+    output.includes("should") ||
+    output.includes("might") ||
+    output.includes("may")
+  ) {
+    const potentialAssumptions =
+      output.match(/[^.]*(?:should|might|may)[^.]+\./gi) || [];
     assumptions.push(...potentialAssumptions.slice(0, 3));
   }
 
-  const isConsistent = contradictions.length === 0 && dependencies.every((d) => d.satisfied);
+  const isConsistent =
+    contradictions.length === 0 && dependencies.every((d) => d.satisfied);
 
   return {
     isConsistent,
@@ -347,10 +415,17 @@ function estimateConfidence(
   const factors: { factor: string; score: number; reasoning: string }[] = [];
 
   // Completeness factor
-  const hasCode = output.includes("function") || output.includes("class") || output.includes("const ") || output.includes("let ");
+  const hasCode =
+    output.includes("function") ||
+    output.includes("class") ||
+    output.includes("const ") ||
+    output.includes("let ");
   const hasReturn = output.includes("return");
   const taskLower = task.toLowerCase();
-  const isComplexTask = taskLower.includes("build") || taskLower.includes("create") || taskLower.includes("implement");
+  const isComplexTask =
+    taskLower.includes("build") ||
+    taskLower.includes("create") ||
+    taskLower.includes("implement");
 
   let completenessScore = 0.5;
   if (hasCode) completenessScore += 0.2;
@@ -372,7 +447,11 @@ function estimateConfidence(
   }
 
   // Check for error handling
-  if (output.includes("try") || output.includes("catch") || output.includes("error")) {
+  if (
+    output.includes("try") ||
+    output.includes("catch") ||
+    output.includes("error")
+  ) {
     qualityScore += 0.15;
   }
 
@@ -385,17 +464,30 @@ function estimateConfidence(
   factors.push({
     factor: "Code Quality",
     score: Math.min(1, qualityScore),
-    reasoning: qualityScore > 0.6 ? "Good coding practices detected" : "Could benefit from improvements",
+    reasoning:
+      qualityScore > 0.6
+        ? "Good coding practices detected"
+        : "Could benefit from improvements",
   });
 
   // Specificity factor
   let specificityScore = 0.5;
   if (requirements) {
     const reqLower = requirements.toLowerCase();
-    const keywords = ["type", "parameter", "return", "handle", "check", "validate"];
+    const keywords = [
+      "type",
+      "parameter",
+      "return",
+      "handle",
+      "check",
+      "validate",
+    ];
 
     for (const keyword of keywords) {
-      if (reqLower.includes(keyword) && output.toLowerCase().includes(keyword)) {
+      if (
+        reqLower.includes(keyword) &&
+        output.toLowerCase().includes(keyword)
+      ) {
         specificityScore += 0.1;
       }
     }
@@ -404,11 +496,18 @@ function estimateConfidence(
   factors.push({
     factor: "Requirements Coverage",
     score: Math.min(1, specificityScore),
-    reasoning: specificityScore > 0.6 ? "Addresses requirements" : "May miss some requirements",
+    reasoning:
+      specificityScore > 0.6
+        ? "Addresses requirements"
+        : "May miss some requirements",
   });
 
   // Calculate overall confidence
-  const weights = { Completeness: 0.4, Code_Quality: 0.3, Requirements_Coverage: 0.3 };
+  const weights = {
+    Completeness: 0.4,
+    Code_Quality: 0.3,
+    Requirements_Coverage: 0.3,
+  };
   const overallConfidence =
     factors[0].score * weights.Completeness +
     factors[1].score * weights.Code_Quality +
@@ -475,7 +574,9 @@ function generateSelfCritique(
   const highIssues = issues.filter((i) => i.severity === "high");
 
   if (criticalIssues.length > 0) {
-    weaknesses.push(`${criticalIssues.length} critical issue(s) need attention`);
+    weaknesses.push(
+      `${criticalIssues.length} critical issue(s) need attention`,
+    );
   }
 
   if (highIssues.length > 0) {
@@ -488,7 +589,9 @@ function generateSelfCritique(
   }
 
   if (confidence.uncertaintyAreas.length > 0) {
-    weaknesses.push("Uncertainty in: " + confidence.uncertaintyAreas.join(", "));
+    weaknesses.push(
+      "Uncertainty in: " + confidence.uncertaintyAreas.join(", "),
+    );
   }
 
   // Generate improvement suggestions
@@ -501,7 +604,9 @@ function generateSelfCritique(
   }
 
   if (!output.includes("type") && output.includes(":")) {
-    improvements.push("Consider adding TypeScript types for better maintainability");
+    improvements.push(
+      "Consider adding TypeScript types for better maintainability",
+    );
   }
 
   if (output.length > 500 && !output.includes("export")) {
@@ -512,7 +617,9 @@ function generateSelfCritique(
   const taskLower = task.toLowerCase();
   if (taskLower.includes("api") || taskLower.includes("fetch")) {
     alternativeApproaches.push("Could use a different HTTP client");
-    alternativeApproaches.push("Could implement caching for better performance");
+    alternativeApproaches.push(
+      "Could implement caching for better performance",
+    );
   }
 
   if (taskLower.includes("data") || taskLower.includes("list")) {
@@ -545,7 +652,15 @@ async function verifyOutput(
   args: SelfVerifierArgs,
   _ctx: AgentContext,
 ): Promise<VerificationResult> {
-  const { output, task, requirements, codeContext: _codeContext, checkConsistency: doCheckConsistency, estimateConfidence: doEstimateConfidence, generateCritique: doGenerateCritique } = args;
+  const {
+    output,
+    task,
+    requirements,
+    codeContext: _codeContext,
+    checkConsistency: doCheckConsistency,
+    estimateConfidence: doEstimateConfidence,
+    generateCritique: doGenerateCritique,
+  } = args;
 
   // Detect issues
   const syntaxIssues = detectSyntaxIssues(output);

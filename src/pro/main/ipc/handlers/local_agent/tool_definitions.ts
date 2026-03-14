@@ -48,6 +48,10 @@ import { executeProjectPlanTool } from "./tools/execute_project_plan";
 import { dependencyAnalyzerTool } from "./tools/dependency_analyzer";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
 import { architectureAnalyzerTool } from "./tools/architecture_analyzer";
+import { architectureGraphBuilderTool } from "./tools/architecture_graph_builder";
+import { architectureValidatorTool } from "./tools/architecture_validator";
+import { architectureSimulatorTool } from "./tools/architecture_simulator";
+import { patternDetectorTool } from "./tools/pattern_detector";
 import { codeIntelligenceTool } from "./tools/code_intelligence";
 import { intentClassifierTool } from "./tools/intent_classifier";
 import { taskDecomposerTool } from "./tools/task_decomposer";
@@ -104,6 +108,10 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   dependencyAnalyzerTool,
   dependencyUpgraderTool,
   architectureAnalyzerTool,
+  architectureGraphBuilderTool,
+  architectureValidatorTool,
+  architectureSimulatorTool,
+  patternDetectorTool,
   codeIntelligenceTool,
   selfImproverTool,
   intentClassifierTool,

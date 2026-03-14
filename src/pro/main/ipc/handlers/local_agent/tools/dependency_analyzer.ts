@@ -211,7 +211,7 @@ async function analyzeDependencies(
       );
       const outdated = parseNpmOutdated(outdatedOutput);
       issues.push(...outdated);
-    } catch  {
+    } catch {
       // npm outdated might fail if no package-lock.json
     }
   }
@@ -225,7 +225,7 @@ async function analyzeDependencies(
       const auditOutput = await runNpmCommand("npm audit --json", projectPath);
       const securityIssues = parseNpmAudit(auditOutput);
       issues.push(...securityIssues);
-    } catch  {
+    } catch {
       // npm audit might fail
     }
   }

@@ -218,7 +218,6 @@ function generateRecommendations(
 
   const criticalPatterns = patterns.filter((p) => p.severity === "critical");
   const highPatterns = patterns.filter((p) => p.severity === "high");
-  
 
   // From critical patterns
   for (const pattern of criticalPatterns) {

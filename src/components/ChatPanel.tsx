@@ -15,9 +15,7 @@ import { VersionPane } from "./chat/VersionPane";
 import { ChatError } from "./chat/ChatError";
 import { FreeAgentQuotaBanner } from "./chat/FreeAgentQuotaBanner";
 import { NotificationBanner } from "./chat/NotificationBanner";
-import {
-  MissionControlPanel,
-} from "./chat/MissionControlPanel";
+import { MissionControlPanel } from "./chat/MissionControlPanel";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,

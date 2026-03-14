@@ -138,14 +138,7 @@ const INTENT_KEYWORDS: Record<IntentCategory, string[]> = {
     "unit test",
     "e2e",
   ],
-  review: [
-    "review",
-    "audit",
-    "assess",
-    "evaluate",
-    "analyze",
-    "check code",
-  ],
+  review: ["review", "audit", "assess", "evaluate", "analyze", "check code"],
   optimize: [
     "optimize",
     "performance",
@@ -163,40 +156,10 @@ const INTENT_KEYWORDS: Record<IntentCategory, string[]> = {
     "explain code",
     "specification",
   ],
-  deploy: [
-    "deploy",
-    "release",
-    "publish",
-    "push to",
-    "ship",
-    "production",
-  ],
-  query: [
-    "find",
-    "search",
-    "list",
-    "show",
-    "get",
-    "display",
-    "query",
-  ],
-  plan: [
-    "plan",
-    "design",
-    "architecture",
-    "structure",
-    "roadmap",
-    "approach",
-  ],
-  modify: [
-    "update",
-    "change",
-    "modify",
-    "edit",
-    "alter",
-    "adjust",
-    "tweak",
-  ],
+  deploy: ["deploy", "release", "publish", "push to", "ship", "production"],
+  query: ["find", "search", "list", "show", "get", "display", "query"],
+  plan: ["plan", "design", "architecture", "structure", "roadmap", "approach"],
+  modify: ["update", "change", "modify", "edit", "alter", "adjust", "tweak"],
   unknown: [],
 };
 
@@ -241,7 +204,10 @@ function detectAmbiguity(prompt: string, context?: string): AmbiguityResult {
 
   // Check for vague references
   const vagueTerms = [
-    { term: "it", suggestion: "Specify the exact file, function, or component" },
+    {
+      term: "it",
+      suggestion: "Specify the exact file, function, or component",
+    },
     { term: "that", suggestion: "Clarify what 'that' refers to" },
     { term: "this", suggestion: "Specify what 'this' refers to" },
     { term: "the code", suggestion: "Identify specific files or functions" },
@@ -448,7 +414,12 @@ async function classifyIntent(
   args: IntentClassifierArgs,
   _ctx: AgentContext,
 ): Promise<ClassificationResult> {
-  const { prompt, context, detectAmbiguity: doDetectAmbiguity, detectMultiIntent: doDetectMultiIntent } = args;
+  const {
+    prompt,
+    context,
+    detectAmbiguity: doDetectAmbiguity,
+    detectMultiIntent: doDetectMultiIntent,
+  } = args;
 
   // Calculate primary intent
   const categories: IntentCategory[] = [

@@ -275,7 +275,11 @@ async function orchestrateContext(
   // Step 2: Deduplication
   let deduplicationResult: DeduplicationResult;
   if (enableDeduplication && scoredItems.length > 1) {
-    const duplicates: { id: string; duplicateOf: string; similarity: number }[] = [];
+    const duplicates: {
+      id: string;
+      duplicateOf: string;
+      similarity: number;
+    }[] = [];
     const uniqueItems: ScoredContextItem[] = [];
     let tokensSaved = 0;
 
@@ -324,7 +328,8 @@ async function orchestrateContext(
   // Step 3: Filter by importance threshold
   const filteredItems = itemsAfterDedup.filter(
     (item) =>
-      item.importance >= minImportanceThreshold || item.type === "system_prompt",
+      item.importance >= minImportanceThreshold ||
+      item.type === "system_prompt",
   );
 
   if (filteredItems.length < itemsAfterDedup.length) {
@@ -357,9 +362,16 @@ async function orchestrateContext(
 
     for (const item of sorted) {
       const typeLimit = categoryBudgets[item.type] || 0;
-      const availableForType = typeLimit - (rankedItems.filter((i) => i.type === item.type).reduce((sum, i) => sum + i.tokenCount, 0));
+      const availableForType =
+        typeLimit -
+        rankedItems
+          .filter((i) => i.type === item.type)
+          .reduce((sum, i) => sum + i.tokenCount, 0);
 
-      if (item.tokenCount <= availableForType || item.type === "system_prompt") {
+      if (
+        item.tokenCount <= availableForType ||
+        item.type === "system_prompt"
+      ) {
         rankedItems.push(item);
         totalAssigned += item.tokenCount;
       } else if (item.importance > 0.7) {
@@ -387,7 +399,10 @@ async function orchestrateContext(
   let tokensSavedByCompression = 0;
   let itemsCompressed = 0;
 
-  if (enableCompression && totalFinalTokens > (targetTokens || maxTokens * 0.9)) {
+  if (
+    enableCompression &&
+    totalFinalTokens > (targetTokens || maxTokens * 0.9)
+  ) {
     const target = targetTokens || Math.floor(maxTokens * 0.9);
     let currentTotal = rankedItems.reduce((sum, i) => sum + i.tokenCount, 0);
 
@@ -422,7 +437,8 @@ async function orchestrateContext(
           compressionRatio: ratio,
         });
 
-        tokensSavedByCompression += item.tokenCount - estimateTokens(compressed);
+        tokensSavedByCompression +=
+          item.tokenCount - estimateTokens(compressed);
         itemsCompressed++;
         currentTotal -= item.tokenCount - estimateTokens(compressed);
       } else {
@@ -452,7 +468,9 @@ async function orchestrateContext(
         type: "compress",
         itemId: item.id,
         reason: `Can reduce by ${Math.round((1 - item.compressionRatio) * 100)}%`,
-        estimatedTokensSaved: Math.round(item.tokenCount * (1 - item.compressionRatio)),
+        estimatedTokensSaved: Math.round(
+          item.tokenCount * (1 - item.compressionRatio),
+        ),
         newContent: item.content,
       });
     }
@@ -464,14 +482,16 @@ async function orchestrateContext(
       type: "remove",
       itemId: item.id,
       reason: `Duplicate of ${item.duplicateOf} (${Math.round(item.similarity * 100)}% similar)`,
-      estimatedTokensSaved: scoredItems.find((i) => i.id === item.id)?.tokenCount || 0,
+      estimatedTokensSaved:
+        scoredItems.find((i) => i.id === item.id)?.tokenCount || 0,
     });
   }
 
   // Build budget
   const usedByCategory: Record<string, number> = {};
   for (const item of rankedItems) {
-    usedByCategory[item.type] = (usedByCategory[item.type] || 0) + item.tokenCount;
+    usedByCategory[item.type] =
+      (usedByCategory[item.type] || 0) + item.tokenCount;
   }
 
   const budget: TokenBudget = {
@@ -547,7 +567,9 @@ function generateOrchestratorXml(result: OrchestratorResult): string {
   lines.push(`- Total Available: ${result.budget.totalAvailable}`);
   lines.push(`- Remaining: ${result.budget.remaining}`);
   lines.push(`- By Category:`);
-  for (const [category, tokens] of Object.entries(result.budget.usedByCategory)) {
+  for (const [category, tokens] of Object.entries(
+    result.budget.usedByCategory,
+  )) {
     lines.push(`  - ${category}: ${tokens}`);
   }
   lines.push(``);
@@ -571,7 +593,11 @@ function generateOrchestratorXml(result: OrchestratorResult): string {
   // Top ranked items
   lines.push(`## Ranked Context (Top 10)`);
   for (const item of result.ranking.rankedItems.slice(0, 10)) {
-    const indicator = item.isDuplicate ? "🔄" : item.compressionRatio < 1 ? "📦" : "✅";
+    const indicator = item.isDuplicate
+      ? "🔄"
+      : item.compressionRatio < 1
+        ? "📦"
+        : "✅";
     lines.push(
       `${indicator} [${item.type}] ${item.tokenCount}t (relevance: ${(item.relevanceScore * 100).toFixed(0)}%)`,
     );
@@ -584,27 +610,28 @@ function generateOrchestratorXml(result: OrchestratorResult): string {
 // Tool Definition
 // ============================================================================
 
-export const contextOrchestratorTool: ToolDefinition<ContextOrchestratorArgs> = {
-  name: "context_orchestrator",
-  description:
-    "Manages token budget allocation, context compression, priority-based ranking, and deduplication for AI context windows. Use this to optimize context before sending to LLMs.",
-  inputSchema: ContextOrchestratorArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const contextOrchestratorTool: ToolDefinition<ContextOrchestratorArgs> =
+  {
+    name: "context_orchestrator",
+    description:
+      "Manages token budget allocation, context compression, priority-based ranking, and deduplication for AI context windows. Use this to optimize context before sending to LLMs.",
+    inputSchema: ContextOrchestratorArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    ctx.onXmlStream(
-      `<dyad-status title="Context Orchestrator">Optimizing context...</dyad-status>`,
-    );
+    execute: async (args, ctx) => {
+      ctx.onXmlStream(
+        `<dyad-status title="Context Orchestrator">Optimizing context...</dyad-status>`,
+      );
 
-    const result = await orchestrateContext(args, ctx);
+      const result = await orchestrateContext(args, ctx);
 
-    const report = generateOrchestratorXml(result);
+      const report = generateOrchestratorXml(result);
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Context Orchestration Complete">${result.tokenReduction}% reduction (${result.originalTokenCount} → ${result.finalTokenCount} tokens)</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Context Orchestration Complete">${result.tokenReduction}% reduction (${result.originalTokenCount} → ${result.finalTokenCount} tokens)</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };
