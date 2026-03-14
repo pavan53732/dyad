@@ -33,7 +33,9 @@ const AdaptiveStrategyArgs = z.object({
       "list_strategies",
       "clear",
     ])
-    .describe("Action: select strategy, record performance, compare, get recommendation, adjust, list, or clear"),
+    .describe(
+      "Action: select strategy, record performance, compare, get recommendation, adjust, list, or clear",
+    ),
   /** Task type for strategy selection */
   taskType: z
     .enum([
@@ -75,7 +77,10 @@ const AdaptiveStrategyArgs = z.object({
     .optional()
     .describe("Performance metrics for the strategy"),
   /** Number of strategies to compare */
-  limit: z.number().optional().describe("Number of strategies to return in comparisons"),
+  limit: z
+    .number()
+    .optional()
+    .describe("Number of strategies to return in comparisons"),
 });
 
 type AdaptiveStrategyArgs = z.infer<typeof AdaptiveStrategyArgs>;
@@ -165,7 +170,14 @@ function getDefaultStrategies(): StrategyRecord[] {
     "general",
   ];
 
-  const strategies = ["conservative", "aggressive", "iterative", "comprehensive", "minimal", "experimental"];
+  const strategies = [
+    "conservative",
+    "aggressive",
+    "iterative",
+    "comprehensive",
+    "minimal",
+    "experimental",
+  ];
   const defaults: StrategyRecord[] = [];
 
   for (const taskType of taskTypes) {
@@ -254,7 +266,7 @@ function selectStrategy(
 
   return {
     recommendedStrategy: best.name,
-    reason: `Strategy "${best.name}" has ${(best.successCount / Math.max(1, best.useCount) * 100).toFixed(0)}% success rate with ${best.useCount} uses`,
+    reason: `Strategy "${best.name}" has ${((best.successCount / Math.max(1, best.useCount)) * 100).toFixed(0)}% success rate with ${best.useCount} uses`,
     alternatives: secondBest ? [secondBest.name] : [],
     confidence,
     historicalData: {
@@ -275,7 +287,10 @@ function compareStrategies(
   const comparison = taskStrategies.map((s) => ({
     name: s.name,
     useCount: s.useCount,
-    successRate: s.useCount > 0 ? Math.round((s.successCount / s.useCount) * 100) / 100 : 0,
+    successRate:
+      s.useCount > 0
+        ? Math.round((s.successCount / s.useCount) * 100) / 100
+        : 0,
     avgDuration: s.useCount > 0 ? Math.round(s.totalDuration / s.useCount) : 0,
     effectiveness: s.effectiveness,
   }));
@@ -309,7 +324,9 @@ function adjustStrategy(
   },
 ): StrategyRecord[] {
   // Find or create the strategy record
-  let record = strategies.find((s) => s.name === strategy && s.taskType === taskType);
+  let record = strategies.find(
+    (s) => s.name === strategy && s.taskType === taskType,
+  );
 
   if (!record) {
     record = {
@@ -353,10 +370,15 @@ function adjustStrategy(
   record.lastUsed = new Date().toISOString();
 
   // Recalculate effectiveness
-  const successRate = record.useCount > 0 ? record.successCount / record.useCount : 0;
+  const successRate =
+    record.useCount > 0 ? record.successCount / record.useCount : 0;
   const qualityScore = record.avgQuality / 10;
   const satisfactionScore = record.avgUserSatisfaction / 5;
-  record.effectiveness = Math.round((successRate * 0.5 + qualityScore * 0.25 + satisfactionScore * 0.25) * 100) / 100;
+  record.effectiveness =
+    Math.round(
+      (successRate * 0.5 + qualityScore * 0.25 + satisfactionScore * 0.25) *
+        100,
+    ) / 100;
 
   return strategies;
 }
@@ -400,8 +422,12 @@ async function executeStrategyAction(
       }
 
       lines.push("## Historical Data");
-      lines.push(`- Best for ${rec.historicalData.taskType}: ${rec.historicalData.bestStrategy}`);
-      lines.push(`- Success rate: ${(rec.historicalData.successRate * 100).toFixed(0)}%`);
+      lines.push(
+        `- Best for ${rec.historicalData.taskType}: ${rec.historicalData.bestStrategy}`,
+      );
+      lines.push(
+        `- Success rate: ${(rec.historicalData.successRate * 100).toFixed(0)}%`,
+      );
 
       const msg = lines.join("\n");
       ctx.onXmlComplete(
@@ -415,7 +441,12 @@ async function executeStrategyAction(
         throw new Error("strategy, taskType, and performance are required");
       }
 
-      const updated = adjustStrategy(strategies, strategy, taskType, performance);
+      const updated = adjustStrategy(
+        strategies,
+        strategy,
+        taskType,
+        performance,
+      );
       saveStrategies(ctx, updated);
 
       ctx.onXmlStream(
@@ -489,7 +520,12 @@ async function executeStrategyAction(
         throw new Error("strategy, taskType, and performance are required");
       }
 
-      const updated = adjustStrategy(strategies, strategy, taskType, performance);
+      const updated = adjustStrategy(
+        strategies,
+        strategy,
+        taskType,
+        performance,
+      );
       saveStrategies(ctx, updated);
 
       const rec = selectStrategy(updated, taskType);

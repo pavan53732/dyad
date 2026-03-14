@@ -51,7 +51,13 @@ type OpportunityType =
 type OpportunityPriority = "high" | "medium" | "low";
 
 /** Cache implementation type */
-type CacheType = "lru" | "ttl" | "memoize" | "redis" | "local_storage" | "in_memory";
+type CacheType =
+  | "lru"
+  | "ttl"
+  | "memoize"
+  | "redis"
+  | "local_storage"
+  | "in_memory";
 
 /** A detected caching opportunity */
 interface CachingOpportunity {
@@ -135,7 +141,8 @@ function detectMemoizationOpportunities(code: string): MemoizationAnalysis {
   }
 
   // Detect pure functions that could be memoized
-  const functionPattern = /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s+)?\(|=>\s*\{)/g;
+  const functionPattern =
+    /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:async\s+)?\(|=>\s*\{)/g;
   let match;
 
   while ((match = functionPattern.exec(code)) !== null) {
@@ -174,13 +181,18 @@ function detectMemoizationOpportunities(code: string): MemoizationAnalysis {
     const lineNumber = i + 1;
 
     // Look for calculations that might be repeated
-    if (/\.map\(.*\)\.filter\(/.test(line) || /\.filter\(.*\)\.map\(/.test(line)) {
+    if (
+      /\.map\(.*\)\.filter\(/.test(line) ||
+      /\.filter\(.*\)\.map\(/.test(line)
+    ) {
       opportunities.push({
         type: "expensive_operation",
         priority: "medium",
-        description: "Chained array operations - could be combined into single pass",
+        description:
+          "Chained array operations - could be combined into single pass",
         lineNumber,
-        suggestedPattern: "// Use reduce to combine operations into single pass",
+        suggestedPattern:
+          "// Use reduce to combine operations into single pass",
         estimatedImprovement: "30-50% by reducing iterations",
       });
     }
@@ -188,11 +200,19 @@ function detectMemoizationOpportunities(code: string): MemoizationAnalysis {
 
   // Improvements for existing memoization
   if (existingMemoization.length > 0) {
-    if (code.includes("useMemo") && !code.includes("deps") && !code.includes("dependencies")) {
-      improvements.push("Add dependency arrays to useMemo/useCallback for correct caching");
+    if (
+      code.includes("useMemo") &&
+      !code.includes("deps") &&
+      !code.includes("dependencies")
+    ) {
+      improvements.push(
+        "Add dependency arrays to useMemo/useCallback for correct caching",
+      );
     }
     if (code.includes("useMemo") && code.includes("[]")) {
-      improvements.push("Consider if empty dependency array is correct - may be missing dependencies");
+      improvements.push(
+        "Consider if empty dependency array is correct - may be missing dependencies",
+      );
     }
   }
 
@@ -255,7 +275,6 @@ function detectDataFetchingPatterns(code: string): DataFetchingAnalysis {
   const opportunities: CachingOpportunity[] = [];
   const fetchPatterns: string[] = [];
   const suggestions: string[] = [];
-  const lines = code.split("\n");
 
   // Detect common fetch patterns
   if (code.includes("useEffect") && code.includes("fetch")) {
@@ -282,14 +301,22 @@ function detectDataFetchingPatterns(code: string): DataFetchingAnalysis {
   }
 
   // Check for loading states
-  if (code.includes("fetch") && !code.includes("loading") && !code.includes("isLoading")) {
+  if (
+    code.includes("fetch") &&
+    !code.includes("loading") &&
+    !code.includes("isLoading")
+  ) {
     suggestions.push("Add loading state to improve UX during data fetching");
   }
 
   // Check for polling
   if (code.includes("setInterval") && code.includes("fetch")) {
-    fetchPatterns.push("Polling pattern detected - consider WebSocket or Server-Sent Events");
-    suggestions.push("For frequent updates, consider WebSocket for real-time data");
+    fetchPatterns.push(
+      "Polling pattern detected - consider WebSocket or Server-Sent Events",
+    );
+    suggestions.push(
+      "For frequent updates, consider WebSocket for real-time data",
+    );
   }
 
   return { opportunities, fetchPatterns, suggestions };
@@ -309,8 +336,16 @@ const memoizedFn = memoize(expensiveFn);
 
 // Clear cache when needed
 memoizedFn.cache.clear();`,
-      pros: ["Simple to implement", "No external dependencies", "Fast for single instance"],
-      cons: ["Memory grows unbounded", "Not shared across instances", "Serialization challenges"],
+      pros: [
+        "Simple to implement",
+        "No external dependencies",
+        "Fast for single instance",
+      ],
+      cons: [
+        "Memory grows unbounded",
+        "Not shared across instances",
+        "Serialization challenges",
+      ],
     },
     {
       type: "lru",
@@ -326,7 +361,11 @@ const cache = new LRUCache({
 function getCached(key) {
   return cache.get(key) ?? computeAndCache(key);
 }`,
-      pros: ["Bounded memory usage", "Evicts old entries automatically", "Good hit rates"],
+      pros: [
+        "Bounded memory usage",
+        "Evicts old entries automatically",
+        "Good hit rates",
+      ],
       cons: ["Additional dependency", "Slightly more complex"],
     },
     {
@@ -344,8 +383,15 @@ function getOrSet(key, compute, ttlMs = 60000) {
   ttlCache.set(key, { value, timestamp: Date.now() });
   return value;
 }`,
-      pros: ["Automatic expiration", "Simple to implement", "Good for time-sensitive data"],
-      cons: ["Requires cleanup of expired entries", "Memory not automatically freed"],
+      pros: [
+        "Automatic expiration",
+        "Simple to implement",
+        "Good for time-sensitive data",
+      ],
+      cons: [
+        "Requires cleanup of expired entries",
+        "Memory not automatically freed",
+      ],
     },
   ];
 }
@@ -359,11 +405,16 @@ function getInvalidationStrategies(code: string): InvalidationStrategy[] {
     strategies.push({
       trigger: "State change",
       strategy: "On-state update",
-      description: "Clear relevant cache entries when application state changes",
+      description:
+        "Clear relevant cache entries when application state changes",
     });
   }
 
-  if (code.includes("POST") || code.includes("PUT") || code.includes("DELETE")) {
+  if (
+    code.includes("POST") ||
+    code.includes("PUT") ||
+    code.includes("DELETE")
+  ) {
     strategies.push({
       trigger: "Data mutation",
       strategy: "On mutation + cache tags",
@@ -403,7 +454,14 @@ async function analyzeCaching(
   args: CachingStrategiesArgs,
   _ctx: AgentContext,
 ): Promise<CachingAnalysisResult> {
-  const { targetPath, code, analyzeMemoization, analyzeApiCaching, analyzeDataFetching, suggestImplementations } = args;
+  const {
+    targetPath,
+    code,
+    analyzeMemoization,
+    analyzeApiCaching,
+    analyzeDataFetching,
+    suggestImplementations,
+  } = args;
 
   let codeToAnalyze = code || "";
   let fileName = "inline code";
@@ -416,15 +474,25 @@ async function analyzeCaching(
       return {
         fileName: targetPath,
         analysis: {
-          opportunities: [{
-            type: "memoization",
-            priority: "high",
-            description: `Could not read file: ${targetPath}`,
-          }],
+          opportunities: [
+            {
+              type: "memoization",
+              priority: "high",
+              description: `Could not read file: ${targetPath}`,
+            },
+          ],
           implementations: [],
           invalidationStrategies: [],
-          memoization: { opportunities: [], existingMemoization: [], improvements: [] },
-          dataFetching: { opportunities: [], fetchPatterns: [], suggestions: [] },
+          memoization: {
+            opportunities: [],
+            existingMemoization: [],
+            improvements: [],
+          },
+          dataFetching: {
+            opportunities: [],
+            fetchPatterns: [],
+            suggestions: [],
+          },
         },
         summary: "Error: Could not read the specified file",
       };
@@ -434,7 +502,11 @@ async function analyzeCaching(
   const opportunities: CachingOpportunity[] = [];
 
   // Run analyses
-  let memoization: MemoizationAnalysis = { opportunities: [], existingMemoization: [], improvements: [] };
+  let memoization: MemoizationAnalysis = {
+    opportunities: [],
+    existingMemoization: [],
+    improvements: [],
+  };
   if (analyzeMemoization) {
     memoization = detectMemoizationOpportunities(codeToAnalyze);
     opportunities.push(...memoization.opportunities);
@@ -444,19 +516,29 @@ async function analyzeCaching(
     opportunities.push(...detectApiCachingOpportunities(codeToAnalyze));
   }
 
-  let dataFetching: DataFetchingAnalysis = { opportunities: [], fetchPatterns: [], suggestions: [] };
+  let dataFetching: DataFetchingAnalysis = {
+    opportunities: [],
+    fetchPatterns: [],
+    suggestions: [],
+  };
   if (analyzeDataFetching) {
     dataFetching = detectDataFetchingPatterns(codeToAnalyze);
     opportunities.push(...dataFetching.opportunities);
   }
 
-  const implementations = suggestImplementations ? getCacheImplementations() : [];
+  const implementations = suggestImplementations
+    ? getCacheImplementations()
+    : [];
   const invalidationStrategies = getInvalidationStrategies(codeToAnalyze);
 
   // Generate summary
   let summary = "";
-  const highPriority = opportunities.filter((o) => o.priority === "high").length;
-  const mediumPriority = opportunities.filter((o) => o.priority === "medium").length;
+  const highPriority = opportunities.filter(
+    (o) => o.priority === "high",
+  ).length;
+  const mediumPriority = opportunities.filter(
+    (o) => o.priority === "medium",
+  ).length;
 
   if (highPriority > 0) {
     summary = `Found ${highPriority} high-priority caching opportunities`;
@@ -494,14 +576,19 @@ function generateCachingXml(result: CachingAnalysisResult): string {
     ``,
   ];
 
-  const { opportunities, implementations, invalidationStrategies, memoization, dataFetching } = result.analysis;
+  const {
+    opportunities,
+    implementations,
+    invalidationStrategies,
+    memoization,
+    dataFetching,
+  } = result.analysis;
 
   // Opportunities by priority
   if (opportunities.length > 0) {
     lines.push(`## Caching Opportunities (${opportunities.length})`);
     const high = opportunities.filter((o) => o.priority === "high");
     const medium = opportunities.filter((o) => o.priority === "medium");
-    const low = opportunities.filter((o) => o.priority === "low");
 
     if (high.length > 0) {
       lines.push(`### 🔴 High Priority`);

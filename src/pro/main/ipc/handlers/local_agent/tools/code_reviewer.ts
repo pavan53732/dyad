@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { ToolDefinition, type AgentContext } from "./types";
+import { ToolDefinition } from "./types";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -37,20 +37,13 @@ const CodeReviewerArgs = z.object({
   /** Generate review summary */
   generateSummary: z.boolean().default(true),
   /** File patterns to include */
-  includePatterns: z.array(z.string()).default([
-    "*.ts",
-    "*.js",
-    "*.tsx",
-    "*.jsx",
-  ]),
+  includePatterns: z
+    .array(z.string())
+    .default(["*.ts", "*.js", "*.tsx", "*.jsx"]),
   /** File patterns to exclude */
-  excludePatterns: z.array(z.string()).default([
-    "node_modules/*",
-    "dist/*",
-    "build/*",
-    "*.test.ts",
-    "*.spec.ts",
-  ]),
+  excludePatterns: z
+    .array(z.string())
+    .default(["node_modules/*", "dist/*", "build/*", "*.test.ts", "*.spec.ts"]),
 });
 
 type CodeReviewerArgs = z.infer<typeof CodeReviewerArgs>;
@@ -123,7 +116,8 @@ const REVIEW_RULES: ReviewRule[] = [
     severity: "critical",
     title: "Hardcoded Secret Detected",
     description: "Potential hardcoded API key, password, or secret found",
-    pattern: /(?:apiKey|api_key|secret|password|token)\s*[=:]\s*["'][^"']{8,}["']/i,
+    pattern:
+      /(?:apiKey|api_key|secret|password|token)\s*[=:]\s*["'][^"']{8,}["']/i,
     suggestion: "Use environment variables or a secrets manager instead",
     rule: "SEC001",
   },
@@ -163,7 +157,8 @@ const REVIEW_RULES: ReviewRule[] = [
     severity: "high",
     title: "Console Logging Sensitive Data",
     description: "Potential sensitive data being logged to console",
-    pattern: /(?:console\.log|logger)\s*\([^)]*(?:password|secret|token|key|credit)/i,
+    pattern:
+      /(?:console\.log|logger)\s*\([^)]*(?:password|secret|token|key|credit)/i,
     suggestion: "Remove or mask sensitive data in logs",
     rule: "SEC005",
   },
@@ -176,7 +171,8 @@ const REVIEW_RULES: ReviewRule[] = [
     title: "Use of 'var' Keyword",
     description: "Use 'const' or 'let' instead of 'var'",
     pattern: /\bvar\s+\w+/,
-    suggestion: "Use 'const' for values that don't change, 'let' for reassignable values",
+    suggestion:
+      "Use 'const' for values that don't change, 'let' for reassignable values",
     rule: "STY001",
   },
   {
@@ -226,7 +222,8 @@ const REVIEW_RULES: ReviewRule[] = [
     category: "performance",
     severity: "medium",
     title: "Regex in Loop",
-    description: "Regex created inside loop - move outside for better performance",
+    description:
+      "Regex created inside loop - move outside for better performance",
     pattern: /(?:for|while|forEach|map)\s*\([^)]*\)\s*\{[^}]*new\s+RegExp/,
     suggestion: "Create regex outside the loop",
     rule: "PERF002",
@@ -249,7 +246,8 @@ const REVIEW_RULES: ReviewRule[] = [
     severity: "high",
     title: "Missing Error Handling",
     description: "Async operation without try-catch",
-    pattern: /(?<!\bawait\s)(?:fetch|readFile|query|execute)\s*\([^)]*\)(?!\s*(?:\.catch|try))/,
+    pattern:
+      /(?<!\bawait\s)(?:fetch|readFile|query|execute)\s*\([^)]*\)(?!\s*(?:\.catch|try))/,
     suggestion: "Add error handling with try-catch or .catch()",
     rule: "BP001",
   },
@@ -259,7 +257,8 @@ const REVIEW_RULES: ReviewRule[] = [
     severity: "low",
     title: "Missing Type Annotations",
     description: "Function parameter without type annotation in TypeScript",
-    pattern: /(?:function\s+\w+|(?:const|let|var)\s+\w+\s*=\s*(?:\([^)]*\)|[^=]))\s*=>/,
+    pattern:
+      /(?:function\s+\w+|(?:const|let|var)\s+\w+\s*=\s*(?:\([^)]*\)|[^=]))\s*=>/,
     suggestion: "Add type annotations for better type safety",
     rule: "BP002",
   },
@@ -270,7 +269,8 @@ const REVIEW_RULES: ReviewRule[] = [
     title: "Empty Catch Block",
     description: "Empty catch block silently swallows errors",
     pattern: /catch\s*\([^)]*\)\s*\{\s*\}/,
-    suggestion: "At minimum, log the error or add a comment explaining why it's empty",
+    suggestion:
+      "At minimum, log the error or add a comment explaining why it's empty",
     rule: "BP003",
   },
   {
@@ -344,18 +344,14 @@ function matchesPatterns(
   const fileName = path.basename(filePath);
 
   for (const pattern of excludePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return false;
     }
   }
 
   for (const pattern of includePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return true;
     }
@@ -381,11 +377,9 @@ async function reviewFile(
       // Skip based on options
       if (rule.category === "security" && !options.checkSecurity) continue;
       if (rule.category === "style" && !options.checkStyle) continue;
-      if (rule.category === "performance" && !options.checkPerformance) continue;
-      if (
-        rule.category === "best_practices" &&
-        !options.checkBestPractices
-      )
+      if (rule.category === "performance" && !options.checkPerformance)
+        continue;
+      if (rule.category === "best_practices" && !options.checkBestPractices)
         continue;
       if (rule.category === "documentation" && !options.checkDocumentation)
         continue;
@@ -436,9 +430,7 @@ async function reviewFile(
 /**
  * Map review type to categories
  */
-function mapReviewTypeToCategories(
-  reviewType: string,
-): ReviewCategory[] {
+function mapReviewTypeToCategories(reviewType: string): ReviewCategory[] {
   switch (reviewType) {
     case "security":
       return ["security"];
@@ -581,9 +573,16 @@ function generateReviewXml(result: ReviewResult): string {
     lines.push(``);
 
     // Sort by severity
-    const severityOrder = ["critical", "high", "medium", "low", "info"] as const;
+    const severityOrder = [
+      "critical",
+      "high",
+      "medium",
+      "low",
+      "info",
+    ] as const;
     const sortedFindings = [...result.findings].sort(
-      (a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
+      (a, b) =>
+        severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
     );
 
     for (const finding of sortedFindings) {
@@ -603,7 +602,9 @@ function generateReviewXml(result: ReviewResult): string {
       );
       lines.push(``);
       lines.push(`**Category:** ${finding.category}`);
-      lines.push(`**File:** ${finding.filePath}${finding.lineNumber ? `:${finding.lineNumber}` : ""}`);
+      lines.push(
+        `**File:** ${finding.filePath}${finding.lineNumber ? `:${finding.lineNumber}` : ""}`,
+      );
       if (finding.rule) {
         lines.push(`**Rule:** ${finding.rule}`);
       }
@@ -676,9 +677,11 @@ export const codeReviewerTool: ToolDefinition<CodeReviewerArgs> = {
                 reviewType: args.reviewType,
                 findings,
                 summary: {
-                  critical: findings.filter((f) => f.severity === "critical").length,
+                  critical: findings.filter((f) => f.severity === "critical")
+                    .length,
                   high: findings.filter((f) => f.severity === "high").length,
-                  medium: findings.filter((f) => f.severity === "medium").length,
+                  medium: findings.filter((f) => f.severity === "medium")
+                    .length,
                   low: findings.filter((f) => f.severity === "low").length,
                   info: findings.filter((f) => f.severity === "info").length,
                   totalFiles: 1,
@@ -706,7 +709,10 @@ export const codeReviewerTool: ToolDefinition<CodeReviewerArgs> = {
         let totalLines = 0;
 
         for (const file of files) {
-          const { findings: fileFindings, lines } = await reviewFile(file, args);
+          const { findings: fileFindings, lines } = await reviewFile(
+            file,
+            args,
+          );
           findings.push(...fileFindings);
           totalLines += lines;
         }
@@ -731,9 +737,11 @@ export const codeReviewerTool: ToolDefinition<CodeReviewerArgs> = {
                 reviewType: args.reviewType,
                 findings,
                 summary: {
-                  critical: findings.filter((f) => f.severity === "critical").length,
+                  critical: findings.filter((f) => f.severity === "critical")
+                    .length,
                   high: findings.filter((f) => f.severity === "high").length,
-                  medium: findings.filter((f) => f.severity === "medium").length,
+                  medium: findings.filter((f) => f.severity === "medium")
+                    .length,
                   low: findings.filter((f) => f.severity === "low").length,
                   info: findings.filter((f) => f.severity === "info").length,
                   totalFiles: files.length,

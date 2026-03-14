@@ -32,9 +32,13 @@ const SecurityScannerArgs = z.object({
   /** Whether to scan for command injection risks */
   checkCommandInjection: z.boolean().default(true),
   /** File patterns to include (e.g., ["*.ts", "*.js"]) */
-  includePatterns: z.array(z.string()).default(["*.ts", "*.js", "*.tsx", "*.jsx"]),
+  includePatterns: z
+    .array(z.string())
+    .default(["*.ts", "*.js", "*.tsx", "*.jsx"]),
   /** File patterns to exclude */
-  excludePatterns: z.array(z.string()).default(["node_modules/*", "dist/*", "build/*"]),
+  excludePatterns: z
+    .array(z.string())
+    .default(["node_modules/*", "dist/*", "build/*"]),
 });
 
 type SecurityScannerArgs = z.infer<typeof SecurityScannerArgs>;
@@ -103,7 +107,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     category: "hardcoded_secret",
     severity: "critical",
     title: "Hardcoded API Key",
-    description: "Hardcoded API key detected - should use environment variables",
+    description:
+      "Hardcoded API key detected - should use environment variables",
     pattern: /api[_-]?key\s*[=:]\s*["'][a-zA-Z0-9_-]{20,}["']/i,
     suggestion: "Use process.env.API_KEY instead",
     cwe: "CWE-798",
@@ -112,7 +117,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     category: "hardcoded_secret",
     severity: "critical",
     title: "Hardcoded Password",
-    description: "Hardcoded password detected - should use environment variables",
+    description:
+      "Hardcoded password detected - should use environment variables",
     pattern: /password\s*[=:]\s*["'][^"']{4,}["']/i,
     suggestion: "Use process.env.PASSWORD instead",
     cwe: "CWE-798",
@@ -151,7 +157,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "critical",
     title: "SQL Injection Risk",
     description: "String concatenation in SQL query - potential injection",
-    pattern: /(?:query|execute|select|insert|update|delete)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|query\.)/i,
+    pattern:
+      /(?:query|execute|select|insert|update|delete)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|query\.)/i,
     suggestion: "Use parameterized queries or prepared statements",
     cwe: "CWE-89",
   },
@@ -171,7 +178,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "high",
     title: "Unsafe innerHTML Usage",
     description: "Direct innerHTML assignment without sanitization",
-    pattern: /\.innerHTML\s*=\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
+    pattern:
+      /\.innerHTML\s*=\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
     suggestion: "Use textContent or sanitize with DOMPurify",
     cwe: "CWE-79",
   },
@@ -200,7 +208,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "high",
     title: "Weak Cryptographic Algorithm",
     description: "Using weak cryptographic algorithm (MD5, SHA1)",
-    pattern: /md5|sha1\s*\(|\.createHash\s*\(\s*['"]md5['"]\)|\.createHash\s*\(\s*['"]sha1['"]\)/gi,
+    pattern:
+      /md5|sha1\s*\(|\.createHash\s*\(\s*['"]md5['"]\)|\.createHash\s*\(\s*['"]sha1['"]\)/gi,
     suggestion: "Use SHA-256 or stronger",
     cwe: "CWE-327",
   },
@@ -209,7 +218,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "high",
     title: "Weak Password Hashing",
     description: "Using weak password hashing (DES, MD5)",
-    pattern: /(?:passwordHash|hashPassword)\s*\(\s*(?:['"]md5['"]|['"]des['"]|['"]sha1['"])/i,
+    pattern:
+      /(?:passwordHash|hashPassword)\s*\(\s*(?:['"]md5['"]|['"]des['"]|['"]sha1['"])/i,
     suggestion: "Use bcrypt, scrypt, or Argon2",
     cwe: "CWE-327",
   },
@@ -249,7 +259,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "critical",
     title: "Command Injection Risk",
     description: "User input in shell command - potential injection",
-    pattern: /(?:exec|spawn|execSync|execFile)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
+    pattern:
+      /(?:exec|spawn|execSync|execFile)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
     suggestion: "Validate input and use array form of exec",
     cwe: "CWE-78",
   },
@@ -278,7 +289,8 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "critical",
     title: "Unsafe Deserialization",
     description: "Using JSON.parse with untrusted data",
-    pattern: /JSON\.parse\s*\(\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
+    pattern:
+      /JSON\.parse\s*\(\s*(?:req\.|request\.|params\.|body\.|user|input)/i,
     suggestion: "Validate JSON structure before parsing",
     cwe: "CWE-502",
   },
@@ -298,8 +310,10 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
     severity: "high",
     title: "Path Traversal Risk",
     description: "User input in file path without validation",
-    pattern: /(?:readFile|readFileSync|open|createReadStream)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|filename|path)/i,
-    suggestion: "Validate and sanitize file paths, use path.join with base directory",
+    pattern:
+      /(?:readFile|readFileSync|open|createReadStream)\s*\([^)]*\+\s*(?:req\.|request\.|params\.|body\.|filename|path)/i,
+    suggestion:
+      "Validate and sanitize file paths, use path.join with base directory",
     cwe: "CWE-22",
   },
 ];
@@ -320,9 +334,7 @@ function matchesPatterns(
 
   // Check exclusions first
   for (const pattern of excludePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return false;
     }
@@ -330,9 +342,7 @@ function matchesPatterns(
 
   // Check inclusions
   for (const pattern of includePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return true;
     }
@@ -356,16 +366,10 @@ async function scanFile(
 
     for (const pattern of SECURITY_PATTERNS) {
       // Skip patterns based on options
-      if (
-        pattern.category === "hardcoded_secret" &&
-        !options.checkSecrets
-      ) {
+      if (pattern.category === "hardcoded_secret" && !options.checkSecrets) {
         continue;
       }
-      if (
-        pattern.category === "sql_injection" &&
-        !options.checkSqlInjection
-      ) {
+      if (pattern.category === "sql_injection" && !options.checkSqlInjection) {
         continue;
       }
       if (pattern.category === "xss" && !options.checkXss) {
@@ -447,7 +451,11 @@ async function getAllFiles(
       if (entry.isDirectory()) {
         // Skip if matches exclude patterns
         if (!matchesPatterns(fullPath, ["*"], excludePatterns)) {
-          const subFiles = await getAllFiles(fullPath, includePatterns, excludePatterns);
+          const subFiles = await getAllFiles(
+            fullPath,
+            includePatterns,
+            excludePatterns,
+          );
           files.push(...subFiles);
         }
       } else if (entry.isFile()) {
@@ -560,9 +568,15 @@ function generateScanXml(result: ScanResult): string {
     lines.push(``);
 
     // Sort by severity
-    const severityOrder: VulnerabilitySeverity[] = ["critical", "high", "medium", "low"];
+    const severityOrder: VulnerabilitySeverity[] = [
+      "critical",
+      "high",
+      "medium",
+      "low",
+    ];
     const sortedVulns = [...result.vulnerabilities].sort(
-      (a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
+      (a, b) =>
+        severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
     );
 
     for (const vuln of sortedVulns) {
@@ -575,10 +589,14 @@ function generateScanXml(result: ScanResult): string {
               ? "🟡"
               : "🔵";
 
-      lines.push(`### ${severityEmoji} ${vuln.title} (${vuln.severity.toUpperCase()})`);
+      lines.push(
+        `### ${severityEmoji} ${vuln.title} (${vuln.severity.toUpperCase()})`,
+      );
       lines.push(``);
       lines.push(`**Category:** ${vuln.category}`);
-      lines.push(`**File:** ${vuln.filePath}${vuln.lineNumber ? `:${vuln.lineNumber}` : ""}`);
+      lines.push(
+        `**File:** ${vuln.filePath}${vuln.lineNumber ? `:${vuln.lineNumber}` : ""}`,
+      );
       lines.push(``);
       lines.push(`**Description:** ${vuln.description}`);
       lines.push(``);

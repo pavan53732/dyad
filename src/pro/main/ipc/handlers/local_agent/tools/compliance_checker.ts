@@ -33,20 +33,13 @@ const ComplianceCheckerArgs = z.object({
   /** Whether to check data handling (GDPR/HIPAA) */
   checkDataHandling: z.boolean().default(true),
   /** File patterns to include */
-  includePatterns: z.array(z.string()).default([
-    "*.ts",
-    "*.js",
-    "*.tsx",
-    "*.jsx",
-    "*.html",
-    "*.json",
-  ]),
+  includePatterns: z
+    .array(z.string())
+    .default(["*.ts", "*.js", "*.tsx", "*.jsx", "*.html", "*.json"]),
   /** File patterns to exclude */
-  excludePatterns: z.array(z.string()).default([
-    "node_modules/*",
-    "dist/*",
-    "build/*",
-  ]),
+  excludePatterns: z
+    .array(z.string())
+    .default(["node_modules/*", "dist/*", "build/*"]),
 });
 
 type ComplianceCheckerArgs = z.infer<typeof ComplianceCheckerArgs>;
@@ -124,8 +117,10 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["owasp", "hipaa"],
     title: "Missing Authentication",
     description: "Endpoint may be accessible without authentication",
-    pattern: /(?:app|router|express)\.(?:get|post|put|delete)\s*\(\s*['"][^'"]+['"]\s*,?\s*(?:function|\([^)]*\)\s*=>)/i,
-    recommendation: "Add authentication middleware to protect sensitive endpoints",
+    pattern:
+      /(?:app|router|express)\.(?:get|post|put|delete)\s*\(\s*['"][^'"]+['"]\s*,?\s*(?:function|\([^)]*\)\s*=>)/i,
+    recommendation:
+      "Add authentication middleware to protect sensitive endpoints",
     cwe: "CWE-306",
     requirement: "OWASP A01:2021",
   },
@@ -162,7 +157,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["owasp", "pci-dss", "hipaa", "gdpr"],
     title: "Hardcoded Cryptographic Key",
     description: "Hardcoded encryption key detected",
-    pattern: /(?:encryptKey|decryptKey|secretKey|cryptoKey)\s*[=:]\s*["'][^"']+["']/i,
+    pattern:
+      /(?:encryptKey|decryptKey|secretKey|cryptoKey)\s*[=:]\s*["'][^"']+["']/i,
     recommendation: "Use environment variables or secure key management",
     cwe: "CWE-798",
     requirement: "OWASP A02:2021",
@@ -229,7 +225,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     title: "Weak Password Validation",
     description: "Weak or missing password validation",
     pattern: /password\s*[=:]\s*(?:req\.|request\.|body\.)/i,
-    recommendation: "Implement strong password policies (min length, complexity)",
+    recommendation:
+      "Implement strong password policies (min length, complexity)",
     cwe: "CWE-521",
     requirement: "OWASP A07:2021",
   },
@@ -254,7 +251,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["gdpr"],
     title: "Potential PII in Logs",
     description: "User data may be logged without protection",
-    pattern: /(?:console\.log|logger|log)\s*\([^)]*(?:email|phone|ssn|address|credit|password)/i,
+    pattern:
+      /(?:console\.log|logger|log)\s*\([^)]*(?:email|phone|ssn|address|credit|password)/i,
     recommendation: "Avoid logging PII, use masking if necessary",
     cwe: "CWE-532",
     requirement: "GDPR Article 32",
@@ -280,7 +278,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["hipaa"],
     title: "Unencrypted PHI Storage",
     description: "Potential unprotected health information storage",
-    pattern: /(?:patient|medical|health|diagnosis|prescription)\s*[=:]\s*(?:req\.|request\.|body\.)/i,
+    pattern:
+      /(?:patient|medical|health|diagnosis|prescription)\s*[=:]\s*(?:req\.|request\.|body\.)/i,
     recommendation: "Encrypt PHI at rest and in transit",
     cwe: "CWE-311",
     requirement: "HIPAA Security Rule 164.312",
@@ -292,7 +291,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["hipaa"],
     title: "Missing Audit Trail",
     description: "PHI access may not be logged",
-    pattern: /(?:app|router|express)\.(?:get|post|put|delete)\s*\([^)]*patient/i,
+    pattern:
+      /(?:app|router|express)\.(?:get|post|put|delete)\s*\([^)]*patient/i,
     recommendation: "Implement audit logging for PHI access",
     cwe: "CWE-778",
     requirement: "HIPAA Security Rule 164.312",
@@ -306,7 +306,8 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     frameworks: ["pci-dss"],
     title: "Cardholder Data Handling",
     description: "Potential unencrypted cardholder data",
-    pattern: /(?:creditCard|cardNumber|cvv|expiry)\s*[=:]\s*(?:req\.|request\.|body\.)/i,
+    pattern:
+      /(?:creditCard|cardNumber|cvv|expiry)\s*[=:]\s*(?:req\.|request\.|body\.)/i,
     recommendation: "Never store card data; use payment processor tokens",
     cwe: "CWE-311",
     requirement: "PCI-DSS Requirement 3",
@@ -366,9 +367,7 @@ function matchesPatterns(
 
   // Check exclusions first
   for (const pattern of excludePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return false;
     }
@@ -376,9 +375,7 @@ function matchesPatterns(
 
   // Check inclusions
   for (const pattern of includePatterns) {
-    const regex = new RegExp(
-      pattern.replace(/\*/g, ".*").replace(/\?/g, "."),
-    );
+    const regex = new RegExp(pattern.replace(/\*/g, ".*").replace(/\?/g, "."));
     if (regex.test(filePath) || regex.test(fileName)) {
       return true;
     }
@@ -407,7 +404,10 @@ async function checkFile(
       if (!hasFramework) continue;
 
       // Skip based on options
-      if (rule.category === "security_headers" && !options.checkSecurityHeaders) {
+      if (
+        rule.category === "security_headers" &&
+        !options.checkSecurityHeaders
+      ) {
         continue;
       }
       if (rule.category === "authentication" && !options.checkAuthentication) {
@@ -416,10 +416,7 @@ async function checkFile(
       if (rule.category === "authorization" && !options.checkAuthorization) {
         continue;
       }
-      if (
-        rule.category === "data_protection" &&
-        !options.checkDataHandling
-      ) {
+      if (rule.category === "data_protection" && !options.checkDataHandling) {
         continue;
       }
 
@@ -481,7 +478,11 @@ async function getAllFiles(
 
       if (entry.isDirectory()) {
         if (!matchesPatterns(fullPath, ["*"], excludePatterns)) {
-          const subFiles = await getAllFiles(fullPath, includePatterns, excludePatterns);
+          const subFiles = await getAllFiles(
+            fullPath,
+            includePatterns,
+            excludePatterns,
+          );
           files.push(...subFiles);
         }
       } else if (entry.isFile()) {
@@ -550,7 +551,8 @@ async function performCheck(
   };
 
   // Count compliant (files with no findings)
-  summary.compliant = summary.critical + summary.high + summary.medium + summary.low;
+  summary.compliant =
+    summary.critical + summary.high + summary.medium + summary.low;
 
   return {
     targetPath: args.targetPath,
@@ -604,9 +606,16 @@ function generateComplianceXml(result: CheckResult): string {
     lines.push(``);
 
     // Sort by severity
-    const severityOrder = ["critical", "high", "medium", "low", "info"] as const;
+    const severityOrder = [
+      "critical",
+      "high",
+      "medium",
+      "low",
+      "info",
+    ] as const;
     const sortedFindings = [...result.findings].sort(
-      (a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
+      (a, b) =>
+        severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity),
     );
 
     for (const finding of sortedFindings) {
@@ -621,11 +630,15 @@ function generateComplianceXml(result: CheckResult): string {
                 ? "🔵"
                 : "ℹ️";
 
-      lines.push(`### ${severityEmoji} ${finding.title} (${finding.severity.toUpperCase()})`);
+      lines.push(
+        `### ${severityEmoji} ${finding.title} (${finding.severity.toUpperCase()})`,
+      );
       lines.push(``);
       lines.push(`**Framework:** ${finding.framework}`);
       lines.push(`**Category:** ${finding.category}`);
-      lines.push(`**File:** ${finding.filePath}${finding.lineNumber ? `:${finding.lineNumber}` : ""}`);
+      lines.push(
+        `**File:** ${finding.filePath}${finding.lineNumber ? `:${finding.lineNumber}` : ""}`,
+      );
       lines.push(``);
       lines.push(`**Description:** ${finding.description}`);
       lines.push(``);

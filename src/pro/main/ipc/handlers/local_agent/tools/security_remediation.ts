@@ -109,7 +109,8 @@ const REMEDIATION_STRATEGIES: RemediationStrategy[] = [
     category: "sql_injection",
     patterns: [
       {
-        search: /(\w+)\s*\(\s*[^)]*\+\s*(?:req\.|request\.|params\.|body\.)\s*\)/gi,
+        search:
+          /(\w+)\s*\(\s*[^)]*\+\s*(?:req\.|request\.|params\.|body\.)\s*\)/gi,
         replace: "$1($1, [$2])",
       },
     ],
@@ -125,7 +126,8 @@ const REMEDIATION_STRATEGIES: RemediationStrategy[] = [
         replace: ".textContent = $1",
       },
       {
-        search: /dangerouslySetInnerHTML\s*=\s*\{\s*\{ __html:\s*([^}]+)\s*\}\s*\}/g,
+        search:
+          /dangerouslySetInnerHTML\s*=\s*\{\s*\{ __html:\s*([^}]+)\s*\}\s*\}/g,
         replace: "dangerouslySetInnerHTML={{ __html: sanitize($1) }}",
       },
     ],
@@ -193,7 +195,8 @@ const REMEDIATION_STRATEGIES: RemediationStrategy[] = [
     category: "path_traversal",
     patterns: [
       {
-        search: /readFile\s*\(\s*[^)]*\+\s*(?:req\.|request\.|params\.|filename)/g,
+        search:
+          /readFile\s*\(\s*[^)]*\+\s*(?:req\.|request\.|params\.|filename)/g,
         replace: "path.join(__dirname, 'safe', path.basename($1))",
       },
     ],
@@ -241,11 +244,11 @@ async function applyRemediation(
           if (originalCode === fixedCode) continue;
 
           // Get code snippet
-          let codeSnippet: string | undefined;
+          let _codeSnippet: string | undefined;
           if (lineNumber > 0 && lineNumber <= lines.length) {
             const startLine = Math.max(0, lineNumber - 2);
             const endLine = Math.min(lines.length, lineNumber + 1);
-            codeSnippet = lines.slice(startLine, endLine).join("\n");
+            _codeSnippet = lines.slice(startLine, endLine).join("\n");
           }
 
           const fix: RemediationFix = {
@@ -275,7 +278,8 @@ async function applyRemediation(
               await fs.writeFile(filePath, content, "utf-8");
               fix.applied = true;
             } catch (error) {
-              fix.error = error instanceof Error ? error.message : "Unknown error";
+              fix.error =
+                error instanceof Error ? error.message : "Unknown error";
             }
           }
 
@@ -347,11 +351,16 @@ async function performRemediation(
           args.createBackup,
         );
       } else {
-        fixes = generateSuggestions(args.targetPath, args.vulnerabilityCategory);
+        fixes = generateSuggestions(
+          args.targetPath,
+          args.vulnerabilityCategory,
+        );
       }
     } else if (stats.isDirectory()) {
       // Process all files in directory
-      const entries = await fs.readdir(args.targetPath, { withFileTypes: true });
+      const entries = await fs.readdir(args.targetPath, {
+        withFileTypes: true,
+      });
 
       for (const entry of entries) {
         if (entry.isFile()) {
@@ -367,7 +376,9 @@ async function performRemediation(
               );
               fixes.push(...fileFixes);
             } else {
-              fixes.push(...generateSuggestions(filePath, args.vulnerabilityCategory));
+              fixes.push(
+                ...generateSuggestions(filePath, args.vulnerabilityCategory),
+              );
             }
           }
         }
@@ -434,7 +445,9 @@ function generateRemediationXml(result: RemediationResult): string {
       lines.push(`### ✅ Applied Fixes`);
       lines.push(``);
       for (const fix of applied) {
-        lines.push(`- **${fix.category}** at line ${fix.lineNumber}: ${fix.description}`);
+        lines.push(
+          `- **${fix.category}** at line ${fix.lineNumber}: ${fix.description}`,
+        );
       }
       lines.push(``);
     }
@@ -444,7 +457,9 @@ function generateRemediationXml(result: RemediationResult): string {
       lines.push(`### ❌ Failed Fixes`);
       lines.push(``);
       for (const fix of failed) {
-        lines.push(`- **${fix.category}** at line ${fix.lineNumber}: ${fix.error}`);
+        lines.push(
+          `- **${fix.category}** at line ${fix.lineNumber}: ${fix.error}`,
+        );
       }
       lines.push(``);
     }
@@ -479,33 +494,34 @@ function generateRemediationXml(result: RemediationResult): string {
 // Tool Definition
 // ============================================================================
 
-export const securityRemediationTool: ToolDefinition<SecurityRemediationArgs> = {
-  name: "security_remediation",
-  description:
-    "Suggests and applies fixes for detected security vulnerabilities. Can auto-apply fixes or generate suggestions for manual remediation. Use this to address issues found by security_scanner or vulnerability_detector.",
-  inputSchema: SecurityRemediationArgs,
-  defaultConsent: "ask",
-  modifiesState: true,
+export const securityRemediationTool: ToolDefinition<SecurityRemediationArgs> =
+  {
+    name: "security_remediation",
+    description:
+      "Suggests and applies fixes for detected security vulnerabilities. Can auto-apply fixes or generate suggestions for manual remediation. Use this to address issues found by security_scanner or vulnerability_detector.",
+    inputSchema: SecurityRemediationArgs,
+    defaultConsent: "ask",
+    modifiesState: true,
 
-  execute: async (args, ctx) => {
-    ctx.onXmlStream(
-      `<dyad-status title="Security Remediation">Processing ${args.targetPath}...</dyad-status>`,
-    );
-
-    const result = await performRemediation(args, ctx);
-
-    const report = generateRemediationXml(result);
-
-    if (args.autoApply) {
-      ctx.onXmlComplete(
-        `<dyad-status title="Remediation Complete">Applied ${result.summary.applied} fixes (${result.summary.failed} failed)</dyad-status>`,
+    execute: async (args, ctx) => {
+      ctx.onXmlStream(
+        `<dyad-status title="Security Remediation">Processing ${args.targetPath}...</dyad-status>`,
       );
-    } else {
-      ctx.onXmlComplete(
-        `<dyad-status title="Remediation Suggestions">Generated ${result.summary.pending} suggestions</dyad-status>`,
-      );
-    }
 
-    return report;
-  },
-};
+      const result = await performRemediation(args, ctx);
+
+      const report = generateRemediationXml(result);
+
+      if (args.autoApply) {
+        ctx.onXmlComplete(
+          `<dyad-status title="Remediation Complete">Applied ${result.summary.applied} fixes (${result.summary.failed} failed)</dyad-status>`,
+        );
+      } else {
+        ctx.onXmlComplete(
+          `<dyad-status title="Remediation Suggestions">Generated ${result.summary.pending} suggestions</dyad-status>`,
+        );
+      }
+
+      return report;
+    },
+  };

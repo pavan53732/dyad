@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { ToolDefinition, type AgentContext } from "./types";
+import { ToolDefinition } from "./types";
 
 // ============================================================================
 // Input Schema
@@ -51,7 +51,12 @@ type TeamCoordinatorArgs = z.infer<typeof TeamCoordinatorArgs>;
 // ============================================================================
 
 type AgentStatus = "idle" | "busy" | "blocked" | "completed";
-type TaskStatus = "pending" | "in_progress" | "completed" | "blocked" | "failed";
+type TaskStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "blocked"
+  | "failed";
 
 interface Agent {
   id: string;
@@ -376,7 +381,9 @@ function balanceLoad(args: TeamCoordinatorArgs): CoordinationResult {
     allAgents.reduce((sum, a) => sum + a.workload, 0) / allAgents.length;
 
   // Reassign tasks from overloaded agents to underutilized ones
-  const overloadedAgents = allAgents.filter((a) => a.workload > avgWorkload + 20);
+  const overloadedAgents = allAgents.filter(
+    (a) => a.workload > avgWorkload + 20,
+  );
   const underutilizedAgents = allAgents.filter(
     (a) => a.workload < avgWorkload - 20,
   );
@@ -526,10 +533,10 @@ function generateCoordinationXml(result: CoordinationResult): string {
     if (result.data.conflict) {
       lines.push(`## Conflict Resolution`);
       lines.push(``);
+      lines.push(`**Conflict:** ${result.data.conflict.description}`);
       lines.push(
-        `**Conflict:** ${result.data.conflict.description}`,
+        `**Resolved:** ${result.data.conflict.resolved ? "Yes" : "No"}`,
       );
-      lines.push(`**Resolved:** ${result.data.conflict.resolved ? "Yes" : "No"}`);
       lines.push(``);
     }
 

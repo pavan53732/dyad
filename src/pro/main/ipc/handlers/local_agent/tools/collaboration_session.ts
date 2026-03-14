@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { ToolDefinition, type AgentContext } from "./types";
+import { ToolDefinition } from "./types";
 
 // ============================================================================
 // Input Schema
@@ -332,7 +332,9 @@ function addParticipant(args: CollaborationSessionArgs): CollaborationResult {
 /**
  * Remove a participant from a session
  */
-function removeParticipant(args: CollaborationSessionArgs): CollaborationResult {
+function removeParticipant(
+  args: CollaborationSessionArgs,
+): CollaborationResult {
   if (!args.sessionId || !args.participantId) {
     return {
       action: "remove_participant",
@@ -623,7 +625,9 @@ function generateCollaborationXml(result: CollaborationResult): string {
     lines.push(``);
     lines.push(`**Name:** ${session.name}`);
     lines.push(`**Status:** ${session.status}`);
-    lines.push(`**Participants:** ${session.participants.length}/${session.maxParticipants}`);
+    lines.push(
+      `**Participants:** ${session.participants.length}/${session.maxParticipants}`,
+    );
     lines.push(`**Created:** ${new Date(session.createdAt).toLocaleString()}`);
     if (session.description) {
       lines.push(`**Description:** ${session.description}`);
@@ -684,7 +688,9 @@ function generateCollaborationXml(result: CollaborationResult): string {
       lines.push(``);
       lines.push(`- **ID:** ${session.id}`);
       lines.push(`- **Status:** ${session.status}`);
-      lines.push(`- **Participants:** ${session.participants.length}/${session.maxParticipants}`);
+      lines.push(
+        `- **Participants:** ${session.participants.length}/${session.maxParticipants}`,
+      );
       lines.push(``);
     }
   }
@@ -706,69 +712,70 @@ function generateCollaborationXml(result: CollaborationResult): string {
 // Tool Definition
 // ============================================================================
 
-export const collaborationSessionTool: ToolDefinition<CollaborationSessionArgs> = {
-  name: "collaboration_session",
-  description:
-    "Manages real-time collaboration sessions for teams. Use this to create collaboration sessions, manage participants, share context, coordinate concurrent editing with resource locks, and synchronize state across team members.",
-  inputSchema: CollaborationSessionArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const collaborationSessionTool: ToolDefinition<CollaborationSessionArgs> =
+  {
+    name: "collaboration_session",
+    description:
+      "Manages real-time collaboration sessions for teams. Use this to create collaboration sessions, manage participants, share context, coordinate concurrent editing with resource locks, and synchronize state across team members.",
+    inputSchema: CollaborationSessionArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    ctx.onXmlStream(
-      `<dyad-status title="Collaboration Session">Processing ${args.action}...</dyad-status>`,
-    );
+    execute: async (args, ctx) => {
+      ctx.onXmlStream(
+        `<dyad-status title="Collaboration Session">Processing ${args.action}...</dyad-status>`,
+      );
 
-    let result: CollaborationResult;
+      let result: CollaborationResult;
 
-    switch (args.action) {
-      case "create_session":
-        result = createSession(args);
-        break;
-      case "join_session":
-        result = joinSession(args);
-        break;
-      case "leave_session":
-        result = leaveSession(args);
-        break;
-      case "add_participant":
-        result = addParticipant(args);
-        break;
-      case "remove_participant":
-        result = removeParticipant(args);
-        break;
-      case "update_context":
-        result = updateContext(args);
-        break;
-      case "sync_state":
-        result = syncState(args);
-        break;
-      case "get_session_info":
-        result = getSessionInfo(args);
-        break;
-      case "list_sessions":
-        result = listSessions();
-        break;
-      case "lock_resource":
-        result = lockResource(args);
-        break;
-      case "unlock_resource":
-        result = unlockResource(args);
-        break;
-      default:
-        result = {
-          action: args.action,
-          success: false,
-          message: `Unknown action: ${args.action}`,
-        };
-    }
+      switch (args.action) {
+        case "create_session":
+          result = createSession(args);
+          break;
+        case "join_session":
+          result = joinSession(args);
+          break;
+        case "leave_session":
+          result = leaveSession(args);
+          break;
+        case "add_participant":
+          result = addParticipant(args);
+          break;
+        case "remove_participant":
+          result = removeParticipant(args);
+          break;
+        case "update_context":
+          result = updateContext(args);
+          break;
+        case "sync_state":
+          result = syncState(args);
+          break;
+        case "get_session_info":
+          result = getSessionInfo(args);
+          break;
+        case "list_sessions":
+          result = listSessions();
+          break;
+        case "lock_resource":
+          result = lockResource(args);
+          break;
+        case "unlock_resource":
+          result = unlockResource(args);
+          break;
+        default:
+          result = {
+            action: args.action,
+            success: false,
+            message: `Unknown action: ${args.action}`,
+          };
+      }
 
-    const report = generateCollaborationXml(result);
+      const report = generateCollaborationXml(result);
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Collaboration Session Complete">${result.message}</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Collaboration Session Complete">${result.message}</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };

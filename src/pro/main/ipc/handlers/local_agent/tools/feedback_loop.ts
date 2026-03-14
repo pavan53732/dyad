@@ -32,11 +32,18 @@ const FeedbackLoopArgs = z.object({
       "get_improvements",
       "clear",
     ])
-    .describe("Action: collect explicit/implicit feedback, get feedback, analyze trends, or get improvements"),
+    .describe(
+      "Action: collect explicit/implicit feedback, get feedback, analyze trends, or get improvements",
+    ),
   /** Task identifier for the feedback */
   taskId: z.string().optional().describe("Task identifier"),
   /** User rating (1-5) */
-  rating: z.number().min(1).max(5).optional().describe("User rating (1-5 scale)"),
+  rating: z
+    .number()
+    .min(1)
+    .max(5)
+    .optional()
+    .describe("User rating (1-5 scale)"),
   /** Optional feedback text */
   feedback: z.string().optional().describe("User feedback text"),
   /** Feedback category */
@@ -59,7 +66,10 @@ const FeedbackLoopArgs = z.object({
   /** Number of recent feedbacks to analyze */
   limit: z.number().optional().describe("Number of recent feedbacks to return"),
   /** Time range for analysis */
-  timeRange: z.string().optional().describe("Time range for analysis (24h, 7d, 30d, all)"),
+  timeRange: z
+    .string()
+    .optional()
+    .describe("Time range for analysis (24h, 7d, 30d, all)"),
 });
 
 type FeedbackLoopArgs = z.infer<typeof FeedbackLoopArgs>;
@@ -130,7 +140,10 @@ function saveFeedback(ctx: AgentContext, feedback: FeedbackRecord[]): void {
 // Analysis Functions
 // ============================================================================
 
-function analyzeTrends(feedback: FeedbackRecord[], timeRange?: string): FeedbackTrends {
+function analyzeTrends(
+  feedback: FeedbackRecord[],
+  timeRange?: string,
+): FeedbackTrends {
   const now = new Date();
   let cutoffTime: Date;
 
@@ -153,7 +166,8 @@ function analyzeTrends(feedback: FeedbackRecord[], timeRange?: string): Feedback
   const withRatings = filtered.filter((f) => f.rating !== undefined);
   const averageRating =
     withRatings.length > 0
-      ? withRatings.reduce((sum, f) => sum + (f.rating || 0), 0) / withRatings.length
+      ? withRatings.reduce((sum, f) => sum + (f.rating || 0), 0) /
+        withRatings.length
       : 0;
 
   const explicitCount = filtered.filter((f) => f.type === "explicit").length;
@@ -172,11 +186,15 @@ function analyzeTrends(feedback: FeedbackRecord[], timeRange?: string): Feedback
     }
   }
 
-  const categoryResults: Record<string, { count: number; avgRating?: number }> = {};
+  const categoryResults: Record<string, { count: number; avgRating?: number }> =
+    {};
   for (const [cat, data] of Object.entries(byCategory)) {
     categoryResults[cat] = {
       count: data.count,
-      avgRating: data.count > 0 ? Math.round((data.totalRating / data.count) * 10) / 10 : undefined,
+      avgRating:
+        data.count > 0
+          ? Math.round((data.totalRating / data.count) * 10) / 10
+          : undefined,
     };
   }
 
@@ -210,7 +228,9 @@ function analyzeTrends(feedback: FeedbackRecord[], timeRange?: string): Feedback
   };
 }
 
-function generateImprovements(feedback: FeedbackRecord[]): ImprovementSuggestion[] {
+function generateImprovements(
+  feedback: FeedbackRecord[],
+): ImprovementSuggestion[] {
   const suggestions: ImprovementSuggestion[] = [];
 
   // Analyze ratings
@@ -223,7 +243,8 @@ function generateImprovements(feedback: FeedbackRecord[]): ImprovementSuggestion
         suggestions.push({
           category: "quality",
           issue: `${lowRated.length} low-rated feedbacks detected`,
-          suggestion: "Review and improve the quality of responses in affected categories",
+          suggestion:
+            "Review and improve the quality of responses in affected categories",
           priority: "high",
         });
       }
@@ -238,7 +259,8 @@ function generateImprovements(feedback: FeedbackRecord[]): ImprovementSuggestion
     suggestions.push({
       category: "correctness",
       issue: `${failedImplicit.length} failed executions detected`,
-      suggestion: "Analyze failure patterns and implement error handling improvements",
+      suggestion:
+        "Analyze failure patterns and implement error handling improvements",
       priority: "high",
     });
   }
@@ -251,13 +273,16 @@ function generateImprovements(feedback: FeedbackRecord[]): ImprovementSuggestion
     suggestions.push({
       category: "accuracy",
       issue: `${partialImplicit.length} partially successful executions`,
-      suggestion: "Review partial success cases to identify incomplete implementations",
+      suggestion:
+        "Review partial success cases to identify incomplete implementations",
       priority: "medium",
     });
   }
 
   // Speed feedback
-  const speedFeedback = feedback.filter((f) => f.category === "speed" && (f.rating || 0) <= 2);
+  const speedFeedback = feedback.filter(
+    (f) => f.category === "speed" && (f.rating || 0) <= 2,
+  );
   if (speedFeedback.length > 0) {
     suggestions.push({
       category: "speed",
@@ -291,7 +316,16 @@ async function executeFeedbackAction(
   args: FeedbackLoopArgs,
   ctx: AgentContext,
 ): Promise<string> {
-  const { action, taskId, rating, feedback, category, outcome, limit, timeRange } = args;
+  const {
+    action,
+    taskId,
+    rating,
+    feedback,
+    category,
+    outcome,
+    limit,
+    timeRange,
+  } = args;
 
   switch (action) {
     case "collect_explicit": {
@@ -332,7 +366,9 @@ async function executeFeedbackAction(
 
     case "collect_implicit": {
       if (!taskId || !outcome) {
-        throw new Error("taskId and outcome are required for implicit feedback");
+        throw new Error(
+          "taskId and outcome are required for implicit feedback",
+        );
       }
 
       const feedbackList = loadFeedback(ctx);
@@ -383,7 +419,10 @@ async function executeFeedbackAction(
       }
 
       // Sort by timestamp descending
-      results.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      results.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
 
       // Apply limit
       if (limit) {
@@ -475,7 +514,12 @@ async function executeFeedbackAction(
 
       const lines = ["# Improvement Suggestions", ""];
       for (const imp of improvements) {
-        const priorityIcon = imp.priority === "high" ? "🔴" : imp.priority === "medium" ? "🟡" : "🟢";
+        const priorityIcon =
+          imp.priority === "high"
+            ? "🔴"
+            : imp.priority === "medium"
+              ? "🟡"
+              : "🟢";
         lines.push(`## ${priorityIcon} ${imp.category}`);
         lines.push(`- **Issue:** ${imp.issue}`);
         lines.push(`- **Suggestion:** ${imp.suggestion}`);

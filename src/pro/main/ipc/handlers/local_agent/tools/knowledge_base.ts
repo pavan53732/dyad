@@ -35,9 +35,14 @@ const KnowledgeBaseArgs = z.object({
       "get_stats",
       "clear",
     ])
-    .describe("Action: add, search, get, update, delete, list, list_tags, get_stats, or clear"),
+    .describe(
+      "Action: add, search, get, update, delete, list, list_tags, get_stats, or clear",
+    ),
   /** Knowledge entry key/identifier */
-  key: z.string().optional().describe("Unique key/identifier for the knowledge entry"),
+  key: z
+    .string()
+    .optional()
+    .describe("Unique key/identifier for the knowledge entry"),
   /** Knowledge content/value */
   value: z.string().optional().describe("Knowledge content to store"),
   /** Tags for categorization */
@@ -203,7 +208,17 @@ async function executeKnowledgeAction(
   args: KnowledgeBaseArgs,
   ctx: AgentContext,
 ): Promise<string> {
-  const { action, key, value, tags, category, query, filterTags, filterCategory, limit } = args;
+  const {
+    action,
+    key,
+    value,
+    tags,
+    category,
+    query,
+    filterTags,
+    filterCategory,
+    limit,
+  } = args;
 
   const knowledge = loadKnowledge(ctx);
 
@@ -221,11 +236,14 @@ async function executeKnowledgeAction(
         value,
         tags: tags || [],
         category: category || "other",
-        createdAt: existingIndex >= 0 ? knowledge[existingIndex].createdAt : now,
+        createdAt:
+          existingIndex >= 0 ? knowledge[existingIndex].createdAt : now,
         updatedAt: now,
-        accessCount: existingIndex >= 0 ? knowledge[existingIndex].accessCount : 0,
+        accessCount:
+          existingIndex >= 0 ? knowledge[existingIndex].accessCount : 0,
         lastAccessed: now,
-        relatedKeys: existingIndex >= 0 ? knowledge[existingIndex].relatedKeys : [],
+        relatedKeys:
+          existingIndex >= 0 ? knowledge[existingIndex].relatedKeys : [],
       };
 
       if (existingIndex >= 0) {
@@ -251,7 +269,9 @@ async function executeKnowledgeAction(
 
     case "search": {
       if (!query && !filterTags && !filterCategory) {
-        throw new Error("query, filterTags, or filterCategory is required for search");
+        throw new Error(
+          "query, filterTags, or filterCategory is required for search",
+        );
       }
 
       const results = searchKnowledge(
@@ -291,7 +311,10 @@ async function executeKnowledgeAction(
         lines.push(`**Tags:** ${entry.tags.join(", ") || "none"}`);
         lines.push(`**Access Count:** ${entry.accessCount}`);
         lines.push("");
-        lines.push(entry.value.substring(0, 200) + (entry.value.length > 200 ? "..." : ""));
+        lines.push(
+          entry.value.substring(0, 200) +
+            (entry.value.length > 200 ? "..." : ""),
+        );
         lines.push("");
         lines.push("---");
         lines.push("");
@@ -432,7 +455,8 @@ async function executeKnowledgeAction(
 
       // Sort by last updated
       results.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
 
       // Apply limit
@@ -452,7 +476,12 @@ async function executeKnowledgeAction(
         return msg;
       }
 
-      const lines = ["# Knowledge Base", "", `Total: ${knowledge.length} entries`, ""];
+      const lines = [
+        "# Knowledge Base",
+        "",
+        `Total: ${knowledge.length} entries`,
+        "",
+      ];
       for (const entry of results) {
         lines.push(
           `- **${entry.key}** [${entry.category}] (${entry.tags.join(", ") || "no tags"}) - ${entry.updatedAt}`,

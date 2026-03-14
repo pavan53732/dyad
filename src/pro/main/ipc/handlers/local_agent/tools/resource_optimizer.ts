@@ -111,23 +111,25 @@ interface ResourceOptimizationResult {
 // ============================================================================
 
 /** Detect eager imports that could be lazy loaded */
-function detectLazyLoadingOpportunities(code: string): LazyLoadingOpportunity[] {
+function detectLazyLoadingOpportunities(
+  code: string,
+): LazyLoadingOpportunity[] {
   const opportunities: LazyLoadingOpportunity[] = [];
-  const lines = code.split("\n");
 
   // Detect React component imports that could be lazy loaded
-  const componentImportPattern = /import\s+.*\s+from\s+['"](.*components?\/.*)['"]/g;
+  const componentImportPattern =
+    /import\s+.*\s+from\s+['"](.*components?\/.*)['"]/g;
   let match;
 
   while ((match = componentImportPattern.exec(code)) !== null) {
     const importPath = match[1];
-    
+
     // Skip already lazy imports
     if (code.includes("lazy(") && code.includes(importPath)) continue;
 
     // Check if it's used in a route or conditional
     const isUsedConditionally = /(\?|&&|\|\||switch)\s*\(/.test(
-      code.substring(match.index, match.index + 500)
+      code.substring(match.index, match.index + 500),
     );
 
     if (!isUsedConditionally) {
@@ -155,12 +157,19 @@ function detectLazyLoadingOpportunities(code: string): LazyLoadingOpportunity[] 
   ];
 
   for (const module of heavyModules) {
-    if (code.includes(`from '${module}'`) || code.includes(`from "${module}"`)) {
+    if (
+      code.includes(`from '${module}'`) ||
+      code.includes(`from "${module}"`)
+    ) {
       // Check if it's used immediately
-      const moduleImportIdx = code.indexOf(`'${module}'`) || code.indexOf(`"${module}"`);
+      const moduleImportIdx =
+        code.indexOf(`'${module}'`) || code.indexOf(`"${module}"`);
       const usageInFirstKB = code.substring(0, moduleImportIdx + 100);
 
-      if (!usageInFirstKB.includes("if (") && !usageInFirstKB.includes("switch")) {
+      if (
+        !usageInFirstKB.includes("if (") &&
+        !usageInFirstKB.includes("switch")
+      ) {
         opportunities.push({
           type: "Dynamic Import",
           description: `Heavy module '${module}' imported eagerly - use dynamic import`,
@@ -197,7 +206,8 @@ function performBundleAnalysis(code: string): BundleAnalysis {
   const optimizations: string[] = [];
 
   // Detect full library imports vs specific imports
-  const fullLibraryImports = code.match(/import\s+.*\s+from\s+['"](?!.*\/)([a-z-]+)['"]/g) || [];
+  const fullLibraryImports =
+    code.match(/import\s+.*\s+from\s+['"](?!.*\/)([a-z-]+)['"]/g) || [];
 
   for (const imp of fullLibraryImports) {
     // Check for large libraries imported in full
@@ -209,15 +219,23 @@ function performBundleAnalysis(code: string): BundleAnalysis {
       (imp.includes("@mui/material") && imp.includes("from '@mui/material'"))
     ) {
       largeImports.push(imp);
-      suggestions.push(`Use specific imports from ${imp.match(/['"]([^'"]+)['"]/)?.[1]}`);
+      suggestions.push(
+        `Use specific imports from ${imp.match(/['"]([^'"]+)['"]/)?.[1]}`,
+      );
     }
   }
 
   // Suggest optimizations
   if (largeImports.length > 0) {
-    optimizations.push("Replace full library imports with tree-shakeable specific imports");
-    optimizations.push("Consider lighter alternatives (e.g., date-fns instead of moment)");
-    optimizations.push("Use barrel exports carefully - import only what's needed");
+    optimizations.push(
+      "Replace full library imports with tree-shakeable specific imports",
+    );
+    optimizations.push(
+      "Consider lighter alternatives (e.g., date-fns instead of moment)",
+    );
+    optimizations.push(
+      "Use barrel exports carefully - import only what's needed",
+    );
   }
 
   return { largeImports, suggestions, optimizations };
@@ -228,14 +246,15 @@ function performMemoryLeakDetection(code: string): MemoryLeakDetection {
   const potentialLeaks: string[] = [];
   const patterns: string[] = [];
   const fixes: string[] = [];
-  const lines = code.split("\n");
 
   // Check for event listeners without cleanup
   if (code.includes("addEventListener")) {
     if (!code.includes("removeEventListener")) {
       potentialLeaks.push("Event listeners added without removal");
       patterns.push("addEventListener found without removeEventListener");
-      fixes.push("Use useEffect cleanup or AbortController to remove listeners");
+      fixes.push(
+        "Use useEffect cleanup or AbortController to remove listeners",
+      );
     }
   }
 
@@ -277,9 +296,17 @@ function performMemoryLeakDetection(code: string): MemoryLeakDetection {
   for (const _ of useEffectMatches) {
     const effectStart = code.indexOf("useEffect");
     const effectBody = code.substring(effectStart, effectStart + 300);
-    if (effectBody.includes("addEventListener") || effectBody.includes("setInterval")) {
-      if (!effectBody.includes("return") && !effectBody.includes("clearInterval")) {
-        potentialLeaks.push("useEffect with subscriptions/timers missing cleanup");
+    if (
+      effectBody.includes("addEventListener") ||
+      effectBody.includes("setInterval")
+    ) {
+      if (
+        !effectBody.includes("return") &&
+        !effectBody.includes("clearInterval")
+      ) {
+        potentialLeaks.push(
+          "useEffect with subscriptions/timers missing cleanup",
+        );
         fixes.push("Return cleanup function from useEffect");
       }
     }
@@ -302,7 +329,9 @@ function analyzeNetworkOptimization(code: string): NetworkOptimization {
   // Check for sequential awaits that could be parallel
   if (code.includes("await fetch") && code.includes("\nawait fetch")) {
     issues.push("Sequential fetches could be parallelized");
-    suggestions.push("Use Promise.all() or Promise.allSettled() for parallel requests");
+    suggestions.push(
+      "Use Promise.all() or Promise.allSettled() for parallel requests",
+    );
   }
 
   // Check for missing request caching
@@ -314,7 +343,11 @@ function analyzeNetworkOptimization(code: string): NetworkOptimization {
   }
 
   // Check for missing request deduplication
-  if (code.includes("fetch(") && !code.includes("dedupe") && !code.includes("AbortController")) {
+  if (
+    code.includes("fetch(") &&
+    !code.includes("dedupe") &&
+    !code.includes("AbortController")
+  ) {
     issues.push("No request deduplication - rapid calls could cause issues");
     suggestions.push("Use request deduplication or abort pending requests");
   }
@@ -328,7 +361,9 @@ function analyzeNetworkOptimization(code: string): NetworkOptimization {
   // Best practices
   bestPractices.push("Use request batching for multiple related API calls");
   bestPractices.push("Implement exponential backoff for retries");
-  bestPractices.push("Use webhooks or websockets instead of polling when possible");
+  bestPractices.push(
+    "Use webhooks or websockets instead of polling when possible",
+  );
   bestPractices.push("Compress request/response data when possible");
 
   return { issues, suggestions, bestPractices };
@@ -342,7 +377,14 @@ async function analyzeResources(
   args: ResourceOptimizerArgs,
   _ctx: AgentContext,
 ): Promise<ResourceOptimizationResult> {
-  const { targetPath, code, analyzeLazyLoading, analyzeBundleSize, detectMemoryLeaks, analyzeNetwork } = args;
+  const {
+    targetPath,
+    code,
+    analyzeLazyLoading,
+    analyzeBundleSize,
+    detectMemoryLeaks,
+    analyzeNetwork,
+  } = args;
 
   let codeToAnalyze = code || "";
   let fileName = "inline code";
@@ -355,11 +397,13 @@ async function analyzeResources(
       return {
         fileName: targetPath,
         analysis: {
-          issues: [{
-            type: "large_bundle",
-            severity: "critical",
-            description: `Could not read file: ${targetPath}`,
-          }],
+          issues: [
+            {
+              type: "large_bundle",
+              severity: "critical",
+              description: `Could not read file: ${targetPath}`,
+            },
+          ],
           lazyLoading: [],
           bundle: { largeImports: [], suggestions: [], optimizations: [] },
           memoryLeaks: { potentialLeaks: [], patterns: [], fixes: [] },
@@ -376,7 +420,7 @@ async function analyzeResources(
   let lazyLoading: LazyLoadingOpportunity[] = [];
   if (analyzeLazyLoading) {
     lazyLoading = detectLazyLoadingOpportunities(codeToAnalyze);
-    
+
     for (const opp of lazyLoading) {
       issues.push({
         type: "eager_import",
@@ -388,10 +432,14 @@ async function analyzeResources(
     }
   }
 
-  let bundle: BundleAnalysis = { largeImports: [], suggestions: [], optimizations: [] };
+  let bundle: BundleAnalysis = {
+    largeImports: [],
+    suggestions: [],
+    optimizations: [],
+  };
   if (analyzeBundleSize) {
     bundle = performBundleAnalysis(codeToAnalyze);
-    
+
     for (const imp of bundle.largeImports) {
       issues.push({
         type: "large_dependency",
@@ -402,10 +450,14 @@ async function analyzeResources(
     }
   }
 
-  let memoryLeaks: MemoryLeakDetection = { potentialLeaks: [], patterns: [], fixes: [] };
+  let memoryLeaks: MemoryLeakDetection = {
+    potentialLeaks: [],
+    patterns: [],
+    fixes: [],
+  };
   if (detectMemoryLeaks) {
     memoryLeaks = performMemoryLeakDetection(codeToAnalyze);
-    
+
     for (const leak of memoryLeaks.potentialLeaks) {
       issues.push({
         type: "memory_leak",
@@ -416,10 +468,14 @@ async function analyzeResources(
     }
   }
 
-  let network: NetworkOptimization = { issues: [], suggestions: [], bestPractices: [] };
+  let network: NetworkOptimization = {
+    issues: [],
+    suggestions: [],
+    bestPractices: [],
+  };
   if (analyzeNetwork) {
     network = analyzeNetworkOptimization(codeToAnalyze);
-    
+
     for (const issue of network.issues) {
       issues.push({
         type: "redundant_request",
@@ -492,7 +548,8 @@ function generateResourceXml(result: ResourceOptimizationResult): string {
       lines.push(`### 🟠 High`);
       for (const issue of high) {
         lines.push(`- **${issue.type}**: ${issue.description}`);
-        if (issue.estimatedImpact) lines.push(`  → Impact: ${issue.estimatedImpact}`);
+        if (issue.estimatedImpact)
+          lines.push(`  → Impact: ${issue.estimatedImpact}`);
         if (issue.suggestion) lines.push(`  → ${issue.suggestion}`);
       }
     }
@@ -512,7 +569,9 @@ function generateResourceXml(result: ResourceOptimizationResult): string {
       lines.push(`### ${opp.type}`);
       lines.push(`- **Description:** ${opp.description}`);
       lines.push(`- **Current:** \`${opp.currentPattern}\``);
-      lines.push(`- **Suggested:** ${opp.suggestedPattern.replace(/\n/g, "\n  ")}`);
+      lines.push(
+        `- **Suggested:** ${opp.suggestedPattern.replace(/\n/g, "\n  ")}`,
+      );
       lines.push(`- **Est. Savings:** ${opp.estimatedSavings}`);
       lines.push(``);
     }

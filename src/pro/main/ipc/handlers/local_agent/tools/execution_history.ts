@@ -31,25 +31,39 @@ const ExecutionHistoryArgs = z.object({
       "get_tool_effectiveness",
       "clear",
     ])
-    .describe("Action: record execution, query history, analyze patterns, get stats, or get tool effectiveness"),
+    .describe(
+      "Action: record execution, query history, analyze patterns, get stats, or get tool effectiveness",
+    ),
   /** Task/goal identifier */
   taskId: z.string().optional().describe("Unique task identifier"),
   /** Task description */
   taskDescription: z.string().optional().describe("Description of the task"),
   /** Whether the execution was successful */
-  success: z.boolean().optional().describe("Whether the execution was successful"),
+  success: z
+    .boolean()
+    .optional()
+    .describe("Whether the execution was successful"),
   /** Error message if failed */
-  errorMessage: z.string().optional().describe("Error message if execution failed"),
+  errorMessage: z
+    .string()
+    .optional()
+    .describe("Error message if execution failed"),
   /** Tools used during execution */
   toolsUsed: z.array(z.string()).optional().describe("List of tools used"),
   /** Duration in milliseconds */
   duration: z.number().optional().describe("Execution duration in ms"),
   /** Time range for queries (e.g., "24h", "7d", "30d") */
-  timeRange: z.string().optional().describe("Time range for queries (24h, 7d, 30d, all)"),
+  timeRange: z
+    .string()
+    .optional()
+    .describe("Time range for queries (24h, 7d, 30d, all)"),
   /** Number of results to return */
   limit: z.number().optional().describe("Number of results to return"),
   /** Tool name for effectiveness queries */
-  toolName: z.string().optional().describe("Tool name for effectiveness queries"),
+  toolName: z
+    .string()
+    .optional()
+    .describe("Tool name for effectiveness queries"),
 });
 
 type ExecutionHistoryArgs = z.infer<typeof ExecutionHistoryArgs>;
@@ -167,7 +181,10 @@ function detectPatterns(toolsUsed: string[], success: boolean): string[] {
 // Analysis Functions
 // ============================================================================
 
-function analyzeExecutions(history: ExecutionRecord[], timeRange?: string): ExecutionStats {
+function analyzeExecutions(
+  history: ExecutionRecord[],
+  timeRange?: string,
+): ExecutionStats {
   const now = new Date();
   let cutoffTime: Date;
 
@@ -190,7 +207,8 @@ function analyzeExecutions(history: ExecutionRecord[], timeRange?: string): Exec
   const totalExecutions = filtered.length;
   const successfulExecutions = filtered.filter((r) => r.success).length;
   const failedExecutions = totalExecutions - successfulExecutions;
-  const successRate = totalExecutions > 0 ? successfulExecutions / totalExecutions : 0;
+  const successRate =
+    totalExecutions > 0 ? successfulExecutions / totalExecutions : 0;
   const averageDuration =
     totalExecutions > 0
       ? filtered.reduce((sum, r) => sum + r.duration, 0) / totalExecutions
@@ -240,13 +258,29 @@ function analyzeExecutions(history: ExecutionRecord[], timeRange?: string): Exec
   };
 }
 
-function getToolEffectiveness(history: ExecutionRecord[], toolName?: string): ToolEffectiveness[] {
-  const toolData: Record<string, { uses: number; success: number; durations: number[]; patterns: Set<string> }> = {};
+function getToolEffectiveness(
+  history: ExecutionRecord[],
+  toolName?: string,
+): ToolEffectiveness[] {
+  const toolData: Record<
+    string,
+    {
+      uses: number;
+      success: number;
+      durations: number[];
+      patterns: Set<string>;
+    }
+  > = {};
 
   for (const record of history) {
     for (const tool of record.toolsUsed) {
       if (!toolData[tool]) {
-        toolData[tool] = { uses: 0, success: 0, durations: [], patterns: new Set() };
+        toolData[tool] = {
+          uses: 0,
+          success: 0,
+          durations: [],
+          patterns: new Set(),
+        };
       }
       toolData[tool].uses++;
       if (record.success) {
@@ -269,7 +303,9 @@ function getToolEffectiveness(history: ExecutionRecord[], toolName?: string): To
       successCount: data.success,
       failureCount: data.uses - data.success,
       successRate: Math.round((data.success / data.uses) * 100) / 100,
-      averageDuration: Math.round(data.durations.reduce((a, b) => a + b, 0) / data.durations.length),
+      averageDuration: Math.round(
+        data.durations.reduce((a, b) => a + b, 0) / data.durations.length,
+      ),
       patterns: Array.from(data.patterns),
     }))
     .sort((a, b) => b.totalUses - a.totalUses);
@@ -285,12 +321,25 @@ async function executeHistoryAction(
   args: ExecutionHistoryArgs,
   ctx: AgentContext,
 ): Promise<string> {
-  const { action, taskId, taskDescription, success, errorMessage, toolsUsed, duration, timeRange, limit, toolName } = args;
+  const {
+    action,
+    taskId,
+    taskDescription,
+    success,
+    errorMessage,
+    toolsUsed,
+    duration,
+    timeRange,
+    limit,
+    toolName,
+  } = args;
 
   switch (action) {
     case "record": {
       if (!taskId || taskDescription === undefined) {
-        throw new Error("taskId and taskDescription are required for record action");
+        throw new Error(
+          "taskId and taskDescription are required for record action",
+        );
       }
 
       const history = loadHistory(ctx);
@@ -336,7 +385,10 @@ async function executeHistoryAction(
       }
 
       // Sort by timestamp descending
-      results.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      results.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
 
       // Apply limit
       if (limit) {
@@ -401,7 +453,9 @@ async function executeHistoryAction(
       if (stats.recentTrends.length > 0) {
         lines.push("## Recent Trends");
         for (const { date, successRate, count } of stats.recentTrends) {
-          lines.push(`- ${date}: ${(successRate * 100).toFixed(0)}% success (${count} executions)`);
+          lines.push(
+            `- ${date}: ${(successRate * 100).toFixed(0)}% success (${count} executions)`,
+          );
         }
       }
 

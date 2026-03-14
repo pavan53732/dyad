@@ -54,7 +54,14 @@ type IssueType =
 type IssueSeverity = "critical" | "high" | "medium" | "low";
 
 /** Complexity level */
-type ComplexityLevel = "O(1)" | "O(log n)" | "O(n)" | "O(n log n)" | "O(n²)" | "O(2^n)" | "O(n!)";
+type ComplexityLevel =
+  | "O(1)"
+  | "O(log n)"
+  | "O(n)"
+  | "O(n log n)"
+  | "O(n²)"
+  | "O(2^n)"
+  | "O(n!)";
 
 /** A detected performance issue */
 interface PerformanceIssue {
@@ -147,7 +154,8 @@ function detectInefficientLoops(code: string): PerformanceIssue[] {
       issues.push({
         type: "inefficient_loop",
         severity: "medium",
-        description: "Loop with array method - consider if multiple passes can be combined",
+        description:
+          "Loop with array method - consider if multiple passes can be combined",
         lineNumber,
         suggestion: "Chain operations or use reduce to combine multiple passes",
       });
@@ -163,13 +171,41 @@ function detectBlockingOperations(code: string): PerformanceIssue[] {
   const lines = code.split("\n");
 
   const blockingPatterns = [
-    { pattern: /\bfs\.readFileSync\(/, desc: "Synchronous file read", severity: "high" as IssueSeverity },
-    { pattern: /\bfs\.writeFileSync\(/, desc: "Synchronous file write", severity: "high" as IssueSeverity },
-    { pattern: /\bfs\.readdirSync\(/, desc: "Synchronous directory read", severity: "high" as IssueSeverity },
-    { pattern: /\bfs\.statSync\(/, desc: "Synchronous file stat", severity: "high" as IssueSeverity },
-    { pattern: /\bexecSync\(/, desc: "Synchronous command execution", severity: "critical" as IssueSeverity },
-    { pattern: /\bwhile\s*\([^)]*\)\s*\{[^}]*\b(sleep|wait)\b/, desc: "Blocking wait in loop", severity: "critical" as IssueSeverity },
-    { pattern: /\.join\(/, desc: "Synchronous array join in loop", severity: "medium" as IssueSeverity },
+    {
+      pattern: /\bfs\.readFileSync\(/,
+      desc: "Synchronous file read",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bfs\.writeFileSync\(/,
+      desc: "Synchronous file write",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bfs\.readdirSync\(/,
+      desc: "Synchronous directory read",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bfs\.statSync\(/,
+      desc: "Synchronous file stat",
+      severity: "high" as IssueSeverity,
+    },
+    {
+      pattern: /\bexecSync\(/,
+      desc: "Synchronous command execution",
+      severity: "critical" as IssueSeverity,
+    },
+    {
+      pattern: /\bwhile\s*\([^)]*\)\s*\{[^}]*\b(sleep|wait)\b/,
+      desc: "Blocking wait in loop",
+      severity: "critical" as IssueSeverity,
+    },
+    {
+      pattern: /\.join\(/,
+      desc: "Synchronous array join in loop",
+      severity: "medium" as IssueSeverity,
+    },
   ];
 
   for (let i = 0; i < lines.length; i++) {
@@ -198,11 +234,31 @@ function detectMemoryIssues(code: string): PerformanceIssue[] {
   const lines = code.split("\n");
 
   const memoryPatterns = [
-    { pattern: /\.push\([^)]*\+[^)]*\)/, desc: "Concatenation in push", severity: "medium" as IssueSeverity },
-    { pattern: /\[.*\]\s*\+\s*\[/, desc: "Array concatenation", severity: "medium" as IssueSeverity },
-    { pattern: /new\s+Array\(.*\)\s*\./, desc: "Large array allocation", severity: "medium" as IssueSeverity },
-    { pattern: /JSON\.stringify\([^)]*\)/, desc: "Full object serialization", severity: "low" as IssueSeverity },
-    { pattern: /\bcloneDeep\(/, desc: "Deep clone operation", severity: "medium" as IssueSeverity },
+    {
+      pattern: /\.push\([^)]*\+[^)]*\)/,
+      desc: "Concatenation in push",
+      severity: "medium" as IssueSeverity,
+    },
+    {
+      pattern: /\[.*\]\s*\+\s*\[/,
+      desc: "Array concatenation",
+      severity: "medium" as IssueSeverity,
+    },
+    {
+      pattern: /new\s+Array\(.*\)\s*\./,
+      desc: "Large array allocation",
+      severity: "medium" as IssueSeverity,
+    },
+    {
+      pattern: /JSON\.stringify\([^)]*\)/,
+      desc: "Full object serialization",
+      severity: "low" as IssueSeverity,
+    },
+    {
+      pattern: /\bcloneDeep\(/,
+      desc: "Deep clone operation",
+      severity: "medium" as IssueSeverity,
+    },
   ];
 
   for (let i = 0; i < lines.length; i++) {
@@ -242,7 +298,10 @@ function detectRecursiveCalls(code: string): PerformanceIssue[] {
     for (const fnName of functionNames) {
       if (new RegExp(`\\b${fnName}\\s*\\(`).test(line) && i > 5) {
         // Check if this is in the same function body
-        const functionStart = lines.slice(0, i).reverse().findIndex((l) => /function\s+(\w+)/.test(l));
+        const functionStart = lines
+          .slice(0, i)
+          .reverse()
+          .findIndex((l) => /function\s+(\w+)/.test(l));
         if (functionStart !== -1) {
           const fnLineNum = i - functionStart;
           const fnLine = lines[fnLineNum];
@@ -252,7 +311,8 @@ function detectRecursiveCalls(code: string): PerformanceIssue[] {
               severity: "medium",
               description: `Recursive call to '${fnName}' - ensure proper termination`,
               lineNumber,
-              suggestion: "Consider adding memoization or converting to iterative approach",
+              suggestion:
+                "Consider adding memoization or converting to iterative approach",
             });
           }
         }
@@ -274,7 +334,6 @@ function detectRedundantComputations(code: string): PerformanceIssue[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const lineNumber = i + 1;
 
     if (/for\s*\(/.test(line) || /while\s*\(/.test(line)) {
       inLoop = true;
@@ -291,7 +350,8 @@ function detectRedundantComputations(code: string): PerformanceIssue[] {
         issues.push({
           type: "redundant_computation",
           severity: "medium",
-          description: "Repeated Math operations in loop - compute once outside",
+          description:
+            "Repeated Math operations in loop - compute once outside",
           lineNumber: loopStart + 1,
           suggestion: "Move constant calculations outside the loop",
         });
@@ -305,15 +365,19 @@ function detectRedundantComputations(code: string): PerformanceIssue[] {
 }
 
 /** Analyze function complexity */
-function analyzeComplexity(code: string): { overall: ComplexityLevel; hotspots: { function: string; complexity: ComplexityLevel }[] } {
+function analyzeComplexity(code: string): {
+  overall: ComplexityLevel;
+  hotspots: { function: string; complexity: ComplexityLevel }[];
+} {
   const hotspots: { function: string; complexity: ComplexityLevel }[] = [];
 
   // Simple heuristics for complexity
-  const functionDefs = code.match(/function\s+\w+|const\s+\w+\s*=\s*(?:async\s+)?\(|=>\s*{/g) || [];
 
   // Look for complexity indicators
-  const nestedLoops = (code.match(/for\s*\([^)]*\)[^}]*for\s*\(/g) || []).length;
-  const recursions = (code.match(/function\s+(\w+)[\s\S]*?\1\s*\(/g) || []).length;
+  const nestedLoops = (code.match(/for\s*\([^)]*\)[^}]*for\s*\(/g) || [])
+    .length;
+  const recursions = (code.match(/function\s+(\w+)[\s\S]*?\1\s*\(/g) || [])
+    .length;
 
   let overall: ComplexityLevel = "O(n)";
   if (nestedLoops > 0) {
@@ -334,11 +398,18 @@ function analyzeMemory(code: string): MemoryAnalysis {
 
   // Check for potential memory leaks
   if (code.includes("setInterval") && !code.includes("clearInterval")) {
-    potentialLeaks.push("setInterval without clearInterval - potential memory leak");
+    potentialLeaks.push(
+      "setInterval without clearInterval - potential memory leak",
+    );
   }
 
-  if (code.includes("addEventListener") && !code.includes("removeEventListener")) {
-    potentialLeaks.push("addEventListener without removeEventListener - potential memory leak");
+  if (
+    code.includes("addEventListener") &&
+    !code.includes("removeEventListener")
+  ) {
+    potentialLeaks.push(
+      "addEventListener without removeEventListener - potential memory leak",
+    );
   }
 
   // Check for large allocations
@@ -354,11 +425,15 @@ function analyzeMemory(code: string): MemoryAnalysis {
 
   // Check for inefficient patterns
   if (/\.innerHTML\s*=/.test(code)) {
-    inefficientPatterns.push("innerHTML assignment - consider using textContent for text");
+    inefficientPatterns.push(
+      "innerHTML assignment - consider using textContent for text",
+    );
   }
 
   if (/JSON\.parse\(.*\)/.test(code) && code.includes("JSON.stringify")) {
-    inefficientPatterns.push("Multiple JSON parse/stringify operations detected");
+    inefficientPatterns.push(
+      "Multiple JSON parse/stringify operations detected",
+    );
   }
 
   // Generate recommendations
@@ -367,7 +442,9 @@ function analyzeMemory(code: string): MemoryAnalysis {
   }
 
   if (largeAllocations.length > 0) {
-    recommendations.push("Consider streaming or chunking large data operations");
+    recommendations.push(
+      "Consider streaming or chunking large data operations",
+    );
   }
 
   return {
@@ -383,7 +460,13 @@ async function profileCode(
   args: RuntimeProfilerArgs,
   _ctx: AgentContext,
 ): Promise<ProfilingResult> {
-  const { targetPath, code, depth, checkPatterns, analyzeMemory: doAnalyzeMemory, analyzeComplexity: doAnalyzeComplexity } = args;
+  const {
+    targetPath,
+    code,
+    checkPatterns,
+    analyzeMemory: doAnalyzeMemory,
+    analyzeComplexity: doAnalyzeComplexity,
+  } = args;
 
   let codeToAnalyze = code || "";
   let fileName = "inline code";
@@ -397,14 +480,21 @@ async function profileCode(
         fileName: targetPath,
         analysis: {
           functions: [],
-          issues: [{
-            type: "blocking_operation",
-            severity: "critical",
-            description: `Could not read file: ${targetPath}`,
-            suggestion: "Check if the file path is correct and accessible",
-          }],
+          issues: [
+            {
+              type: "blocking_operation",
+              severity: "critical",
+              description: `Could not read file: ${targetPath}`,
+              suggestion: "Check if the file path is correct and accessible",
+            },
+          ],
           issueCount: { critical: 1, high: 0, medium: 0, low: 0 },
-          memory: { potentialLeaks: [], largeAllocations: [], inefficientPatterns: [], recommendations: [] },
+          memory: {
+            potentialLeaks: [],
+            largeAllocations: [],
+            inefficientPatterns: [],
+            recommendations: [],
+          },
           complexity: { overall: "O(1)", hotspots: [] },
         },
         summary: "Error: Could not read the specified file",
@@ -422,17 +512,21 @@ async function profileCode(
     allIssues.push(...detectRedundantComputations(codeToAnalyze));
   }
 
-  const memory = doAnalyzeMemory ? analyzeMemory(codeToAnalyze) : {
-    potentialLeaks: [],
-    largeAllocations: [],
-    inefficientPatterns: [],
-    recommendations: [],
-  };
+  const memory = doAnalyzeMemory
+    ? analyzeMemory(codeToAnalyze)
+    : {
+        potentialLeaks: [],
+        largeAllocations: [],
+        inefficientPatterns: [],
+        recommendations: [],
+      };
 
-  const complexity = doAnalyzeComplexity ? analyzeComplexity(codeToAnalyze) : {
-    overall: "O(n)" as ComplexityLevel,
-    hotspots: [],
-  };
+  const complexity = doAnalyzeComplexity
+    ? analyzeComplexity(codeToAnalyze)
+    : {
+        overall: "O(n)" as ComplexityLevel,
+        hotspots: [],
+      };
 
   // Count issues by severity
   const issueCount = {
@@ -494,11 +588,15 @@ function generateProfilingXml(result: ProfilingResult): string {
     lines.push(``);
 
     // List critical and high issues first
-    const criticalHigh = issues.filter((i) => i.severity === "critical" || i.severity === "high");
+    const criticalHigh = issues.filter(
+      (i) => i.severity === "critical" || i.severity === "high",
+    );
     if (criticalHigh.length > 0) {
       lines.push(`### Critical/High Issues`);
       for (const issue of criticalHigh) {
-        lines.push(`- **${issue.type}** (${issue.severity}): ${issue.description}`);
+        lines.push(
+          `- **${issue.type}** (${issue.severity}): ${issue.description}`,
+        );
         if (issue.lineNumber) {
           lines.push(`  → Line ${issue.lineNumber}`);
         }
@@ -522,7 +620,11 @@ function generateProfilingXml(result: ProfilingResult): string {
   lines.push(``);
 
   // Memory analysis
-  if (memory.potentialLeaks.length > 0 || memory.largeAllocations.length > 0 || memory.inefficientPatterns.length > 0) {
+  if (
+    memory.potentialLeaks.length > 0 ||
+    memory.largeAllocations.length > 0 ||
+    memory.inefficientPatterns.length > 0
+  ) {
     lines.push(`## Memory Analysis`);
     if (memory.potentialLeaks.length > 0) {
       lines.push(`### Potential Leaks`);

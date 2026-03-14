@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { ToolDefinition, type AgentContext } from "./types";
+import { ToolDefinition } from "./types";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -112,7 +112,8 @@ const initialPatterns: KnowledgeEntry[] = [
   {
     id: "pat-1",
     pattern: "Singleton Pattern",
-    description: "Ensures a class has only one instance and provides a global point of access to it",
+    description:
+      "Ensures a class has only one instance and provides a global point of access to it",
     language: "typescript",
     codeExample: `class Singleton {
   private static instance: Singleton;
@@ -134,7 +135,8 @@ const initialPatterns: KnowledgeEntry[] = [
   {
     id: "pat-2",
     pattern: "Repository Pattern",
-    description: "Mediates between the domain and data mapping layers using a collection-like interface",
+    description:
+      "Mediates between the domain and data mapping layers using a collection-like interface",
     language: "typescript",
     codeExample: `interface Repository<T> {
   findAll(): Promise<T[]>;
@@ -269,7 +271,9 @@ function sharePattern(args: KnowledgeSharingArgs): KnowledgeResult {
 /**
  * Generate documentation from code
  */
-async function generateDocs(args: KnowledgeSharingArgs): Promise<KnowledgeResult> {
+async function generateDocs(
+  args: KnowledgeSharingArgs,
+): Promise<KnowledgeResult> {
   if (!args.filePath) {
     return {
       action: "generate_docs",
@@ -291,7 +295,9 @@ async function generateDocs(args: KnowledgeSharingArgs): Promise<KnowledgeResult
 
     for (const line of lines) {
       // Match functions
-      const funcMatch = line.match(/(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:\([^)]*\)|[^=]))?\s*=>/);
+      const funcMatch = line.match(
+        /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*(?:\([^)]*\)|[^=]))?\s*=>/,
+      );
       if (funcMatch && !line.includes("//")) {
         functions.push(funcMatch[1]);
       }
@@ -309,19 +315,30 @@ async function generateDocs(args: KnowledgeSharingArgs): Promise<KnowledgeResult
       }
 
       // Match exports
-      const exportMatch = line.match(/export\s+(?:default\s+)?(?:const|let|var|function|class|interface|type)\s+(\w+)/);
+      const exportMatch = line.match(
+        /export\s+(?:default\s+)?(?:const|let|var|function|class|interface|type)\s+(\w+)/,
+      );
       if (exportMatch) {
         exports.push(exportMatch[1]);
       }
     }
 
-    const documentation = `# ${fileName}\n\n` +
+    const documentation =
+      `# ${fileName}\n\n` +
       `## Overview\n\n` +
       `Generated documentation for ${path.basename(args.filePath)}\n\n` +
-      (classes.length > 0 ? `## Classes\n\n${classes.map(c => `- ${c}`).join("\n")}\n\n` : "") +
-      (interfaces.length > 0 ? `## Interfaces\n\n${interfaces.map(i => `- ${i}`).join("\n")}\n\n` : "") +
-      (functions.length > 0 ? `## Functions\n\n${functions.map(f => `- ${f}`).join("\n")}\n\n` : "") +
-      (exports.length > 0 ? `## Exports\n\n${exports.map(e => `- ${e}`).join("\n")}\n\n` : "") +
+      (classes.length > 0
+        ? `## Classes\n\n${classes.map((c) => `- ${c}`).join("\n")}\n\n`
+        : "") +
+      (interfaces.length > 0
+        ? `## Interfaces\n\n${interfaces.map((i) => `- ${i}`).join("\n")}\n\n`
+        : "") +
+      (functions.length > 0
+        ? `## Functions\n\n${functions.map((f) => `- ${f}`).join("\n")}\n\n`
+        : "") +
+      (exports.length > 0
+        ? `## Exports\n\n${exports.map((e) => `- ${e}`).join("\n")}\n\n`
+        : "") +
       `## Usage\n\n\`\`\`${args.language}\n// Import and use the exported members\nimport { ${exports.join(", ")} } from './${fileName}';\n\`\`\`\n`;
 
     return {
@@ -342,7 +359,9 @@ async function generateDocs(args: KnowledgeSharingArgs): Promise<KnowledgeResult
 /**
  * Generate API documentation
  */
-async function generateApiDocs(args: KnowledgeSharingArgs): Promise<KnowledgeResult> {
+async function generateApiDocs(
+  args: KnowledgeSharingArgs,
+): Promise<KnowledgeResult> {
   if (!args.sourcePath) {
     return {
       action: "generate_api_docs",
@@ -420,14 +439,18 @@ async function generateApiDocs(args: KnowledgeSharingArgs): Promise<KnowledgeRes
     }
 
     if (interfaces.length > 0) {
-      documentation += `## Interfaces\n\n${interfaces.map(i => `- ${i}`).join("\n")}\n\n`;
+      documentation += `## Interfaces\n\n${interfaces.map((i) => `- ${i}`).join("\n")}\n\n`;
     }
 
     if (types.length > 0) {
-      documentation += `## Types\n\n${types.map(t => `- ${t}`).join("\n")}\n\n`;
+      documentation += `## Types\n\n${types.map((t) => `- ${t}`).join("\n")}\n\n`;
     }
 
-    if (endpoints.length === 0 && interfaces.length === 0 && types.length === 0) {
+    if (
+      endpoints.length === 0 &&
+      interfaces.length === 0 &&
+      types.length === 0
+    ) {
       documentation += "No API definitions found in the file.\n";
     }
 
@@ -522,7 +545,10 @@ function updateKnowledgeBase(args: KnowledgeSharingArgs): KnowledgeResult {
 function searchKnowledge(args: KnowledgeSharingArgs): KnowledgeResult {
   if (!args.searchQuery) {
     // Return all entries
-    const entries = Array.from(knowledgeBase.values()).slice(0, args.maxResults);
+    const entries = Array.from(knowledgeBase.values()).slice(
+      0,
+      args.maxResults,
+    );
     return {
       action: "search_knowledge",
       success: true,
@@ -603,16 +629,20 @@ function exportKnowledge(args: KnowledgeSharingArgs): KnowledgeResult {
 </head>
 <body>
   <h1>Knowledge Base Export</h1>
-  ${entries.map(entry => `
+  ${entries
+    .map(
+      (entry) => `
   <div class="entry">
     <h2>${entry.pattern}</h2>
     <p>${entry.description}</p>
     <p><strong>Language:</strong> ${entry.language}</p>
     <p><strong>Category:</strong> ${entry.category}</p>
-    <p><strong>Tags:</strong> ${entry.tags.map(tag => `<span class="tag">${tag}</span>`).join(" ")}</p>
+    <p><strong>Tags:</strong> ${entry.tags.map((tag) => `<span class="tag">${tag}</span>`).join(" ")}</p>
     ${entry.codeExample ? `<pre><code>${entry.codeExample}</code></pre>` : ""}
   </div>
-  `).join("\n")}
+  `,
+    )
+    .join("\n")}
 </body>
 </html>`;
       break;
@@ -620,7 +650,8 @@ function exportKnowledge(args: KnowledgeSharingArgs): KnowledgeResult {
     default:
       exportedData = entries
         .map(
-          (entry) => `## ${entry.pattern}\n\n**Language:** ${entry.language}  \n**Category:** ${entry.category}  \n**Tags:** ${entry.tags.join(", ")}  \n\n${entry.description}\n\n${entry.codeExample ? "```" + entry.language + "\n" + entry.codeExample + "\n```" : ""}\n`,
+          (entry) =>
+            `## ${entry.pattern}\n\n**Language:** ${entry.language}  \n**Category:** ${entry.category}  \n**Tags:** ${entry.tags.join(", ")}  \n\n${entry.description}\n\n${entry.codeExample ? "```" + entry.language + "\n" + entry.codeExample + "\n```" : ""}\n`,
         )
         .join("\n---\n\n");
       break;
@@ -676,7 +707,9 @@ function generateKnowledgeXml(result: KnowledgeResult): string {
         lines.push(``);
         lines.push(entry.description);
         lines.push(``);
-        lines.push(`*${entry.language} | ${entry.category} | ${entry.tags.join(", ")}*`);
+        lines.push(
+          `*${entry.language} | ${entry.category} | ${entry.tags.join(", ")}*`,
+        );
         lines.push(``);
       }
     }
@@ -703,7 +736,9 @@ function generateKnowledgeXml(result: KnowledgeResult): string {
       if (result.data.exportedData.length > 5000) {
         lines.push(`## Exported Data`);
         lines.push(``);
-        lines.push(`(Output truncated - ${result.data.exportedData.length} characters)`);
+        lines.push(
+          `(Output truncated - ${result.data.exportedData.length} characters)`,
+        );
         lines.push(``);
         lines.push("```");
         lines.push(result.data.exportedData.substring(0, 5000));

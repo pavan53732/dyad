@@ -11,11 +11,13 @@
 **Dyad** is a local, open-source AI app builder — a desktop application that enables users to create, edit, and deploy AI-powered applications. It functions as a private, self-hosted alternative to cloud-based AI builders like Lovable, v0, or Bolt.
 
 ### Core Value Proposition
+
 - **Local-First:** All AI processing happens locally or via user-provided API keys
 - **Privacy:** No vendor lock-in; users control their data and AI providers
 - **Cross-Platform:** Runs on Mac and Windows via Electron
 
 ### Key Features
+
 - AI-powered app scaffolding and editing via chat interface
 - GitHub integration for version control and collaboration
 - Vercel deployment integration
@@ -71,59 +73,65 @@ dyad/
 ## 3. Technology Stack
 
 ### Core Framework
-| Technology | Purpose |
-|------------|---------|
-| **Electron** | Desktop application framework |
-| **React** | UI library |
+
+| Technology          | Purpose                                           |
+| ------------------- | ------------------------------------------------- |
+| **Electron**        | Desktop application framework                     |
+| **React**           | UI library                                        |
 | **TanStack Router** | Client-side routing (not Next.js or React Router) |
-| **TanStack Query** | Data fetching and caching for IPC endpoints |
-| **TypeScript** | Type safety (strict mode via `tsgo`) |
-| **Vite** | Build tool |
+| **TanStack Query**  | Data fetching and caching for IPC endpoints       |
+| **TypeScript**      | Type safety (strict mode via `tsgo`)              |
+| **Vite**            | Build tool                                        |
 
 ### UI & Styling
-| Technology | Purpose |
-|------------|---------|
+
+| Technology         | Purpose                                |
+| ------------------ | -------------------------------------- |
 | **@base-ui/react** | UI component primitives (NOT Radix UI) |
-| **Tailwind CSS** | Utility-first CSS |
-| **Geist** | Font/typography |
-| **Framer Motion** | Animations |
-| **Monaco Editor** | Code editor |
-| **Lexical** | Rich text editor |
+| **Tailwind CSS**   | Utility-first CSS                      |
+| **Geist**          | Font/typography                        |
+| **Framer Motion**  | Animations                             |
+| **Monaco Editor**  | Code editor                            |
+| **Lexical**        | Rich text editor                       |
 
 ### Database & Storage
-| Technology | Purpose |
-|------------|---------|
-| **Drizzle ORM** | SQLite database ORM |
-| **SQLite (better-sqlite3)** | Local database |
-| **Neon (PostgreSQL)** | Cloud database for deployments |
+
+| Technology                  | Purpose                        |
+| --------------------------- | ------------------------------ |
+| **Drizzle ORM**             | SQLite database ORM            |
+| **SQLite (better-sqlite3)** | Local database                 |
+| **Neon (PostgreSQL)**       | Cloud database for deployments |
 
 ### AI & Language Models
-| Technology | Purpose |
-|------------|---------|
-| **AI SDK (Vercel)** | Unified AI API client |
-| **@ai-sdk/openai** | OpenAI models |
-| **@ai-sdk/anthropic** | Anthropic Claude models |
-| **@ai-sdk/azure** | Azure OpenAI |
-| **@ai-sdk/google** | Google AI |
-| **@ai-sdk/amazon-bedrock** | AWS Bedrock |
-| **@modelcontextprotocol/sdk** | MCP client |
+
+| Technology                    | Purpose                 |
+| ----------------------------- | ----------------------- |
+| **AI SDK (Vercel)**           | Unified AI API client   |
+| **@ai-sdk/openai**            | OpenAI models           |
+| **@ai-sdk/anthropic**         | Anthropic Claude models |
+| **@ai-sdk/azure**             | Azure OpenAI            |
+| **@ai-sdk/google**            | Google AI               |
+| **@ai-sdk/amazon-bedrock**    | AWS Bedrock             |
+| **@modelcontextprotocol/sdk** | MCP client              |
 
 ### External Integrations
-| Technology | Purpose |
-|------------|---------|
-| **@vercel/sdk** | Vercel deployments |
-| **@dyad-sh/supabase-management-js** | Supabase management |
-| **@neondatabase/api-client** | Neon database management |
-| **Octokit** | GitHub API |
+
+| Technology                          | Purpose                  |
+| ----------------------------------- | ------------------------ |
+| **@vercel/sdk**                     | Vercel deployments       |
+| **@dyad-sh/supabase-management-js** | Supabase management      |
+| **@neondatabase/api-client**        | Neon database management |
+| **Octokit**                         | GitHub API               |
 
 ### Testing & Development
-| Technology | Purpose |
-|------------|---------|
-| **Playwright** | E2E testing |
-| **Vitest** | Unit testing |
-| **Electron Forge** | Build and package |
-| **Husky** | Git hooks |
-| **Biome** | Linting and formatting |
+
+| Technology         | Purpose                |
+| ------------------ | ---------------------- |
+| **Playwright**     | E2E testing            |
+| **Vitest**         | Unit testing           |
+| **Electron Forge** | Build and package      |
+| **Husky**          | Git hooks              |
+| **Biome**          | Linting and formatting |
 
 ---
 
@@ -184,21 +192,22 @@ sequenceDiagram
 
 The IPC layer is the backbone of main-renderer communication:
 
-| Module | Path | Purpose |
-|--------|------|---------|
-| **Chat Handlers** | `src/ipc/handlers/chat_stream_handlers.ts` | AI chat streaming with agent mode |
-| **App Handlers** | `src/ipc/handlers/app_handlers.ts` | App CRUD operations |
-| **GitHub Handlers** | `src/ipc/handlers/github_handlers.ts` | GitHub integration |
-| **Vercel Handlers** | `src/ipc/handlers/vercel_handlers.ts` | Deployment management |
-| **Supabase Handlers** | `src/ipc/handlers/supabase_handlers.ts` | Backend integration |
-| **Neon Handlers** | `src/ipc/handlers/neon_handlers.ts` | Database integration |
-| **Language Model Handlers** | `src/ipc/handlers/language_model_handlers.ts` | AI provider management |
-| **MCP Handlers** | `src/ipc/handlers/mcp_handlers.ts` | MCP server management |
-| **Compaction Handlers** | `src/ipc/handlers/compaction/` | Context window management |
+| Module                      | Path                                          | Purpose                           |
+| --------------------------- | --------------------------------------------- | --------------------------------- |
+| **Chat Handlers**           | `src/ipc/handlers/chat_stream_handlers.ts`    | AI chat streaming with agent mode |
+| **App Handlers**            | `src/ipc/handlers/app_handlers.ts`            | App CRUD operations               |
+| **GitHub Handlers**         | `src/ipc/handlers/github_handlers.ts`         | GitHub integration                |
+| **Vercel Handlers**         | `src/ipc/handlers/vercel_handlers.ts`         | Deployment management             |
+| **Supabase Handlers**       | `src/ipc/handlers/supabase_handlers.ts`       | Backend integration               |
+| **Neon Handlers**           | `src/ipc/handlers/neon_handlers.ts`           | Database integration              |
+| **Language Model Handlers** | `src/ipc/handlers/language_model_handlers.ts` | AI provider management            |
+| **MCP Handlers**            | `src/ipc/handlers/mcp_handlers.ts`            | MCP server management             |
+| **Compaction Handlers**     | `src/ipc/handlers/compaction/`                | Context window management         |
 
 ### 5.2 Local Agent Tools
 
 Located in the AI SDK integration, tools include:
+
 - File system operations (read, write, list)
 - Git operations (commit, branch, status)
 - Shell command execution
@@ -206,11 +215,11 @@ Located in the AI SDK integration, tools include:
 
 ### 5.3 State Management
 
-| Approach | Usage |
-|----------|-------|
-| **Jotai Atoms** | `src/atoms/` - UI state (chat, app, preview) |
-| **TanStack Query** | Server state via IPC |
-| **React Context** | `src/contexts/` - Theme, deep links |
+| Approach           | Usage                                        |
+| ------------------ | -------------------------------------------- |
+| **Jotai Atoms**    | `src/atoms/` - UI state (chat, app, preview) |
+| **TanStack Query** | Server state via IPC                         |
+| **React Context**  | `src/contexts/` - Theme, deep links          |
 
 ### 5.4 Component Architecture
 
@@ -485,11 +494,11 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ### 9.1 Environment Configuration
 
-| Variable | Purpose |
-|----------|---------|
+| Variable          | Purpose                   |
+| ----------------- | ------------------------- |
 | `DYAD_ENGINE_URL` | Custom AI engine endpoint |
-| `DATABASE_URL` | SQLite database path |
-| `NODE_ENV` | Development/production |
+| `DATABASE_URL`    | SQLite database path      |
+| `NODE_ENV`        | Development/production    |
 
 ### 9.2 Build & Distribution
 
@@ -509,16 +518,16 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ### 10.1 AI Providers
 
-| Provider | SDK | Environment Variables |
-|----------|-----|----------------------|
-| OpenAI | @ai-sdk/openai | OPENAI_API_KEY |
-| Anthropic | @ai-sdk/anthropic | ANTHROPIC_API_KEY |
-| Azure OpenAI | @ai-sdk/azure | AZURE_OPENAI_API_KEY |
-| Google AI | @ai-sdk/google | GOOGLE_API_KEY |
-| AWS Bedrock | @ai-sdk/amazon-bedrock | AWS_ACCESS_KEY_ID |
-| Ollama (local) | @ai-sdk/openai-compatible | OLLAMA_HOST |
-| LM Studio | @ai-sdk/openai-compatible | LM_STUDIO_HOST |
-| Custom | Any OpenAI-compatible | Configurable |
+| Provider       | SDK                       | Environment Variables |
+| -------------- | ------------------------- | --------------------- |
+| OpenAI         | @ai-sdk/openai            | OPENAI_API_KEY        |
+| Anthropic      | @ai-sdk/anthropic         | ANTHROPIC_API_KEY     |
+| Azure OpenAI   | @ai-sdk/azure             | AZURE_OPENAI_API_KEY  |
+| Google AI      | @ai-sdk/google            | GOOGLE_API_KEY        |
+| AWS Bedrock    | @ai-sdk/amazon-bedrock    | AWS_ACCESS_KEY_ID     |
+| Ollama (local) | @ai-sdk/openai-compatible | OLLAMA_HOST           |
+| LM Studio      | @ai-sdk/openai-compatible | LM_STUDIO_HOST        |
+| Custom         | Any OpenAI-compatible     | Configurable          |
 
 ### 10.2 GitHub Integration
 
@@ -529,11 +538,11 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ### 10.3 Deployment Integrations
 
-| Service | Features |
-|---------|----------|
-| **Vercel** | Project linking, deployments, deployment URLs |
-| **Supabase** | Project management, branch support |
-| **Neon** | PostgreSQL branches, database timestamps |
+| Service      | Features                                      |
+| ------------ | --------------------------------------------- |
+| **Vercel**   | Project linking, deployments, deployment URLs |
+| **Supabase** | Project management, branch support            |
+| **Neon**     | PostgreSQL branches, database timestamps      |
 
 ---
 
@@ -541,13 +550,13 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ### 11.1 Identified Risks
 
-| Risk | Severity | Description |
-|------|----------|-------------|
-| **Large IPC Handlers** | Medium | Some handlers (e.g., `chat_stream_handlers.ts` - 73K+ chars) are monolithic and difficult to maintain |
-| **Context Compaction Complexity** | Medium | AI message compaction logic is intricate with backup/restore mechanisms |
-| **Free Agent Quota Tracking** | Medium | Complex quota enforcement logic across multiple handlers |
-| **Migration Conflicts** | Medium | 26+ migrations can cause conflicts in collaborative environments |
-| **MCP Security** | Medium | Executing arbitrary commands from MCP servers requires careful consent management |
+| Risk                              | Severity | Description                                                                                           |
+| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| **Large IPC Handlers**            | Medium   | Some handlers (e.g., `chat_stream_handlers.ts` - 73K+ chars) are monolithic and difficult to maintain |
+| **Context Compaction Complexity** | Medium   | AI message compaction logic is intricate with backup/restore mechanisms                               |
+| **Free Agent Quota Tracking**     | Medium   | Complex quota enforcement logic across multiple handlers                                              |
+| **Migration Conflicts**           | Medium   | 26+ migrations can cause conflicts in collaborative environments                                      |
+| **MCP Security**                  | Medium   | Executing arbitrary commands from MCP servers requires careful consent management                     |
 
 ### 11.2 Mitigation Strategies
 
@@ -562,13 +571,13 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ### 12.1 Areas Needing Investigation
 
-| Area | Notes |
-|------|-------|
-| **Worker Architecture** | `worker/` and `workers/` directories - their exact purpose and interaction with main process |
-| **Convex Backend** | Plans mention Convex support but implementation unclear |
-| **Web Fetch Integration** | `plans/web-fetch-local-agent.md` - web fetching capabilities for local agent |
-| **Mobile Support** | `capacitor_handlers.ts` suggests mobile app support that needs exploration |
-| **Cloud Sandboxes** | `plans/cloud-sandboxes.md` - future architecture for cloud-based development environments |
+| Area                      | Notes                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| **Worker Architecture**   | `worker/` and `workers/` directories - their exact purpose and interaction with main process |
+| **Convex Backend**        | Plans mention Convex support but implementation unclear                                      |
+| **Web Fetch Integration** | `plans/web-fetch-local-agent.md` - web fetching capabilities for local agent                 |
+| **Mobile Support**        | `capacitor_handlers.ts` suggests mobile app support that needs exploration                   |
+| **Cloud Sandboxes**       | `plans/cloud-sandboxes.md` - future architecture for cloud-based development environments    |
 
 ### 12.2 Architectural Questions
 
@@ -594,4 +603,4 @@ The architecture follows Electron best practices with a clear separation between
 
 ---
 
-*Document generated from Phase 12 of architectural analysis. For detailed information on specific modules, refer to the individual phase documents and the `rules/` directory for development guidelines.*
+_Document generated from Phase 12 of architectural analysis. For detailed information on specific modules, refer to the individual phase documents and the `rules/` directory for development guidelines._

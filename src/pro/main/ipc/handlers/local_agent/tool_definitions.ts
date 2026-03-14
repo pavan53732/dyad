@@ -43,14 +43,47 @@ import { autonomousTestGeneratorTool } from "./tools/autonomous_test_generator";
 import { autonomousSoftwareEngineerTool } from "./tools/autonomous_software_engineer";
 import { autonomousCodeReviewTool } from "./tools/autonomous_code_review";
 import { memoryStoreTool } from "./tools/memory_store";
+import { agentNegotiationTools } from "./tools/agent_negotiation";
+import { dynamicAgentTools } from "./tools/dynamic_agents";
 import { multiAgentCoordinatorTool } from "./tools/multi_agent_coordinator";
+import {
+  messageBusTool,
+  eventBroadcastTool,
+  agentDiscoveryTool,
+} from "./tools/multi_agent_coordinator";
 import { executeProjectPlanTool } from "./tools/execute_project_plan";
-import { dependencyAnalyzerTool } from "./tools/dependency_analyzer";
+import {
+  dependencyAnalyzerTool,
+  transitiveScanTool,
+  transitiveVulnerabilitiesTool,
+  transitiveOutdatedTool,
+  deepDependencyTreeTool,
+  detectCyclesTool,
+  cyclePathTool,
+  cycleImpactTool,
+  licenseCheckTool,
+  bundleImpactTool,
+  duplicateDepsTool,
+  orphanDepsTool,
+  deprecatedCheckTool,
+} from "./tools/dependency_analyzer";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
+import {
+  detectPatternsTool,
+  suggestRefactoringTool,
+  detectAntiPatternsTool,
+  patternLibraryTool,
+} from "./tools/design_patterns";
+import {
+  analyzeDebtTool,
+  prioritizeDebtTool,
+  trackDebtTool,
+} from "./tools/technical_debt";
 import { architectureAnalyzerTool } from "./tools/architecture_analyzer";
 import { architectureGraphBuilderTool } from "./tools/architecture_graph_builder";
 import { architectureValidatorTool } from "./tools/architecture_validator";
 import { architectureSimulatorTool } from "./tools/architecture_simulator";
+import { evaluateHealthTool, benchmarkArchTool } from "./tools/architecture_validator";
 import { patternDetectorTool } from "./tools/pattern_detector";
 import { codeIntelligenceTool } from "./tools/code_intelligence";
 import { intentClassifierTool } from "./tools/intent_classifier";
@@ -73,6 +106,27 @@ import { teamCoordinatorTool } from "./tools/team_coordinator";
 import { codeReviewerTool } from "./tools/code_reviewer";
 import { knowledgeSharingTool } from "./tools/knowledge_sharing";
 import { collaborationSessionTool } from "./tools/collaboration_session";
+import {
+  generateHypothesesTool,
+  rankHypothesesTool,
+  exploreBranchesTool,
+} from "./tools/hypothesis_generator";
+import {
+  causalAnalysisTool,
+  traceDependenciesTool,
+  detectConflictsTool,
+} from "./tools/causal_reasoning";
+import {
+  monitorReasoningTool,
+  theoryOfMindTool,
+  abstractReasoningTool,
+} from "./tools/metacognition";
+import {
+  semanticSearchTool,
+  nlQueryTool,
+  codeSynthesisTool,
+  crossLanguageTool,
+} from "./tools/code_intelligence";
 import type { LanguageModelV3ToolResultOutput } from "@ai-sdk/provider";
 import {
   escapeXmlAttr,
@@ -120,13 +174,49 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   autonomousCodeReviewTool,
   memoryStoreTool,
   multiAgentCoordinatorTool,
+  messageBusTool,
+  eventBroadcastTool,
+  agentDiscoveryTool,
+  // Agent Negotiation & Trust Systems
+  agentNegotiationTools.negotiateSolutionTool,
+  agentNegotiationTools.buildConsensusTool,
+  agentNegotiationTools.trustCalibrateTool,
+  agentNegotiationTools.collaborativePlanningTool,
+  // Dynamic Agent Systems
+  dynamicAgentTools.spawnAgentTool,
+  dynamicAgentTools.cloneAgentTool,
+  dynamicAgentTools.swarmCoordinateTool,
+  dynamicAgentTools.agentFailoverTool,
   executeProjectPlanTool,
   dependencyAnalyzerTool,
   dependencyUpgraderTool,
+  transitiveScanTool,
+  transitiveVulnerabilitiesTool,
+  transitiveOutdatedTool,
+  deepDependencyTreeTool,
+  detectCyclesTool,
+  cyclePathTool,
+  cycleImpactTool,
+  licenseCheckTool,
+  bundleImpactTool,
+  duplicateDepsTool,
+  orphanDepsTool,
+  deprecatedCheckTool,
   architectureAnalyzerTool,
   architectureGraphBuilderTool,
   architectureValidatorTool,
   architectureSimulatorTool,
+  evaluateHealthTool,
+  benchmarkArchTool,
+  // Design Pattern tools
+  detectPatternsTool,
+  suggestRefactoringTool,
+  detectAntiPatternsTool,
+  patternLibraryTool,
+  // Technical Debt tools
+  analyzeDebtTool,
+  prioritizeDebtTool,
+  trackDebtTool,
   patternDetectorTool,
   codeIntelligenceTool,
   selfImproverTool,
@@ -150,6 +240,21 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   codeReviewerTool,
   knowledgeSharingTool,
   collaborationSessionTool,
+  // AI Reasoning tools
+  generateHypothesesTool,
+  rankHypothesesTool,
+  exploreBranchesTool,
+  causalAnalysisTool,
+  traceDependenciesTool,
+  detectConflictsTool,
+  monitorReasoningTool,
+  theoryOfMindTool,
+  abstractReasoningTool,
+  // Code Intelligence tools
+  semanticSearchTool,
+  nlQueryTool,
+  codeSynthesisTool,
+  crossLanguageTool,
   // Plan mode tools
   planningQuestionnaireTool,
   writePlanTool,

@@ -490,7 +490,6 @@ function detectConflicts(
   const uiFiles = files.filter(
     (f) => f.includes("/ui/") || f.includes("/components/"),
   );
-  
 
   for (const uiFile of uiFiles) {
     const fileContent = content.get(uiFile);
@@ -605,8 +604,6 @@ function detectDrift(
   const drifts: ArchitectureDrift[] = [];
 
   // Check for inconsistent structure
-  
-  
 
   // Detect mixed patterns
   const hasLayered = files.some(
@@ -952,3 +949,677 @@ export const architectureValidatorTool: ToolDefinition<ArchitectureValidatorArgs
       return reportXml;
     },
   };
+
+// ============================================================================
+// Architecture Health Evaluation Tool (Capability 371)
+// ============================================================================
+
+const EvaluateHealthArgs = z.object({
+  /** Path to the project (defaults to app root) */
+  projectPath: z.string().optional(),
+  /** Evaluation dimensions */
+  dimensions: z
+    .enum(["all", "modularity", "testability", "maintainability", "scalability", "security", "performance"])
+    .array()
+    .default(["all"]),
+  /** Include recommendations */
+  includeRecommendations: z.boolean().default(true),
+});
+
+type EvaluateHealthArgs = z.infer<typeof EvaluateHealthArgs>;
+
+interface HealthDimension {
+  name: string;
+  score: number;
+  factors: { name: string; score: number; weight: number }[];
+  recommendations: string[];
+}
+
+interface HealthReport {
+  overallScore: number;
+  grade: string;
+  dimensions: HealthDimension[];
+  summary: {
+    strengths: string[];
+    weaknesses: string[];
+    nextSteps: string[];
+  };
+}
+
+function evaluateArchitectureHealth(
+  files: string[],
+  content: Map<string, string>,
+  dimensions: string[],
+): HealthReport {
+  const healthDimensions: HealthDimension[] = [];
+
+  // Modularity score
+  if (dimensions.includes("all") || dimensions.includes("modularity")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    // File organization
+    const hasSrc = files.some((f) => f.includes("/src/"));
+    const hasComponents = files.some((f) => f.includes("/components/") || f.includes("/ui/"));
+    const hasUtils = files.some((f) => f.includes("/utils/") || f.includes("/helpers/"));
+    const modularity = (hasSrc ? 25 : 0) + (hasComponents ? 25 : 0) + (hasUtils ? 25 : 0) + (files.length > 20 ? 25 : 0);
+    factors.push({ name: "File Organization", score: modularity, weight: 0.4 });
+
+    // Directory depth
+    const maxDepth = Math.max(...files.map((f) => f.split("/").length));
+    const depthScore = maxDepth <= 4 ? 100 : maxDepth <= 6 ? 70 : 40;
+    factors.push({ name: "Directory Depth", score: depthScore, weight: 0.3 });
+
+    // Module cohesion (files per directory)
+    const dirs = new Set(files.map((f) => path.dirname(f)));
+    const avgFilesPerDir = files.length / Math.max(dirs.size, 1);
+    const cohesionScore = avgFilesPerDir <= 10 ? 100 : avgFilesPerDir <= 20 ? 70 : 40;
+    factors.push({ name: "Module Cohesion", score: cohesionScore, weight: 0.3 });
+
+    const modularityScore = Math.round(
+      factors.reduce((sum, f) => sum + f.score * f.weight, 0),
+    );
+
+    healthDimensions.push({
+      name: "Modularity",
+      score: modularityScore,
+      factors,
+      recommendations: modularityScore < 70 ? ["Consider restructuring into clearer module boundaries", "Reduce directory nesting depth"] : [],
+    });
+  }
+
+  // Testability score
+  if (dimensions.includes("all") || dimensions.includes("testability")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    const testFiles = files.filter(
+      (f) => f.includes("/__tests__/") || f.includes("/test/") || f.includes(".spec.") || f.includes(".test."),
+    );
+    const sourceFiles = files.filter((f) => f.endsWith(".ts") || f.endsWith(".tsx"));
+    const testCoverage = sourceFiles.length > 0 ? (testFiles.length / sourceFiles.length) * 100 : 0;
+    factors.push({ name: "Test File Coverage", score: Math.min(testCoverage, 100), weight: 0.5 });
+
+    // Check for test utilities
+    const hasTestUtils = files.some((f) => f.includes("test") && (f.includes("utils") || f.includes("setup")));
+    factors.push({ name: "Test Utilities", score: hasTestUtils ? 100 : 30, weight: 0.2 });
+
+    // Mock usage
+    let hasMocks = false;
+    for (const [, fileContent] of content) {
+      if (fileContent.includes("mock") || fileContent.includes("jest.fn")) {
+        hasMocks = true;
+        break;
+      }
+    }
+    factors.push({ name: "Mock Usage", score: hasMocks ? 100 : 50, weight: 0.3 });
+
+    const testabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+
+    healthDimensions.push({
+      name: "Testability",
+      score: testabilityScore,
+      factors,
+      recommendations: testabilityScore < 60 ? ["Add more test files", "Create test utilities and setup"] : [],
+    });
+  }
+
+  // Maintainability score
+  if (dimensions.includes("all") || dimensions.includes("maintainability")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    // Average file size
+    const avgSize = Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) / Math.max(content.size, 1);
+    const sizeScore = avgSize < 3000 ? 100 : avgSize < 5000 ? 70 : 40;
+    factors.push({ name: "Average File Size", score: sizeScore, weight: 0.3 });
+
+    // Documentation
+    const hasReadme = files.some((f) => f.toLowerCase().includes("readme"));
+    const hasDocs = files.some((f) => f.includes("/docs/") || f.includes("/.doc"));
+    const docScore = hasReadme ? 50 : 20 + (hasDocs ? 30 : 0);
+    factors.push({ name: "Documentation", score: docScore, weight: 0.3 });
+
+    // Code complexity (simplified)
+    let totalComplexity = 0;
+    for (const [, fileContent] of content) {
+      totalComplexity += (fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b/g) || []).length;
+    }
+    const complexityScore = totalComplexity / Math.max(content.size, 1) < 20 ? 100 : totalComplexity / Math.max(content.size, 1) < 40 ? 70 : 40;
+    factors.push({ name: "Code Complexity", score: complexityScore, weight: 0.4 });
+
+    const maintainabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+
+    healthDimensions.push({
+      name: "Maintainability",
+      score: maintainabilityScore,
+      factors,
+      recommendations: maintainabilityScore < 60 ? ["Reduce file sizes by splitting modules", "Add README and documentation"] : [],
+    });
+  }
+
+  // Scalability score
+  if (dimensions.includes("all") || dimensions.includes("scalability")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    // Dependency management
+    let hasPackageJson = false;
+    let depsCount = 0;
+    for (const file of files) {
+      if (file.includes("package.json")) {
+        hasPackageJson = true;
+        try {
+          const pkg = JSON.parse(content.get(file) || "{}");
+          depsCount = Object.keys(pkg.dependencies || {}).length + Object.keys(pkg.devDependencies || {}).length;
+        } catch {
+          // Ignore parse errors
+        }
+        break;
+      }
+    }
+    const depScore = hasPackageJson ? (depsCount < 50 ? 100 : depsCount < 100 ? 70 : 40) : 50;
+    factors.push({ name: "Dependency Management", score: depScore, weight: 0.4 });
+
+    // Configuration patterns
+    const hasEnvConfig = files.some((f) => f.includes(".env") || f.includes("/config/"));
+    factors.push({ name: "Configuration", score: hasEnvConfig ? 100 : 40, weight: 0.3 });
+
+    // Feature flags support (simplified check)
+    let hasFeatureFlags = false;
+    for (const [, fileContent] of content) {
+      if (/feature[_-]?flag|feature[_-]?toggle/i.test(fileContent)) {
+        hasFeatureFlags = true;
+        break;
+      }
+    }
+    factors.push({ name: "Feature Flags", score: hasFeatureFlags ? 100 : 30, weight: 0.3 });
+
+    const scalabilityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+
+    healthDimensions.push({
+      name: "Scalability",
+      score: scalabilityScore,
+      factors,
+      recommendations: scalabilityScore < 60 ? ["Consider implementing feature flags", "Review dependency count"] : [],
+    });
+  }
+
+  // Security score
+  if (dimensions.includes("all") || dimensions.includes("security")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    // Secrets detection
+    let hasHardcodedSecrets = false;
+    for (const [, fileContent] of content) {
+      if (/api[_-]?key|password|secret|token/i.test(fileContent)) {
+        if (!/example|your_[a-z_]+|replace|xxx|placeholder/i.test(fileContent)) {
+          hasHardcodedSecrets = true;
+          break;
+        }
+      }
+    }
+    factors.push({ name: "No Hardcoded Secrets", score: hasHardcodedSecrets ? 20 : 100, weight: 0.5 });
+
+    // Input validation
+    let hasValidation = false;
+    for (const [, fileContent] of content) {
+      if (/validate|sanitize|escape|encode/i.test(fileContent)) {
+        hasValidation = true;
+        break;
+      }
+    }
+    factors.push({ name: "Input Validation", score: hasValidation ? 100 : 40, weight: 0.3 });
+
+    // TypeScript usage
+    const tsFiles = files.filter((f) => f.endsWith(".ts") || f.endsWith(".tsx")).length;
+    const tsScore = tsFiles / Math.max(files.length, 1) > 0.7 ? 100 : tsFiles / Math.max(files.length, 1) > 0.4 ? 70 : 40;
+    factors.push({ name: "Type Safety", score: tsScore, weight: 0.2 });
+
+    const securityScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+
+    healthDimensions.push({
+      name: "Security",
+      score: securityScore,
+      factors,
+      recommendations: securityScore < 60 ? ["Remove hardcoded secrets", "Add input validation"] : [],
+    });
+  }
+
+  // Performance score
+  if (dimensions.includes("all") || dimensions.includes("performance")) {
+    const factors: { name: string; score: number; weight: number }[] = [];
+
+    // Bundle size indicators
+    const bundleFiles = files.filter((f) => f.includes("bundle") || f.includes("dist"));
+    factors.push({ name: "Bundle Configuration", score: bundleFiles.length > 0 ? 100 : 50, weight: 0.4 });
+
+    // Code optimization patterns
+    let hasOptimization = false;
+    for (const [, fileContent] of content) {
+      if (/memo|lazy|code-splitting|cache/i.test(fileContent)) {
+        hasOptimization = true;
+        break;
+      }
+    }
+    factors.push({ name: "Optimization Patterns", score: hasOptimization ? 100 : 40, weight: 0.3 });
+
+    // Async patterns
+    let hasAsync = false;
+    for (const [, fileContent] of content) {
+      if (/async|await|Promise/i.test(fileContent)) {
+        hasAsync = true;
+        break;
+      }
+    }
+    factors.push({ name: "Async/Await Usage", score: hasAsync ? 100 : 50, weight: 0.3 });
+
+    const performanceScore = Math.round(factors.reduce((sum, f) => sum + f.score * f.weight, 0));
+
+    healthDimensions.push({
+      name: "Performance",
+      score: performanceScore,
+      factors,
+      recommendations: performanceScore < 60 ? ["Add code splitting and lazy loading", "Implement caching strategies"] : [],
+    });
+  }
+
+  // Calculate overall score
+  const overallScore = Math.round(
+    healthDimensions.reduce((sum, d) => sum + d.score, 0) / Math.max(healthDimensions.length, 1),
+  );
+
+  // Determine grade
+  let grade: string;
+  if (overallScore >= 90) grade = "A";
+  else if (overallScore >= 80) grade = "B";
+  else if (overallScore >= 70) grade = "C";
+  else if (overallScore >= 60) grade = "D";
+  else grade = "F";
+
+  // Generate summary
+  const strengths: string[] = [];
+  const weaknesses: string[] = [];
+  const nextSteps: string[] = [];
+
+  for (const dim of healthDimensions) {
+    if (dim.score >= 80) {
+      strengths.push(`${dim.name}: ${dim.score}%`);
+    } else if (dim.score < 60) {
+      weaknesses.push(`${dim.name}: ${dim.score}%`);
+      nextSteps.push(...dim.recommendations);
+    }
+  }
+
+  return {
+    overallScore,
+    grade,
+    dimensions: healthDimensions,
+    summary: {
+      strengths,
+      weaknesses,
+      nextSteps: [...new Set(nextSteps)].slice(0, 5),
+    },
+  };
+}
+
+function generateHealthXml(report: HealthReport): string {
+  const lines: string[] = [
+    `# Architecture Health Report`,
+    "",
+    `## Overall Score: **${report.overallScore}/100** (Grade: ${report.grade})`,
+    "",
+  ];
+
+  lines.push("## Dimension Scores");
+  for (const dim of report.dimensions) {
+    const bar = "█".repeat(Math.round(dim.score / 10)) + "░".repeat(10 - Math.round(dim.score / 10));
+    lines.push(`- **${dim.name}**: ${bar} ${dim.score}%`);
+  }
+  lines.push("");
+
+  if (report.summary.strengths.length > 0) {
+    lines.push("## ✅ Strengths");
+    for (const s of report.summary.strengths) {
+      lines.push(`- ${s}`);
+    }
+    lines.push("");
+  }
+
+  if (report.summary.weaknesses.length > 0) {
+    lines.push("## ⚠️ Areas for Improvement");
+    for (const w of report.summary.weaknesses) {
+      lines.push(`- ${w}`);
+    }
+    lines.push("");
+  }
+
+  if (report.summary.nextSteps.length > 0) {
+    lines.push("## 🎯 Recommended Next Steps");
+    for (const step of report.summary.nextSteps) {
+      lines.push(`- ${step}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+async function evaluateHealthExecute(args: EvaluateHealthArgs, ctx: AgentContext): Promise<string> {
+  const projectPath = args.projectPath
+    ? path.isAbsolute(args.projectPath)
+      ? args.projectPath
+      : path.join(ctx.appPath, args.projectPath)
+    : ctx.appPath;
+
+  if (!fs.existsSync(projectPath)) {
+    throw new Error(`Project path does not exist: ${projectPath}`);
+  }
+
+  ctx.onXmlStream(
+    `<dyad-status title="Architecture Health Evaluation">Analyzing architecture...</dyad-status>`,
+  );
+
+  const { files, content } = await analyzeProject(projectPath);
+  const healthReport = evaluateArchitectureHealth(files, content, args.dimensions);
+
+  const reportXml = generateHealthXml(healthReport);
+
+  ctx.onXmlComplete(
+    `<dyad-status title="Health Evaluation Complete">Score: ${healthReport.overallScore}/100 (${healthReport.grade})</dyad-status>`,
+  );
+
+  return reportXml;
+}
+
+export const evaluateHealthTool: ToolDefinition<EvaluateHealthArgs> = {
+  name: "evaluate_health",
+  description:
+    "Evaluate overall architecture health across multiple dimensions: modularity, testability, maintainability, scalability, security, and performance.",
+  inputSchema: EvaluateHealthArgs,
+  defaultConsent: "always",
+  modifiesState: false,
+
+  execute: async (args, ctx) => evaluateHealthExecute(args, ctx),
+};
+
+// ============================================================================
+// Architecture Benchmarking Tool (Capability 372)
+// ============================================================================
+
+const BenchmarkArchArgs = z.object({
+  /** Path to the project to benchmark */
+  projectPath: z.string().optional(),
+  /** Comparison type */
+  comparisonType: z.enum(["standards", "best-practices", "similar-projects"]).default("standards"),
+  /** Metrics to benchmark */
+  metrics: z
+    .enum(["all", "size", "complexity", "coupling", "cohesion", "documentation"])
+    .array()
+    .default(["all"]),
+});
+
+type BenchmarkArchArgs = z.infer<typeof BenchmarkArchArgs>;
+
+interface BenchmarkMetric {
+  name: string;
+  value: number;
+  unit: string;
+  rating: "excellent" | "good" | "average" | "poor";
+  comparison: string;
+}
+
+interface BenchmarkReport {
+  projectName: string;
+  metrics: BenchmarkMetric[];
+  summary: string;
+  recommendationsText: string;
+}
+
+// Industry benchmarks (simplified)
+const BENCHMARKS = {
+  avgFileSize: { excellent: 1500, good: 3000, average: 5000 },
+  maxFileSize: { excellent: 3000, good: 5000, average: 8000 },
+  complexity: { excellent: 10, good: 20, average: 35 },
+  coupling: { excellent: 5, good: 10, average: 15 },
+  cohesion: { excellent: 80, good: 60, average: 40 },
+  docCoverage: { excellent: 70, good: 50, average: 30 },
+  testCoverage: { excellent: 80, good: 60, average: 40 },
+};
+
+function benchmarkArchitecture(
+  projectPath: string,
+  files: string[],
+  content: Map<string, string>,
+  metrics: string[],
+): BenchmarkReport {
+  const benchmarkMetrics: BenchmarkMetric[] = [];
+
+  const projectName = path.basename(projectPath);
+
+  // Size metrics
+  if (metrics.includes("all") || metrics.includes("size")) {
+    const avgSize = Array.from(content.values()).reduce((sum, c) => sum + c.length, 0) / Math.max(content.size, 1);
+    const maxSize = Math.max(...Array.from(content.values()).map((c) => c.length));
+
+    benchmarkMetrics.push({
+      name: "Average File Size",
+      value: Math.round(avgSize),
+      unit: "bytes",
+      rating: avgSize < BENCHMARKS.avgFileSize.excellent ? "excellent" : avgSize < BENCHMARKS.avgFileSize.good ? "good" : avgSize < BENCHMARKS.avgFileSize.average ? "average" : "poor",
+      comparison: `Industry avg: ${BENCHMARKS.avgFileSize.good} bytes`,
+    });
+
+    benchmarkMetrics.push({
+      name: "Max File Size",
+      value: maxSize,
+      unit: "bytes",
+      rating: maxSize < BENCHMARKS.maxFileSize.excellent ? "excellent" : maxSize < BENCHMARKS.maxFileSize.good ? "good" : maxSize < BENCHMARKS.maxFileSize.average ? "average" : "poor",
+      comparison: `Industry max: ${BENCHMARKS.maxFileSize.good} bytes`,
+    });
+
+    benchmarkMetrics.push({
+      name: "Total Files",
+      value: files.length,
+      unit: "files",
+      rating: files.length < 100 ? "excellent" : files.length < 300 ? "good" : files.length < 500 ? "average" : "poor",
+      comparison: "Similar projects: 50-200 files",
+    });
+  }
+
+  // Complexity metrics
+  if (metrics.includes("all") || metrics.includes("complexity")) {
+    let totalComplexity = 0;
+    let maxComplexity = 0;
+    for (const [, fileContent] of content) {
+      const complexity = (fileContent.match(/\bif\b|\bfor\b|\bwhile\b|\bswitch\b|\bcatch\b/g) || []).length;
+      totalComplexity += complexity;
+      maxComplexity = Math.max(maxComplexity, complexity);
+    }
+    const avgComplexity = totalComplexity / Math.max(content.size, 1);
+
+    benchmarkMetrics.push({
+      name: "Average Complexity",
+      value: Math.round(avgComplexity * 10) / 10,
+      unit: "statements",
+      rating: avgComplexity < BENCHMARKS.complexity.excellent ? "excellent" : avgComplexity < BENCHMARKS.complexity.good ? "good" : avgComplexity < BENCHMARKS.complexity.average ? "average" : "poor",
+      comparison: `Industry avg: ${BENCHMARKS.complexity.good}`,
+    });
+
+    benchmarkMetrics.push({
+      name: "Max Complexity",
+      value: maxComplexity,
+      unit: "statements",
+      rating: maxComplexity < 20 ? "excellent" : maxComplexity < 40 ? "good" : maxComplexity < 60 ? "average" : "poor",
+      comparison: "Best practice: < 20",
+    });
+  }
+
+  // Coupling metrics
+  if (metrics.includes("all") || metrics.includes("coupling")) {
+    let totalImports = 0;
+    for (const [, fileContent] of content) {
+      const imports = fileContent.match(/import\s+.*from/g);
+      totalImports += imports ? imports.length : 0;
+    }
+    const avgImports = totalImports / Math.max(content.size, 1);
+
+    benchmarkMetrics.push({
+      name: "Average Imports",
+      value: Math.round(avgImports * 10) / 10,
+      unit: "imports/file",
+      rating: avgImports < BENCHMARKS.coupling.excellent ? "excellent" : avgImports < BENCHMARKS.coupling.good ? "good" : avgImports < BENCHMARKS.coupling.average ? "average" : "poor",
+      comparison: `Best practice: < ${BENCHMARKS.coupling.excellent}`,
+    });
+  }
+
+  // Cohesion metrics
+  if (metrics.includes("all") || metrics.includes("cohesion")) {
+    const dirs = new Set(files.map((f) => path.dirname(f)));
+    const avgFilesPerDir = files.length / Math.max(dirs.size, 1);
+    const cohesionScore = Math.max(0, Math.min(100, 100 - avgFilesPerDir * 2));
+
+    benchmarkMetrics.push({
+      name: "Module Cohesion",
+      value: Math.round(cohesionScore),
+      unit: "%",
+      rating: cohesionScore >= BENCHMARKS.cohesion.excellent ? "excellent" : cohesionScore >= BENCHMARKS.cohesion.good ? "good" : cohesionScore >= BENCHMARKS.cohesion.average ? "average" : "poor",
+      comparison: `Best practice: > ${BENCHMARKS.cohesion.excellent}%`,
+    });
+  }
+
+  // Documentation metrics
+  if (metrics.includes("all") || metrics.includes("documentation")) {
+    let documentedExports = 0;
+    let totalExports = 0;
+    for (const [, fileContent] of content) {
+      const exports = fileContent.match(/export\s+(?:function|class|const|interface|type)/g) || [];
+      const jsdocs = fileContent.match(/\/\*\*[\s\S]*?\*\//g) || [];
+      totalExports += exports.length;
+      documentedExports += Math.min(exports.length, jsdocs.length);
+    }
+    const docCoverage = totalExports > 0 ? (documentedExports / totalExports) * 100 : 0;
+
+    benchmarkMetrics.push({
+      name: "Documentation Coverage",
+      value: Math.round(docCoverage),
+      unit: "%",
+      rating: docCoverage >= BENCHMARKS.docCoverage.excellent ? "excellent" : docCoverage >= BENCHMARKS.docCoverage.good ? "good" : docCoverage >= BENCHMARKS.docCoverage.average ? "average" : "poor",
+      comparison: `Best practice: > ${BENCHMARKS.docCoverage.excellent}%`,
+    });
+
+    // Test coverage estimate
+    const testFiles = files.filter((f) => f.includes("test") || f.includes("spec"));
+    const testCoverage = files.length > 0 ? (testFiles.length / files.length) * 100 : 0;
+
+    benchmarkMetrics.push({
+      name: "Test Coverage",
+      value: Math.round(testCoverage),
+      unit: "%",
+      rating: testCoverage >= BENCHMARKS.testCoverage.excellent ? "excellent" : testCoverage >= BENCHMARKS.testCoverage.good ? "good" : testCoverage >= BENCHMARKS.testCoverage.average ? "average" : "poor",
+      comparison: `Best practice: > ${BENCHMARKS.testCoverage.excellent}%`,
+    });
+  }
+
+  // Generate summary
+  const excellent = benchmarkMetrics.filter((m) => m.rating === "excellent").length;
+  const good = benchmarkMetrics.filter((m) => m.rating === "good").length;
+  const average = benchmarkMetrics.filter((m) => m.rating === "average").length;
+  const poor = benchmarkMetrics.filter((m) => m.rating === "poor").length;
+
+  let summary: string;
+  if (poor > 2) {
+    summary = "This project needs significant architectural improvements.";
+  } else if (average > good) {
+    summary = "This project is on par with industry standards but has room for improvement.";
+  } else if (good > average) {
+    summary = "This project exceeds typical industry standards.";
+  } else {
+    summary = "This project is well-structured and follows best practices.";
+  }
+
+  // Generate recommendations
+  const recommendations: string[] = [];
+  for (const metric of benchmarkMetrics) {
+    if (metric.rating === "poor") {
+      recommendations.push(`Improve ${metric.name.toLowerCase()} (currently ${metric.rating})`);
+    }
+  }
+
+  return {
+    projectName,
+    metrics: benchmarkMetrics,
+    summary,
+    recommendationsText: recommendations
+      .slice(0, 5)
+      .map((r, i) => `${i + 1}. ${r}`)
+      .join("\n"),
+  };
+}
+
+function generateBenchmarkXml(report: BenchmarkReport): string {
+  const ratingEmoji: Record<string, string> = {
+    excellent: "🟢",
+    good: "🟡",
+    average: "🟠",
+    poor: "🔴",
+  };
+
+  const lines: string[] = [
+    `# Architecture Benchmark Report`,
+    "",
+    `**Project:** ${report.projectName}`,
+    "",
+    report.summary,
+    "",
+  ];
+
+  lines.push("## Metrics Comparison");
+  for (const metric of report.metrics) {
+    lines.push(`### ${metric.name}`);
+    lines.push(`- **Value:** ${metric.value} ${metric.unit}`);
+    lines.push(`- **Rating:** ${ratingEmoji[metric.rating]} ${metric.rating.charAt(0).toUpperCase() + metric.rating.slice(1)}`);
+    lines.push(`- **Comparison:** ${metric.comparison}`);
+    lines.push("");
+  }
+
+  if (report.recommendationsText) {
+    lines.push("## Recommendations");
+    lines.push(report.recommendationsText);
+  }
+
+  return lines.join("\n");
+}
+
+async function benchmarkArchExecute(args: BenchmarkArchArgs, ctx: AgentContext): Promise<string> {
+  const projectPath = args.projectPath
+    ? path.isAbsolute(args.projectPath)
+      ? args.projectPath
+      : path.join(ctx.appPath, args.projectPath)
+    : ctx.appPath;
+
+  if (!fs.existsSync(projectPath)) {
+    throw new Error(`Project path does not exist: ${projectPath}`);
+  }
+
+  ctx.onXmlStream(
+    `<dyad-status title="Architecture Benchmarking">Comparing against benchmarks...</dyad-status>`,
+  );
+
+  const { files, content } = await analyzeProject(projectPath);
+  const benchmarkReport = benchmarkArchitecture(projectPath, files, content, args.metrics);
+
+  const reportXml = generateBenchmarkXml(benchmarkReport);
+
+  ctx.onXmlComplete(
+    `<dyad-status title="Benchmarking Complete">${benchmarkReport.metrics.length} metrics analyzed</dyad-status>`,
+  );
+
+  return reportXml;
+}
+
+export const benchmarkArchTool: ToolDefinition<BenchmarkArchArgs> = {
+  name: "benchmark_arch",
+  description:
+    "Benchmark architecture against industry standards and best practices. Compare metrics like file size, complexity, coupling, cohesion, and documentation coverage.",
+  inputSchema: BenchmarkArchArgs,
+  defaultConsent: "always",
+  modifiesState: false,
+
+  execute: async (args, ctx) => benchmarkArchExecute(args, ctx),
+};

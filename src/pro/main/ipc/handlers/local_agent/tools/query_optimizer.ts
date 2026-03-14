@@ -125,12 +125,18 @@ function detectNPlusOnePatterns(code: string): NPlusOneDetection {
     // Loop with query inside
     { pattern: /for\s*\([^)]*\)\s*\{[^}]*\.find\(/, type: "loop with .find()" },
     { pattern: /for\s*\([^)]*\)\s*\{[^}]*\.get\(/, type: "loop with .get()" },
-    { pattern: /for\s*\([^)]*\)\s*\{[^}]*await.*\./, type: "loop with await query" },
+    {
+      pattern: /for\s*\([^)]*\)\s*\{[^}]*await.*\./,
+      type: "loop with await query",
+    },
     // map with query
     { pattern: /\.map\([^)]*=>[^}]*\.find\(/, type: "map with .find()" },
     { pattern: /\.map\([^)]*=>[^}]*await/, type: "map with await query" },
     // forEach with query
-    { pattern: /\.forEach\([^)]*=>[^}]*\.find\(/, type: "forEach with .find()" },
+    {
+      pattern: /\.forEach\([^)]*=>[^}]*\.find\(/,
+      type: "forEach with .find()",
+    },
     { pattern: /\.forEach\([^)]*=>[^}]*await/, type: "forEach with await" },
   ];
 
@@ -159,7 +165,8 @@ function detectNPlusOnePatterns(code: string): NPlusOneDetection {
       pattern: "Supabase .eq() in loop",
       location: "Detected filter operation inside iteration",
       lineNumber: 0,
-      suggestedFix: "Collect all IDs and use .in() or .any() for batch filtering",
+      suggestedFix:
+        "Collect all IDs and use .in() or .any() for batch filtering",
     });
     severity = "critical";
   }
@@ -179,19 +186,22 @@ function performIndexAnalysis(code: string): IndexAnalysis {
   const orderByColumns = code.match(/\.order\(['"](\w+)['"]/g) || [];
 
   const allColumns = [...whereColumns, ...whereInColumns, ...orderByColumns];
-  const uniqueColumns = [...new Set(allColumns.map((c) => c.match(/['"](\w+)['"]/)?.[1] || ""))];
 
   // Check for foreign key patterns
   if (code.includes("_id") || code.includes("Id")) {
     const hasForeignKeyIndex = code.includes("index") || code.includes("Index");
     if (!hasForeignKeyIndex) {
-      missingIndexes.push("Foreign key columns may need indexes for join performance");
+      missingIndexes.push(
+        "Foreign key columns may need indexes for join performance",
+      );
     }
   }
 
   // Detect LIKE queries that might need indexes
   if (code.includes(".like(") || code.includes(".ilike(")) {
-    suggestions.push("Consider full-text search indexes for text search operations");
+    suggestions.push(
+      "Consider full-text search indexes for text search operations",
+    );
   }
 
   // Check for ORDER BY without index
@@ -200,7 +210,12 @@ function performIndexAnalysis(code: string): IndexAnalysis {
   }
 
   // Check for range queries
-  if (code.includes(".gt(") || code.includes(".lt(") || code.includes(".gte(") || code.includes(".lte(")) {
+  if (
+    code.includes(".gt(") ||
+    code.includes(".lt(") ||
+    code.includes(".gte(") ||
+    code.includes(".lte(")
+  ) {
     suggestions.push("Range queries on large tables may need indexes");
   }
 
@@ -223,13 +238,18 @@ function detectQueryIssues(code: string): QueryIssue[] {
         severity: "medium",
         description: "Using SELECT * - specify columns for better performance",
         lineNumber,
-        suggestion: "Select only needed columns: .select('id', 'name', 'email')",
+        suggestion:
+          "Select only needed columns: .select('id', 'name', 'email')",
         estimatedImpact: "20-30% reduction in data transfer",
       });
     }
 
     // Check for missing LIMIT
-    if (/\.(findMany|all|get)\(/.test(line) && !line.includes("limit") && !line.includes("range")) {
+    if (
+      /\.(findMany|all|get)\(/.test(line) &&
+      !line.includes("limit") &&
+      !line.includes("range")
+    ) {
       issues.push({
         type: "missing_limit",
         severity: "high",
@@ -241,9 +261,17 @@ function detectQueryIssues(code: string): QueryIssue[] {
     }
 
     // Check for multiple sequential queries
-    if (line.includes("await") && (line.includes(".findFirst") || line.includes(".findUnique"))) {
+    if (
+      line.includes("await") &&
+      (line.includes(".findFirst") || line.includes(".findUnique"))
+    ) {
       const prevLines = lines.slice(Math.max(0, i - 5), i);
-      if (prevLines.some((l) => l.includes("await") && (l.includes(".find") || l.includes(".get")))) {
+      if (
+        prevLines.some(
+          (l) =>
+            l.includes("await") && (l.includes(".find") || l.includes(".get")),
+        )
+      ) {
         issues.push({
           type: "redundant_query",
           severity: "medium",
@@ -275,7 +303,11 @@ function suggestQueryOptimizations(code: string): QueryOptimization[] {
   const optimizations: QueryOptimization[] = [];
 
   // Check for pagination
-  if (!code.includes("range") && !code.includes("limit") && !code.includes("offset")) {
+  if (
+    !code.includes("range") &&
+    !code.includes("limit") &&
+    !code.includes("offset")
+  ) {
     optimizations.push({
       type: "Pagination",
       description: "Add pagination to prevent loading all records",
@@ -294,8 +326,10 @@ function suggestQueryOptimizations(code: string): QueryOptimization[] {
     optimizations.push({
       type: "Eager Loading",
       description: "Use eager loading to prevent N+1 queries",
-      original: "const posts = await db.posts.findMany()\n// then: posts.map(p => p.author)",
-      optimized: "const posts = await db.posts.findMany({ include: { author: true } })",
+      original:
+        "const posts = await db.posts.findMany()\n// then: posts.map(p => p.author)",
+      optimized:
+        "const posts = await db.posts.findMany({ include: { author: true } })",
       benefit: "2 queries instead of N+1",
     });
   }
@@ -316,19 +350,24 @@ function suggestQueryOptimizations(code: string): QueryOptimization[] {
     optimizations.push({
       type: "Server-side Sorting",
       description: "Move sorting to database instead of in-memory",
-      optimized: "const items = await db.query.findMany({ orderBy: { createdAt: 'desc' } })",
+      optimized:
+        "const items = await db.query.findMany({ orderBy: { createdAt: 'desc' } })",
       original: "const items = (await db.query.findMany()).sort(...)",
       benefit: "Leverage database indexes and reduce memory usage",
     });
   }
 
   // Check for select specific columns
-  if (!code.includes(".select(") && (code.includes("findMany") || code.includes("findAll"))) {
+  if (
+    !code.includes(".select(") &&
+    (code.includes("findMany") || code.includes("findAll"))
+  ) {
     optimizations.push({
       type: "Column Selection",
       description: "Select only needed columns",
       original: "const items = await db.items.findMany()",
-      optimized: "const items = await db.items.findMany({ select: { id: true, name: true } })",
+      optimized:
+        "const items = await db.items.findMany({ select: { id: true, name: true } })",
       benefit: "Reduce data transfer by 50-90%",
     });
   }
@@ -359,7 +398,11 @@ function analyzeORMPatterns(code: string): ORMPatternAnalysis {
   }
 
   // Check for error handling on queries
-  if (code.includes("await") && !code.includes("try") && !code.includes("catch")) {
+  if (
+    code.includes("await") &&
+    !code.includes("try") &&
+    !code.includes("catch")
+  ) {
     issues.push("Queries without try/catch - add error handling");
   }
 
@@ -371,7 +414,9 @@ function analyzeORMPatterns(code: string): ORMPatternAnalysis {
   // Check for connection pooling
   if (!code.includes("pool") && !code.includes("Pool")) {
     issues.push("No explicit connection pooling configuration detected");
-    improvements.push("Configure connection pooling for better concurrent performance");
+    improvements.push(
+      "Configure connection pooling for better concurrent performance",
+    );
   }
 
   return { patterns, issues, improvements };
@@ -385,7 +430,14 @@ async function analyzeQueries(
   args: QueryOptimizerArgs,
   _ctx: AgentContext,
 ): Promise<QueryOptimizationResult> {
-  const { targetPath, code, detectNPlusOne, analyzeIndexes, suggestOptimizations, analyzeORM } = args;
+  const {
+    targetPath,
+    code,
+    detectNPlusOne,
+    analyzeIndexes,
+    suggestOptimizations,
+    analyzeORM,
+  } = args;
 
   let codeToAnalyze = code || "";
   let fileName = "inline code";
@@ -398,11 +450,13 @@ async function analyzeQueries(
       return {
         fileName: targetPath,
         analysis: {
-          issues: [{
-            type: "n_plus_one",
-            severity: "critical",
-            description: `Could not read file: ${targetPath}`,
-          }],
+          issues: [
+            {
+              type: "n_plus_one",
+              severity: "critical",
+              description: `Could not read file: ${targetPath}`,
+            },
+          ],
           nPlusOne: { occurrences: [], severity: "medium" },
           indexes: { missingIndexes: [], unusedIndexes: [], suggestions: [] },
           optimizations: [],
@@ -419,7 +473,7 @@ async function analyzeQueries(
   let nPlusOne: NPlusOneDetection = { occurrences: [], severity: "medium" };
   if (detectNPlusOne) {
     nPlusOne = detectNPlusOnePatterns(codeToAnalyze);
-    
+
     for (const occ of nPlusOne.occurrences) {
       issues.push({
         type: "n_plus_one",
@@ -433,10 +487,14 @@ async function analyzeQueries(
     }
   }
 
-  let indexes: IndexAnalysis = { missingIndexes: [], unusedIndexes: [], suggestions: [] };
+  let indexes: IndexAnalysis = {
+    missingIndexes: [],
+    unusedIndexes: [],
+    suggestions: [],
+  };
   if (analyzeIndexes) {
     indexes = performIndexAnalysis(codeToAnalyze);
-    
+
     for (const idx of indexes.missingIndexes) {
       issues.push({
         type: "missing_index",
@@ -454,7 +512,11 @@ async function analyzeQueries(
     optimizations = suggestQueryOptimizations(codeToAnalyze);
   }
 
-  let ormPatterns: ORMPatternAnalysis = { patterns: [], issues: [], improvements: [] };
+  let ormPatterns: ORMPatternAnalysis = {
+    patterns: [],
+    issues: [],
+    improvements: [],
+  };
   if (analyzeORM) {
     ormPatterns = analyzeORMPatterns(codeToAnalyze);
   }
@@ -500,14 +562,15 @@ function generateQueryXml(result: QueryOptimizationResult): string {
     ``,
   ];
 
-  const { issues, nPlusOne, indexes, optimizations, ormPatterns } = result.analysis;
+  const { issues, nPlusOne, indexes, optimizations, ormPatterns } =
+    result.analysis;
 
   // N+1 patterns
   if (nPlusOne.occurrences.length > 0) {
     lines.push(`## 🚨 N+1 Query Patterns (${nPlusOne.occurrences.length})`);
     lines.push(`**Severity:** ${nPlusOne.severity.toUpperCase()}`);
     lines.push(``);
-    
+
     for (const occ of nPlusOne.occurrences) {
       lines.push(`### ${occ.pattern}`);
       lines.push(`- Location: ${occ.location}`);
@@ -537,7 +600,8 @@ function generateQueryXml(result: QueryOptimizationResult): string {
       for (const issue of high) {
         lines.push(`- **${issue.type}**: ${issue.description}`);
         if (issue.suggestion) lines.push(`  → ${issue.suggestion}`);
-        if (issue.estimatedImpact) lines.push(`  → Impact: ${issue.estimatedImpact}`);
+        if (issue.estimatedImpact)
+          lines.push(`  → Impact: ${issue.estimatedImpact}`);
       }
       lines.push(``);
     }

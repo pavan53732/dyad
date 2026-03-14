@@ -665,7 +665,6 @@ async function runSimulation(
 
   // Generate summary
   const criticalFindings: string[] = [];
-  
 
   if (report.trafficSimulation?.recommendations) {
     criticalFindings.push(
