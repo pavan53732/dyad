@@ -624,6 +624,90 @@ The `autonomous_software_engineer` persona has been upgraded with a self-healing
 
 ---
 
+## 16. Unlimited Context Memory System
+
+Dyad implements a multi-tier memory architecture that provides effectively unlimited context for the AI agent by combining in-context memory with semantic retrieval from long-term storage.
+
+### 16.1 Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         UNLIMITED CONTEXT MEMORY                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L1: ACTIVE CONTEXT (In-Context)                                            │
+│      Capacity: Context Window Size                                          │
+│      Contents: Current turn + recent messages                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L2: SEMANTIC RETRIEVAL CACHE (Vector Store)                                │
+│      Capacity: Unlimited (disk-based)                                       │
+│      Contents: Embeddings of all context                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L3: LONG-TERM MEMORY (Knowledge Systems)                                   │
+│      Capacity: Unlimited (file-based)                                       │
+│      Contents: Knowledge base, patterns, learnings                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L4: ARCHIVAL STORAGE (Database + Files)                                    │
+│      Capacity: Unlimited (SQLite + files)                                   │
+│      Contents: Full message history, backups                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 16.2 Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/unlimited_context_memory.ts` | Core memory system with vector store and context builder |
+| `src/pro/main/ipc/handlers/local_agent/tools/unlimited_context_memory.ts` | Agent tool for memory operations |
+| `docs/UNLIMITED_CONTEXT_MEMORY_DESIGN.md` | Full architecture documentation |
+
+### 16.3 Memory Tool Actions
+
+The `unlimited_context_memory` tool provides these actions:
+
+| Action | Description | modifiesState |
+|--------|-------------|---------------|
+| `remember` | Store content in long-term memory | Yes |
+| `recall` | Retrieve relevant memories using semantic search | No |
+| `build_context` | Build optimized context for a query | No |
+| `get_stats` | Get memory statistics | No |
+| `cleanup` | Remove old memories | Yes |
+| `forget` | Remove specific memories by query | Yes |
+
+### 16.4 Memory Types and Priorities
+
+| Type | Importance | Description |
+|------|------------|-------------|
+| decision | 1.0 | Important decisions and their rationale |
+| error | 0.9 | Errors encountered and their resolutions |
+| current_task | 0.95 | Active task context |
+| active_plan | 0.9 | Current execution plan |
+| message | 0.7 | Conversation messages |
+| code | 0.6 | Code snippets and patterns |
+| learning | 0.5 | Patterns and learnings discovered |
+| summary | 0.4 | Summarized content |
+
+### 16.5 Token Budget Management
+
+The context builder manages token budgets intelligently:
+
+| Budget Area | Allocation |
+|-------------|------------|
+| System Prompt Reserve | ~20,000 tokens |
+| Tool Definitions Reserve | ~25,000 tokens |
+| Codebase Context Reserve | ~50,000 tokens |
+| Message History Budget | 50% of remaining |
+| Retrieved Memories | 30% of message budget |
+
+### 16.6 Integration with Context Limit Banner
+
+The context limit banner was fixed to prevent false positive warnings:
+
+- **Minimum Messages Threshold**: 4 messages before showing warning
+- **Minimum Context Usage**: 50% before showing warning
+- **Files Modified**: `ContextLimitBanner.tsx`, `ChatInput.tsx`
+
+---
+
 ## Summary
 
 Dyad is a sophisticated Electron-based desktop application that combines:

@@ -251,12 +251,17 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     "",
   );
 
+  // Get message count for this chat to prevent false warnings on new chats
+  const currentChatMessages = chatId ? (messagesById.get(chatId) ?? []) : [];
+  const messageCount = currentChatMessages.length;
+
   const showBanner =
     !isStreaming &&
     tokenCountResult &&
     shouldShowContextLimitBanner({
       totalTokens: tokenCountResult.actualMaxTokens,
       contextWindow: tokenCountResult.contextWindow,
+      messageCount,
     });
 
   useEffect(() => {
@@ -562,6 +567,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
           <ContextLimitBanner
             totalTokens={tokenCountResult.actualMaxTokens}
             contextWindow={tokenCountResult.contextWindow}
+            messageCount={messageCount}
           />
         )}
         <div

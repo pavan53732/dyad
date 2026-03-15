@@ -23,6 +23,34 @@ Detailed rules and learnings are in the `rules/` directory. Read the relevant fi
 | [rules/product-principles.md](rules/product-principles.md)           | Planning new features, especially via `dyad:swarm-to-plan`, to guide design trade-offs           |
 | [rules/ai-sovereignty.md](rules/ai-sovereignty.md)                   | Working with Level 7.0 Sovereignty, Deterministic Dispatcher, or Aegis Safety Protocols          |
 
+## Unlimited Context Memory System
+
+Dyad implements a multi-tier memory architecture that provides effectively unlimited context for the AI agent:
+
+```
+L1: Active Context (current conversation, in LLM context window)
+L2: Semantic Retrieval Cache (vector store for quick retrieval)
+L3: Long-term Memory (knowledge base, learned patterns)
+L4: Archival Storage (full conversation history)
+```
+
+### Key Files
+
+- `src/lib/unlimited_context_memory.ts` - Core memory system with vector store and context builder
+- `src/pro/main/ipc/handlers/local_agent/tools/unlimited_context_memory.ts` - Agent tool for memory operations
+- `docs/UNLIMITED_CONTEXT_MEMORY_DESIGN.md` - Full architecture documentation
+
+### Memory Tool Actions
+
+The `unlimited_context_memory` tool provides these actions:
+
+1. **remember** - Store decisions, errors, learnings, messages in long-term memory
+2. **recall** - Retrieve relevant memories using semantic search
+3. **build_context** - Build optimized context for a query with token budget awareness
+4. **get_stats** - Get memory statistics
+5. **cleanup** - Remove old memories
+6. **forget** - Remove specific memories by query
+
 ## Project setup and lints
 
 Make sure you run this once after doing `npm install` because it will make sure whenever you commit something, it will run pre-commit hooks like linting and formatting.

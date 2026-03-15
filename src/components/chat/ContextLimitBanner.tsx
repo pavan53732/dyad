@@ -10,24 +10,53 @@ import { useSummarizeInNewChat } from "./SummarizeInNewChatButton";
 const CONTEXT_LIMIT_THRESHOLD = 40_000;
 const LONG_CONTEXT_THRESHOLD = 200_000;
 
+// Minimum number of messages before showing context warnings
+// This prevents false warnings for new chats with large system context
+const MIN_MESSAGES_FOR_WARNING = 10;
+
+// Minimum percentage of context window used before showing warnings
+// This prevents warnings when context usage is low
+// Set to 80% to make warnings appear only when truly critical
+const MIN_CONTEXT_USAGE_PERCENT = 0.8; // 80%
+
 interface ContextLimitBannerProps {
   totalTokens?: number | null;
   contextWindow?: number;
+  messageCount?: number;
 }
 
 /** Check if the context limit banner should be shown */
 export function shouldShowContextLimitBanner({
   totalTokens,
   contextWindow,
+  messageCount = 0,
 }: ContextLimitBannerProps): boolean {
   if (!totalTokens || !contextWindow) {
     return false;
   }
-  // Show if long context (costs extra)
+
+  // Don't show warning for new chats with few messages
+  // The initial system context (prompts, tool definitions, codebase) is expected to be large
+  // We need at least 10 messages before we start worrying about context
+  if (messageCount < MIN_MESSAGES_FOR_WARNING) {
+    return false;
+  }
+
+  // Calculate context usage percentage
+  const contextUsagePercent = totalTokens / contextWindow;
+
+  // Only show warning if context usage is VERY high (80%+)
+  // This matches how Lovable handles it - no warnings until truly critical
+  if (contextUsagePercent < MIN_CONTEXT_USAGE_PERCENT) {
+    return false;
+  }
+
+  // Show if long context (costs extra) - only after minimum messages
   if (totalTokens > LONG_CONTEXT_THRESHOLD) {
     return true;
   }
-  // Show if close to context limit
+
+  // Show if close to context limit - only after minimum messages
   const tokensRemaining = contextWindow - totalTokens;
   return tokensRemaining <= CONTEXT_LIMIT_THRESHOLD;
 }
@@ -35,10 +64,11 @@ export function shouldShowContextLimitBanner({
 export function ContextLimitBanner({
   totalTokens,
   contextWindow,
+  messageCount = 0,
 }: ContextLimitBannerProps) {
   const { handleSummarize } = useSummarizeInNewChat();
 
-  if (!shouldShowContextLimitBanner({ totalTokens, contextWindow })) {
+  if (!shouldShowContextLimitBanner({ totalTokens, contextWindow, messageCount })) {
     return null;
   }
 

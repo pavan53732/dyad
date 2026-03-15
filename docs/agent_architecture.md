@@ -21,6 +21,75 @@ To prevent regression and the repetition of historical engineering errors, Dyad 
 - Anti-patterns (e.g., "Mismatched IPC signatures") are logged by the `self_improver` tool.
 - This memory is used to "hearth" the agent's strategy, ensuring it avoids known pitfalls recorded in past sessions.
 
+## Unlimited Context Memory System
+
+Dyad implements a multi-tier memory architecture that provides effectively unlimited context by combining in-context memory with semantic retrieval from long-term storage.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         UNLIMITED CONTEXT MEMORY                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L1: ACTIVE CONTEXT (In-Context)                                            │
+│      Capacity: Context Window Size                                          │
+│      Contents: Current turn + recent messages                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L2: SEMANTIC RETRIEVAL CACHE (Vector Store)                                │
+│      Capacity: Unlimited (disk-based)                                       │
+│      Contents: Embeddings of all context                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L3: LONG-TERM MEMORY (Knowledge Systems)                                   │
+│      Capacity: Unlimited (file-based)                                       │
+│      Contents: Knowledge base, patterns, learnings                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  L4: ARCHIVAL STORAGE (Database + Files)                                    │
+│      Capacity: Unlimited (SQLite + files)                                   │
+│      Contents: Full message history, backups                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Files
+
+- `src/lib/unlimited_context_memory.ts` - Core memory system with vector store and context builder
+- `src/pro/main/ipc/handlers/local_agent/tools/unlimited_context_memory.ts` - Agent tool for memory operations
+- `docs/UNLIMITED_CONTEXT_MEMORY_DESIGN.md` - Full architecture documentation
+
+### Memory Tool Actions
+
+The `unlimited_context_memory` tool provides these actions:
+
+1. **remember** - Store decisions, errors, learnings, messages in long-term memory
+2. **recall** - Retrieve relevant memories using semantic search
+3. **build_context** - Build optimized context for a query with token budget awareness
+4. **get_stats** - Get memory statistics
+5. **cleanup** - Remove old memories
+6. **forget** - Remove specific memories by query
+
+### Memory Types and Priorities
+
+| Type | Importance | Description |
+|------|------------|-------------|
+| decision | 1.0 | Important decisions and their rationale |
+| error | 0.9 | Errors encountered and their resolutions |
+| current_task | 0.95 | Active task context |
+| active_plan | 0.9 | Current execution plan |
+| message | 0.7 | Conversation messages |
+| code | 0.6 | Code snippets and patterns |
+| learning | 0.5 | Patterns and learnings discovered |
+| summary | 0.4 | Summarized content |
+
+### Integration with Context Building
+
+The context builder uses the following strategy:
+
+1. **Always Include**: System prompt, current message, active todos
+2. **High Priority**: Recent messages, active plan, current file context
+3. **Medium Priority**: Earlier messages, related code files
+4. **Low Priority**: Old messages, unrelated files
+
+Retrieved memories are injected into the context with relevance markers, allowing the LLM to understand the source and relevance of each piece of context.
+
 ## Add a tool
 
 If you want to add a new tool, you will want to create a new tool in the `src/pro/main/ipc/handlers/local_agent/tools` directory. You can look at the existing tools as examples.
