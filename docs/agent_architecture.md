@@ -103,3 +103,118 @@ Finally, you will need to define how to render the custom XML tag (e.g. `<dyad-$
 You can add an E2E test by looking at the existing local agent E2E tests which are named like `e2e-tests/local_agent*.spec.ts`
 
 You can define a tool call testing fixture at `e2e-tests/fixtures/engine` which allows you to simulate a tool call.
+
+---
+
+## Autonomous Core Systems (Phase 3-5 Implementation)
+
+As of Version 0.39.0, Dyad implements three core autonomous systems that transform it from a "Tool-Augmented LLM" into a "Fully Autonomous AI Builder":
+
+### Phase 3: Autonomous Planning Engine
+
+Located in `src/pro/main/planner/`, the Planning Engine provides autonomous task planning capabilities:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Types | `types.ts` | Goal, Task, Plan type definitions |
+| Engine | `planning_engine.ts` | Plan generation, goal decomposition |
+| Persistence | `plan_persistence.ts` | SQLite storage for plans |
+| IPC | `ipc_handlers.ts` | Renderer communication |
+
+**Key Features:**
+- Goal decomposition based on intent analysis
+- Task dependency resolution with topological ordering
+- Execution strategy selection (sequential, parallel, adaptive)
+- Plan confidence scoring and warning generation
+- Success criteria and constraint management
+
+**Database Tables:** `plans`, `goals`, `tasks`
+
+### Phase 4: Agent Scheduler
+
+Located in `src/pro/main/scheduler/`, the Scheduler provides priority-based task execution:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Types | `types.ts` | Schedule entry, queue, resource types |
+| Engine | `scheduler_engine.ts` | Priority queuing, resource scheduling |
+| IPC | `ipc_handlers.ts` | Renderer communication |
+
+**Key Features:**
+- Priority levels: critical, high, normal, low, background
+- Resource-aware scheduling (CPU, memory, agents)
+- Exponential backoff retry with configurable strategies
+- Queue management per application with concurrency limits
+- Timeout handling and retry management
+
+**Database Tables:** `schedule_entries`, `schedule_queues`
+
+### Phase 5: Distributed Agent Runtime
+
+Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-agent coordination:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Types | `types.ts` | Agent, node, communication types |
+| Engine | `runtime_engine.ts` | Agent lifecycle, messaging, fault tolerance |
+| IPC | `ipc_handlers.ts` | Renderer communication |
+
+**Key Features:**
+- Agent lifecycle management (create, terminate, monitor)
+- Node registry with heartbeat monitoring
+- Inter-agent messaging with pub/sub channels
+- Checkpoint/restore for fault tolerance
+- Task distribution strategies (round-robin, least-loaded, capability-match)
+- Distributed locks and coordination primitives
+
+**Database Tables:** `distributed_agents`, `distributed_nodes`, `agent_checkpoints`
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         AUTONOMOUS EXECUTION PIPELINE                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. USER REQUEST                                                             │
+│      ↓                                                                       │
+│  2. PLANNING ENGINE (Phase 3)                                                │
+│      - Analyze intent                                                        │
+│      - Generate goals and tasks                                              │
+│      - Resolve dependencies                                                  │
+│      ↓                                                                       │
+│  3. AGENT SCHEDULER (Phase 4)                                                │
+│      - Queue tasks by priority                                               │
+│      - Allocate resources                                                    │
+│      - Execute with retry logic                                              │
+│      ↓                                                                       │
+│  4. DISTRIBUTED RUNTIME (Phase 5)                                            │
+│      - Distribute to agents                                                  │
+│      - Monitor execution                                                     │
+│      - Handle failures with checkpoints                                      │
+│      ↓                                                                       │
+│  5. RESULT                                                                   │
+│      - Return to user                                                        │
+│      - Update knowledge graph                                                │
+│      - Store in memory systems                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### IPC Channels
+
+**Planner IPC (`PLANNER_IPC_CHANNELS`):**
+- `planner:generate-plan` - Generate a plan from user request
+- `planner:get-plan` - Get plan by ID
+- `planner:get-ready-tasks` - Get tasks ready for execution
+- `planner:update-task-status` - Update task execution status
+
+**Scheduler IPC (`SCHEDULER_IPC_CHANNELS`):**
+- `scheduler:schedule-task` - Schedule a task for execution
+- `scheduler:cancel-task` - Cancel a scheduled task
+- `scheduler:get-resource-pool` - Get resource pool state
+- `scheduler:start` / `scheduler:stop` - Lifecycle control
+
+**Distributed IPC (`DISTRIBUTED_IPC_CHANNELS`):**
+- `distributed:create-agent` - Create a new agent instance
+- `distributed:distribute-task` - Distribute task to agents
+- `distributed:send-message` - Send inter-agent message
+- `distributed:get-stats` - Get runtime statistics

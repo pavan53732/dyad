@@ -213,7 +213,19 @@ Located in the AI SDK integration, tools include:
 - Shell command execution
 - Code execution and testing
 
-### 5.3 State Management
+### 5.3 Autonomous Core Systems (Phase 3-5)
+
+Dyad implements three core autonomous systems for fully autonomous operation:
+
+| System | Location | Purpose |
+|--------|----------|---------|
+| **Planning Engine** | `src/pro/main/planner/` | Goal decomposition, task planning, dependency resolution |
+| **Agent Scheduler** | `src/pro/main/scheduler/` | Priority-based execution, resource management, retry logic |
+| **Distributed Runtime** | `src/pro/main/distributed/` | Multi-agent coordination, fault tolerance, checkpointing |
+
+See `docs/agent_architecture.md` for detailed documentation of these systems.
+
+### 5.4 State Management
 
 | Approach           | Usage                                        |
 | ------------------ | -------------------------------------------- |
@@ -474,6 +486,113 @@ custom_themes {
   name: string
   description: string?
   prompt: string
+}
+
+// === AUTONOMOUS PLANNING ENGINE ===
+
+// Autonomous execution plans
+plans {
+  id: text (PK)
+  appId: integer (FK → apps)
+  title: string
+  description: string
+  type: string // development, bugfix, refactoring, deployment, etc.
+  status: string // pending, running, completed, failed
+  goalIds: json // array of goal IDs
+  strategy: json // execution strategy config
+  progress: json // progress tracking
+  createdAt: timestamp
+}
+
+// Goals within plans
+goals {
+  id: text (PK)
+  appId: integer (FK → apps)
+  title: string
+  description: string
+  type: string // feature, bugfix, refactor, test, etc.
+  priority: string // critical, high, medium, low
+  status: string
+  successCriteria: json
+  taskIds: json // array of task IDs
+  dependsOn: json // goal dependencies
+  createdAt: timestamp
+}
+
+// Tasks within goals
+tasks {
+  id: text (PK)
+  goalId: string (FK → goals)
+  appId: integer (FK → apps)
+  title: string
+  type: string // code_generation, testing, verification, etc.
+  status: string
+  order: integer
+  dependsOn: json
+  input: json
+  output: json
+  createdAt: timestamp
+}
+
+// === AGENT SCHEDULER ===
+
+// Scheduled task executions
+schedule_entries {
+  id: text (PK)
+  taskId: string
+  planId: string
+  appId: integer (FK → apps)
+  status: string // scheduled, running, completed, failed
+  priority: string // critical, high, normal, low, background
+  timeout: integer
+  retryConfig: json
+  createdAt: timestamp
+}
+
+// Execution queues
+schedule_queues {
+  id: text (PK)
+  appId: integer (FK → apps)
+  name: string
+  maxConcurrency: integer
+  isPaused: boolean
+  createdAt: timestamp
+}
+
+// === DISTRIBUTED RUNTIME ===
+
+// Distributed agents
+distributed_agents {
+  id: text (PK)
+  name: string
+  role: string // worker, coordinator, specialist
+  status: string // initializing, ready, busy, error
+  capabilities: json
+  nodeId: string
+  appId: integer (FK → apps)
+  config: json
+  createdAt: timestamp
+}
+
+// Distributed nodes
+distributed_nodes {
+  id: text (PK)
+  name: string
+  status: string // joining, active, offline
+  address: string
+  capabilities: json
+  capacity: json
+  createdAt: timestamp
+}
+
+// Agent checkpoints
+agent_checkpoints {
+  id: text (PK)
+  agentId: string
+  taskId: string
+  data: json
+  sequence: integer
+  createdAt: timestamp
 }
 ```
 
