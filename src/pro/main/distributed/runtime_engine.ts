@@ -329,7 +329,6 @@ export class DistributedRuntime {
     const agent = this.agents.get(agentId);
     if (!agent) return false;
     
-    const oldStatus = agent.status;
     agent.status = status;
     agent.lastHeartbeat = new Date();
     

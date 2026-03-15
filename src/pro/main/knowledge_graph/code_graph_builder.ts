@@ -78,7 +78,6 @@ class TypeScriptParser implements LanguageParser {
   async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
     const entities: ExtractedEntity[] = [];
     const relationships: ExtractedRelationship[] = [];
-    const lines = content.split("\n");
 
     // Extract imports
     const importRegex = /import\s+(?:\{([^}]+)\}|(\w+)(?:\s*,\s*\{([^}]+)\})?)\s+from\s+['"]([^'"]+)['"]/g;
@@ -294,7 +293,6 @@ class PythonParser implements LanguageParser {
   async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
     const entities: ExtractedEntity[] = [];
     const relationships: ExtractedRelationship[] = [];
-    const lines = content.split("\n");
 
     // Extract imports
     const importRegex = /(?:from\s+(\w+(?:\.\w+)*)\s+)?import\s+([^\n]+)/g;
@@ -645,7 +643,7 @@ export class CodeGraphBuilder {
             });
             result.edgesAdded++;
           }
-        } catch (error) {
+        } catch (_error) {
           // Edge might already exist, that's OK
         }
       }
@@ -673,7 +671,7 @@ export class CodeGraphBuilder {
             });
             result.edgesAdded++;
           }
-        } catch (error) {
+        } catch (_error) {
           // Edge might already exist
         }
       }
