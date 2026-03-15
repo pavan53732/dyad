@@ -10,7 +10,6 @@ import { generateText } from "ai";
 import {
   ToolDefinition,
   AgentContext,
-  escapeXmlAttr,
   escapeXmlContent,
 } from "./types";
 import { getModelClient } from "@/ipc/utils/get_model_client";
@@ -938,7 +937,7 @@ export const crossAgentReasoningTool: ToolDefinition<
 
       // Start first round of reasoning
       const firstAgent = agents[0];
-      const prompt = reasoningPrompt || `Reason about: ${topic}`;
+      
 
       const { text: reasoning } = await generateText({
         model: modelClient.model,

@@ -37,13 +37,7 @@ export const reasoningGraphBuilderTool: ToolDefinition<z.infer<typeof reasoningG
 
   execute: async (args, ctx: AgentContext) => {
     // Build graph structure
-    const graph = {
-      nodes: args.nodes,
-      edges: args.edges || [],
-      graphType: args.graphType,
-      timestamp: new Date().toISOString(),
-      id: `reasoning-graph-${Date.now()}`
-    };
+    
 
     // Validate graph structure
     const nodeIds = new Set(args.nodes.map(n => n.id));
@@ -162,14 +156,7 @@ export const reasoningStatePersistenceTool: ToolDefinition<z.infer<typeof reason
 
   execute: async (args, ctx: AgentContext) => {
     // In a real implementation, this would save to a database or file system
-    const persistedState = {
-      graphId: args.graphId,
-      stateData: args.stateData,
-      mode: args.persistenceMode,
-      metadata: args.metadata,
-      timestamp: new Date().toISOString(),
-      persistedAt: new Date().toISOString()
-    };
+    
 
     return `Successfully persisted ${args.persistenceMode} state for reasoning graph ${args.graphId}`;
   },
@@ -232,14 +219,7 @@ export const reasoningTraceVisualizationTool: ToolDefinition<z.infer<typeof reas
 
   execute: async (args, ctx: AgentContext) => {
     // Placeholder for visualization generation
-    const visualization = {
-      traceId: args.traceId,
-      type: args.visualizationType,
-      includeMetadata: args.includeMetadata,
-      highlightNodes: args.highlightNodes,
-      generatedAt: new Date().toISOString(),
-      format: "svg" // or other format
-    };
+    
 
     return `Generated ${args.visualizationType} visualization for reasoning trace ${args.traceId}`;
   },

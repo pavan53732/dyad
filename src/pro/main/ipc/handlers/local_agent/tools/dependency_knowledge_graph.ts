@@ -389,7 +389,7 @@ async function buildDependencyGraph(
   );
 
   const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"));
-  const lockFile = parseLockFile(projectPath);
+  
 
   const nodes: DependencyNode[] = [];
   const edges: DependencyEdge[] = [];
@@ -690,7 +690,7 @@ async function detectDependencyConflicts(
           }
         }
       }
-    } catch (error) {
+    } catch  {
       // Handle error
     }
   }
@@ -703,7 +703,7 @@ async function resolveDependencyVersion(
   args: DependencyVersionResolverArgs,
   ctx: AgentContext,
 ): Promise<VersionResolution> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Version Resolver">Resolving version for ${args.packageName}...</dyad-status>`,

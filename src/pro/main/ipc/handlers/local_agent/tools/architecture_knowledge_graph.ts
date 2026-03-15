@@ -521,7 +521,7 @@ async function scoreArchitectureDecision(
   args: ArchitectureDecisionScoringArgs,
   ctx: AgentContext,
 ): Promise<DecisionScoringResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Architecture Decision Scoring">Scoring decision: ${args.decision.substring(0, 50)}...</dyad-status>`,
@@ -700,7 +700,7 @@ async function solveConstraints(
   args: ArchitectureConstraintSolverArgs,
   ctx: AgentContext,
 ): Promise<ConstraintSolvingResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Constraint Solver">Finding solutions...</dyad-status>`,
@@ -734,7 +734,7 @@ async function solveConstraints(
     let timeline = "3-6 months";
     let risk: "low" | "medium" | "high" = "medium";
 
-    const solutionName = sol.name || `Solution ${sol.id}`;
+    
 
     for (const constraint of args.constraints) {
       const descLower = sol.description.toLowerCase();
@@ -814,7 +814,7 @@ async function searchOptimization(
   args: ArchitectureOptimizationSearchArgs,
   ctx: AgentContext,
 ): Promise<OptimizationResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Optimization Search">Running ${args.algorithm} algorithm...</dyad-status>`,
@@ -860,7 +860,7 @@ async function planMultiObjective(
   args: ArchitectureMultiObjectivePlannerArgs,
   ctx: AgentContext,
 ): Promise<MultiObjectiveResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Multi-Objective Planner">Planning for ${args.goals.length} goals...</dyad-status>`,
@@ -952,7 +952,7 @@ async function applyHeuristics(
   args: ArchitectureHeuristicEngineArgs,
   ctx: AgentContext,
 ): Promise<HeuristicResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Heuristic Engine">Applying architectural heuristics...</dyad-status>`,
@@ -1015,7 +1015,7 @@ async function runRLOptimization(
   args: ArchitectureReinforcementLearningArgs,
   ctx: AgentContext,
 ): Promise<RLResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="RL Optimization">Training for ${args.episodes} episodes...</dyad-status>`,
@@ -1038,7 +1038,7 @@ async function runRLOptimization(
     }
 
     // Decay exploration rate
-    const effectiveExploration = args.explorationRate * (1 - i / args.episodes);
+    
     
     trainingHistory.push(currentReward);
 
@@ -1068,7 +1068,7 @@ async function rankSolutions(
   args: ArchitectureSolutionRankingArgs,
   ctx: AgentContext,
 ): Promise<RankingResult> {
-  const projectPath = getProjectPath(args, ctx);
+  
 
   ctx.onXmlStream(
     `<dyad-status title="Solution Ranking">Ranking ${args.solutions.length} solutions...</dyad-status>`,
@@ -1142,7 +1142,7 @@ async function generateRecommendations(
 
   for (const goal of args.targetGoals) {
     let recommendation: Recommendation | null = null;
-    let confidence = 0.8;
+    
 
     switch (goal.toLowerCase()) {
       case "scalability":
