@@ -108,6 +108,9 @@ userData/
 # Claude Code
 .claude/settings.local.json
 
+# Roo AI Assistant
+.roo/
+.roomodes
 # Python
 __pycache__/
 
