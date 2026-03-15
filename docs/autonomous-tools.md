@@ -611,3 +611,107 @@ User: "Build a new user profile page"
 - [Local Agent Tools](src/pro/main/ipc/handlers/local_agent/tools/)
 - [E2E Testing Rules](rules/e2e-testing.md)
 - [Git Workflow Rules](rules/git-workflow.md)
+
+---
+
+## Knowledge Integration Layer (KIL)
+
+The Knowledge Integration Layer provides unified access to all knowledge sources in Dyad. It enables cross-module queries and persistent learning from architecture decisions.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE INTEGRATION LAYER                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
+│  │ Query        │  │ Knowledge    │  │ Learning                 │ │
+│  │ Orchestrator │  │ Aggregator   │  │ Repository               │ │
+│  └──────┬───────┘  └──────┬───────┘  └────────────┬─────────────┘ │
+│         │                 │                        │                │
+│         └─────────────────┼────────────────────────┘                │
+│                           │                                         │
+│         ┌─────────────────┼─────────────────┐                       │
+│         │                 │                 │                       │
+│         ▼                 ▼                 ▼                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │ Knowledge    │  │ Vector       │  │ Dependency   │              │
+│  │ Graph        │  │ Memory       │  │ Graph        │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### IPC Channels
+
+The KIL exposes the following IPC channels for renderer-to-main communication:
+
+| Channel | Purpose |
+|---------|---------|
+| `kil:query` | Execute a unified knowledge query across sources |
+| `kil:query-similar` | Find similar entities across all sources |
+| `kil:record-decision` | Record an architecture decision with context |
+| `kil:get-recommendations` | Get recommendations based on past decisions |
+| `kil:build-context` | Build aggregated context for a task |
+| `kil:clear-cache` | Clear the query cache |
+| `kil:get-stats` | Get cache and query statistics |
+
+### Knowledge Sources
+
+| Source | Module | Data Types |
+|--------|--------|------------|
+| **Code Graph** | `knowledge_graph/` | Entities, relationships, code structure |
+| **Vector Memory** | `vector_memory/` | Embeddings, semantic search results |
+| **Dependency Graph** | `dependency_analyzer.ts` | Package dependencies, version info |
+| **Architecture** | `architecture_knowledge_graph.ts` | Patterns, decisions, constraints |
+| **Reasoning** | `reasoning_infrastructure.ts` | Traces, insights, learned patterns |
+
+### Query Example
+
+```typescript
+// Execute a unified knowledge query
+const result = await ipcRenderer.invoke('kil:query', {
+  query: 'authentication implementation',
+  sources: ['code_graph', 'vector_memory', 'architecture'],
+  maxResults: 20,
+  rankingStrategy: 'hybrid'
+});
+
+// Result contains aggregated results from all sources
+result.results.forEach(r => {
+  console.log(`${r.source}: ${r.entity.name} (score: ${r.score})`);
+});
+```
+
+### Decision Recording
+
+```typescript
+// Record an architecture decision for learning
+await ipcRenderer.invoke('kil:record-decision', {
+  decision: 'Use JWT for authentication',
+  context: {
+    requirements: ['stateless', 'scalable', 'mobile-friendly'],
+    constraints: ['no server-side sessions']
+  },
+  alternatives: ['Session cookies', 'OAuth only'],
+  selectedOption: 'JWT with refresh tokens',
+  rationale: 'Best balance of security and scalability',
+  confidence: 0.85
+});
+
+// Later, get recommendations based on similar decisions
+const recommendations = await ipcRenderer.invoke('kil:get-recommendations', {
+  context: {
+    requirements: ['stateless', 'scalable']
+  }
+});
+```
+
+### Benefits
+
+1. **Unified Access**: Single interface for all knowledge sources
+2. **Cross-Source Reasoning**: Find related entities across modules
+3. **Persistent Learning**: Learn from past architecture decisions
+4. **Context Enrichment**: Build rich context for AI tools
+5. **Recommendation Engine**: Get suggestions based on successful patterns

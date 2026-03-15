@@ -218,3 +218,76 @@ Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-ag
 - `distributed:distribute-task` - Distribute task to agents
 - `distributed:send-message` - Send inter-agent message
 - `distributed:get-stats` - Get runtime statistics
+
+---
+
+## Knowledge Integration Layer (Evolution Cycle 1)
+
+Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowledge access across all modules:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Types | `types.ts` | Unified type definitions for knowledge entities, queries, and decisions |
+| Query Orchestrator | `query_orchestrator.ts` | Unified query interface across all knowledge sources |
+| Knowledge Aggregator | `knowledge_aggregator.ts` | Cross-module data fusion and context enrichment |
+| Learning Repository | `learning_repository.ts` | Architecture decision recording and pattern learning |
+| IPC | `ipc_handlers.ts` | Renderer communication |
+
+**Key Features:**
+- Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
+- Parallel source queries with configurable sources
+- Multiple ranking strategies (relevance, confidence, recency, hybrid)
+- Cross-source entity resolution and deduplication
+- Architecture decision recording with outcome tracking
+- Pattern extraction from successful decisions
+- Recommendation generation based on past learnings
+
+**Database Tables:** `architecture_decisions`, `knowledge_queries`, `learned_patterns`, `knowledge_entities`, `knowledge_relationships`
+
+### KIL IPC Channels
+
+**Knowledge Integration IPC (`KIL_IPC_CHANNELS`):**
+- `kil:query` - Execute unified knowledge query
+- `kil:query-similar` - Find similar entities across sources
+- `kil:record-decision` - Record architecture decision with context
+- `kil:get-recommendations` - Get learning-based recommendations
+- `kil:build-context` - Build aggregated task context
+- `kil:clear-cache` - Clear query cache
+- `kil:get-stats` - Get cache statistics
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    UNIFIED KNOWLEDGE ACCESS PIPELINE                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. USER/AI REQUEST                                                          │
+│      ↓                                                                       │
+│  2. KNOWLEDGE INTEGRATION LAYER                                              │
+│      - Query orchestrator receives request                                   │
+│      - Parallel queries to multiple sources                                  │
+│      - Knowledge aggregator fuses results                                    │
+│      ↓                                                                       │
+│  3. LEARNING REPOSITORY                                                      │
+│      - Record decisions with outcomes                                        │
+│      - Extract patterns from successful decisions                            │
+│      - Generate recommendations                                              │
+│      ↓                                                                       │
+│  4. RESULT                                                                   │
+│      - Unified response with ranked results                                  │
+│      - Context enrichment for AI tools                                       │
+│      - Learning feedback for future queries                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### KIL Source Connectors
+
+The KIL connects to the following knowledge sources:
+
+| Source | Module | Data Types |
+|--------|--------|------------|
+| Code Graph | `knowledge_graph/` | Entities, relationships, code structure |
+| Vector Memory | `vector_memory/` | Embeddings, semantic search results |
+| Dependency Graph | `dependency_analyzer.ts` | Package dependencies, version info |
+| Architecture | `architecture_knowledge_graph.ts` | Patterns, decisions, constraints |
+| Reasoning | `reasoning_infrastructure.ts` | Traces, insights, learned patterns |

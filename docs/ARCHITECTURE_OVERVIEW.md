@@ -225,7 +225,49 @@ Dyad implements three core autonomous systems for fully autonomous operation:
 
 See `docs/agent_architecture.md` for detailed documentation of these systems.
 
-### 5.4 State Management
+### 5.4 Knowledge Integration Layer (KIL)
+
+The Knowledge Integration Layer provides a unified interface for accessing and correlating knowledge across multiple modules:
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **Query Orchestrator** | `src/pro/main/knowledge_integration/query_orchestrator.ts` | Unified query interface across all knowledge sources |
+| **Knowledge Aggregator** | `src/pro/main/knowledge_integration/knowledge_aggregator.ts` | Cross-module data fusion and context enrichment |
+| **Learning Repository** | `src/pro/main/knowledge_integration/learning_repository.ts` | Architecture decision recording and learning |
+
+**Key Features:**
+- Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
+- Parallel source queries with configurable sources
+- Multiple ranking strategies (relevance, confidence, recency, hybrid)
+- Cross-source entity resolution and deduplication
+- Architecture decision recording with outcome tracking
+- Pattern extraction from successful decisions
+
+**Database Tables:** `architecture_decisions`, `knowledge_queries`, `learned_patterns`, `knowledge_entities`, `knowledge_relationships`
+
+**Architecture:**
+```
+                    ┌─────────────────────────────────────┐
+                    │   KNOWLEDGE INTEGRATION LAYER       │
+                    │                                     │
+                    │  ┌─────────────┐  ┌──────────────┐│
+                    │  │ Query       │  │ Knowledge    ││
+                    │  │ Orchestrator│  │ Aggregator   ││
+                    │  └──────┬──────┘  └──────┬───────┘│
+                    │         │                │         │
+                    │  ┌──────┴────────────────┴──────┐ │
+                    │  │   Learning Repository        │ │
+                    │  └──────────────────────────────┘ │
+                    └─────────────────────────────────────┘
+                         │         │         │
+         ┌───────────────┼─────────┼─────────┼───────────┐
+         ▼               ▼         ▼         ▼           ▼
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ Code Graph   │ │ Vector Mem   │ │ Deps Graph   │ │ Architecture │
+└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+```
+
+### 5.5 State Management
 
 | Approach           | Usage                                        |
 | ------------------ | -------------------------------------------- |
@@ -592,6 +634,68 @@ agent_checkpoints {
   taskId: string
   data: json
   sequence: integer
+  createdAt: timestamp
+}
+
+// === KNOWLEDGE INTEGRATION LAYER ===
+
+// Architecture Decision Records
+architecture_decisions {
+  id: text (PK)
+  appId: integer (FK → apps)
+  decision: text
+  context: json
+  alternatives: json
+  selectedOption: text
+  rationale: text
+  outcome: text // success, partial, failure
+  outcomeMetrics: json
+  learnedPatterns: json
+  confidence: real
+  createdAt: timestamp
+}
+
+// Knowledge Queries (for learning)
+knowledge_queries {
+  id: text (PK)
+  query: text
+  sources: json
+  resultCount: integer
+  relevanceScore: real
+  feedback: text
+  createdAt: timestamp
+}
+
+// Learned Patterns
+learned_patterns {
+  id: text (PK)
+  pattern: text
+  context: json
+  successCount: integer
+  failureCount: integer
+  confidence: real
+  createdAt: timestamp
+}
+
+// Unified Knowledge Entities
+knowledge_entities {
+  id: text (PK)
+  source: text // code_graph, vector_memory, dependency_graph, etc.
+  entityType: text
+  name: text
+  data: json
+  embedding: blob // vector embedding for similarity
+  createdAt: timestamp
+}
+
+// Cross-source Relationships
+knowledge_relationships {
+  id: text (PK)
+  sourceEntityId: text (FK)
+  targetEntityId: text (FK)
+  relationshipType: text
+  weight: real
+  metadata: json
   createdAt: timestamp
 }
 ```
