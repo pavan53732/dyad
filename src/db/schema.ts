@@ -898,3 +898,207 @@ export const agentCheckpointsRelations = relations(agentCheckpoints, ({ one }) =
     references: [distributedAgents.id],
   }),
 }));
+
+// ============================================================================
+// KNOWLEDGE INTEGRATION LAYER TABLES
+// ============================================================================
+
+/**
+ * Architecture Decision Records - stores architecture decisions for learning
+ */
+export const architectureDecisions = sqliteTable(
+  "architecture_decisions",
+  {
+    id: text("id").primaryKey(),
+    appId: integer("app_id")
+      .notNull()
+      .references(() => apps.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    type: text("type").notNull().default("custom"), // pattern_selection, technology_choice, structure_change, etc.
+    status: text("status").notNull().default("pending"), // pending, success, partial, failure, reverted
+    context: text("context", { mode: "json" }).notNull(), // DecisionContext
+    alternatives: text("alternatives", { mode: "json" }).notNull().default("[]"), // DecisionAlternative[]
+    selectedOption: text("selected_option").notNull(),
+    rationale: text("rationale").notNull(),
+    outcome: text("outcome", { mode: "json" }).notNull(), // DecisionOutcome
+    confidence: integer("confidence").notNull().default(50), // 0-100 scale
+    tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    relatedEntities: text("related_entities", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    lessonsLearned: text("lessons_learned", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    createdBy: text("created_by"),
+    metadata: text("metadata", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+    outcomeDeterminedAt: integer("outcome_determined_at", { mode: "timestamp" }),
+  },
+);
+
+/**
+ * Knowledge Queries - stores query history for learning
+ */
+export const knowledgeQueries = sqliteTable(
+  "knowledge_queries",
+  {
+    id: text("id").primaryKey(),
+    appId: integer("app_id")
+      .notNull()
+      .references(() => apps.id, { onDelete: "cascade" }),
+    query: text("query").notNull(),
+    sources: text("sources", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    entityTypes: text("entity_types", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    resultCount: integer("result_count").notNull().default(0),
+    relevanceScore: integer("relevance_score").notNull().default(0), // 0-100
+    queryTimeMs: integer("query_time_ms").notNull().default(0),
+    feedback: text("feedback"), // positive, negative, neutral
+    feedbackDetails: text("feedback_details"),
+    context: text("context", { mode: "json" }), // QueryContext
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+);
+
+/**
+ * Learned Patterns - stores patterns extracted from successful decisions
+ */
+export const learnedPatterns = sqliteTable(
+  "learned_patterns",
+  {
+    id: text("id").primaryKey(),
+    appId: integer("app_id")
+      .notNull()
+      .references(() => apps.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // ArchitectureDecisionType
+    description: text("description").notNull(),
+    condition: text("condition").notNull(), // When this pattern applies
+    solution: text("solution").notNull(), // Recommended approach
+    confidence: integer("confidence").notNull().default(50), // 0-100
+    applicability: integer("applicability").notNull().default(50), // 0-100
+    basedOnDecisionId: text("based_on_decision_id")
+      .references(() => architectureDecisions.id, { onDelete: "set null" }),
+    usageCount: integer("usage_count").notNull().default(0),
+    successCount: integer("success_count").notNull().default(0),
+    failureCount: integer("failure_count").notNull().default(0),
+    tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default("[]"),
+    metadata: text("metadata", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    lastAppliedAt: integer("last_applied_at", { mode: "timestamp" }),
+  },
+);
+
+/**
+ * Knowledge Entities - unified entity cache from all sources
+ */
+export const knowledgeEntities = sqliteTable(
+  "knowledge_entities",
+  {
+    id: text("id").primaryKey(),
+    appId: integer("app_id")
+      .notNull()
+      .references(() => apps.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // KnowledgeEntityType
+    name: text("name").notNull(),
+    source: text("source").notNull(), // KnowledgeSource
+    sourceId: text("source_id").notNull(), // Original ID from source
+    filePath: text("file_path"),
+    locationStartLine: integer("location_start_line"),
+    locationEndLine: integer("location_end_line"),
+    properties: text("properties", { mode: "json" }).notNull().default("{}"),
+    confidence: integer("confidence").notNull().default(50), // 0-100
+    accessCount: integer("access_count").notNull().default(0),
+    sourceSpecific: text("source_specific", { mode: "json" }).default("{}"),
+    embedding: text("embedding", { mode: "json" }).$type<number[]>(), // Optional embedding vector
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    lastAccessedAt: integer("last_accessed_at", { mode: "timestamp" }),
+  },
+);
+
+/**
+ * Knowledge Relationships - relationships between entities
+ */
+export const knowledgeRelationships = sqliteTable(
+  "knowledge_relationships",
+  {
+    id: text("id").primaryKey(),
+    sourceEntityId: text("source_entity_id")
+      .notNull()
+      .references(() => knowledgeEntities.id, { onDelete: "cascade" }),
+    targetEntityId: text("target_entity_id")
+      .notNull()
+      .references(() => knowledgeEntities.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // KnowledgeRelationType
+    weight: integer("weight").notNull().default(50), // 0-100
+    source: text("source").notNull(), // KnowledgeSource
+    metadata: text("metadata", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    unique("uniq_knowledge_relationship").on(table.sourceEntityId, table.targetEntityId, table.type),
+  ],
+);
+
+// Knowledge Integration Relations
+export const architectureDecisionsRelations = relations(architectureDecisions, ({ one }) => ({
+  app: one(apps, {
+    fields: [architectureDecisions.appId],
+    references: [apps.id],
+  }),
+}));
+
+export const knowledgeQueriesRelations = relations(knowledgeQueries, ({ one }) => ({
+  app: one(apps, {
+    fields: [knowledgeQueries.appId],
+    references: [apps.id],
+  }),
+}));
+
+export const learnedPatternsRelations = relations(learnedPatterns, ({ one }) => ({
+  app: one(apps, {
+    fields: [learnedPatterns.appId],
+    references: [apps.id],
+  }),
+  basedOnDecision: one(architectureDecisions, {
+    fields: [learnedPatterns.basedOnDecisionId],
+    references: [architectureDecisions.id],
+  }),
+}));
+
+export const knowledgeEntitiesRelations = relations(knowledgeEntities, ({ one, many }) => ({
+  app: one(apps, {
+    fields: [knowledgeEntities.appId],
+    references: [apps.id],
+  }),
+  outgoingRelationships: many(knowledgeRelationships, { relationName: "source" }),
+  incomingRelationships: many(knowledgeRelationships, { relationName: "target" }),
+}));
+
+export const knowledgeRelationshipsRelations = relations(knowledgeRelationships, ({ one }) => ({
+  sourceEntity: one(knowledgeEntities, {
+    fields: [knowledgeRelationships.sourceEntityId],
+    references: [knowledgeEntities.id],
+    relationName: "source",
+  }),
+  targetEntity: one(knowledgeEntities, {
+    fields: [knowledgeRelationships.targetEntityId],
+    references: [knowledgeEntities.id],
+    relationName: "target",
+  }),
+}));
