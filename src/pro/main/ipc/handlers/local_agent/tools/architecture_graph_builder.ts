@@ -19,7 +19,15 @@ const ArchitectureGraphBuilderArgs = z.object({
   projectPath: z.string().optional(),
   /** Types of graphs to build */
   graphTypes: z
-    .enum(["all", "component", "service", "dataflow", "api", "constraint"])
+    .enum([
+      "all",
+      "component",
+      "service",
+      "dataflow",
+      "eventflow",
+      "api",
+      "constraint",
+    ])
     .default("all"),
   /** Include detailed edge weights for dependencies */
   includeWeights: z.boolean().default(true),
@@ -80,6 +88,16 @@ interface DataFlowGraph {
   };
 }
 
+interface EventFlowGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  metadata: {
+    producers: string[];
+    consumers: string[];
+    eventBuses: string[];
+  };
+}
+
 interface ApiGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -108,6 +126,7 @@ interface GraphBuilderReport {
   componentGraph?: ComponentGraph;
   serviceGraph?: ServiceGraph;
   dataFlowGraph?: DataFlowGraph;
+  eventFlowGraph?: EventFlowGraph;
   apiGraph?: ApiGraph;
   constraintEngine?: ArchitectureConstraintEngine;
   visualizationData?: {
@@ -564,6 +583,44 @@ function buildDataFlowGraph(
   };
 }
 
+// Build event flow graph
+function buildEventFlowGraph(
+  files: Array<{ path: string; imports: string[]; content?: string }>,
+  componentMap: Map<string, GraphNode>,
+): EventFlowGraph {
+  const nodes = Array.from(componentMap.values());
+  const edges: GraphEdge[] = [];
+  const producers: string[] = [];
+  const consumers: string[] = [];
+  const eventBuses: string[] = [];
+
+  for (const file of files) {
+    const content = file.content || "";
+    const isProducer = /emit|publish|broadcast/i.test(content);
+    const isConsumer = /on\(|subscribe|listen/i.test(content);
+    const isBus = /EventBus|EventEmitter|MessageBus/i.test(file.path);
+
+    if (isProducer) producers.push(file.path);
+    if (isConsumer) consumers.push(file.path);
+    if (isBus) eventBuses.push(file.path);
+
+    // Simple edge detection: if a file imports an event bus and emits
+    if (isProducer) {
+      for (const bus of eventBuses) {
+        if (file.imports.some((imp) => bus.includes(imp))) {
+          edges.push({ source: file.path, target: bus, type: "event" });
+        }
+      }
+    }
+  }
+
+  return {
+    nodes,
+    edges,
+    metadata: { producers, consumers, eventBuses },
+  };
+}
+
 // Build API communication graph
 function buildApiGraph(
   files: Array<{ path: string; apiRoutes: string[]; imports: string[] }>,
@@ -775,6 +832,10 @@ async function buildArchitectureGraphs(
 
   if (buildAll || args.graphTypes === "dataflow") {
     report.dataFlowGraph = buildDataFlowGraph(files, componentMap);
+  }
+
+  if (buildAll || args.graphTypes === "eventflow") {
+    report.eventFlowGraph = buildEventFlowGraph(files, componentMap);
   }
 
   if (buildAll || args.graphTypes === "api") {

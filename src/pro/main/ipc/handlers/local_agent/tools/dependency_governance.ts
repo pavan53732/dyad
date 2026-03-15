@@ -648,7 +648,7 @@ async function scanVulnerabilities(
         }
       }
     }
-  } catch {
+  } catch {}
 
   vulnerabilities.sort((a, b) => {
     const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };

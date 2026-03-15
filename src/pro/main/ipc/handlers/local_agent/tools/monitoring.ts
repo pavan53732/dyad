@@ -61,7 +61,7 @@ const MonitoringArgs = z.object({
   timestamp: z.string().optional().describe("ISO timestamp for the metric"),
   /** Labels/tags for the metric */
   labels: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .optional()
     .describe("Labels or tags for the metric"),
   /** Time range for queries (e.g., "1h", "24h", "7d") */

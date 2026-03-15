@@ -48,7 +48,7 @@ export const quantifyUncertaintyTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -119,7 +119,7 @@ export const confidenceScoreTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -182,7 +182,7 @@ export const evidenceStrengthTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -225,7 +225,10 @@ export const evidenceStrengthTool: ToolDefinition = {
   <assessment>
     <evidence_provided>${evidence ? "yes" : "no"}</evidence_provided>
     <evidence_length>${evidence?.length || 0}</evidence_length>
-    <reliable_sources>${evidence && reliableSources.some((s) => evidence.toLowerCase().includes(s)) ? "detected" : "none"}</reliable_sources>
+    <reliable_sources>${(() => {
+      const reliableSources = ["study", "research", "data", "experiment", "survey", "analysis"];
+      return evidence && reliableSources.some((s) => evidence.toLowerCase().includes(s)) ? "detected" : "none";
+    })()}</reliable_sources>
     <quantitative_data>${evidence && /\d+/.test(evidence) ? "present" : "absent"}</quantitative_data>
   </assessment>
 </tool_result>`;
@@ -246,7 +249,7 @@ export const bayesianUpdateTool: ToolDefinition = {
   }),
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -303,7 +306,7 @@ export const entropyMeasureTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -355,7 +358,7 @@ export const sensitivityAnalysisTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -423,7 +426,7 @@ export const confidenceIntervalTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -432,7 +435,7 @@ export const confidenceIntervalTool: ToolDefinition = {
     // Estimate point and interval based on statement characteristics
     // This is a simplified estimation - real implementation would use actual data
     const hasNumbers = statement.match(/\d+/g) || [];
-    const baseEstimate = hasNumbers.length > 0 ? parseFloat(hasNumbers[0]) : 50;
+    const baseEstimate = hasNumbers.length > 0 ? parseFloat(hasNumbers[0]!) : 50;
 
     // Base uncertainty from evidence
     const evidenceLength = evidence?.length || 0;
@@ -480,7 +483,7 @@ export const riskAssessmentTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -588,7 +591,7 @@ export const ambiguityDetectionTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -646,7 +649,7 @@ export const calibrationCheckTool: ToolDefinition = {
   inputSchema: UncertaintyInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: UncertaintyInput,
     context: AgentContext,
   ): Promise<string> => {

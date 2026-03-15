@@ -106,6 +106,13 @@ import {
   architectureRecommendationEngineTool,
 } from "./tools/architecture_knowledge_graph";
 import {
+  architectureRollbackPlannerTool,
+  futureGrowthPlannerTool,
+  scalingForecastEngineTool,
+  costProjectionModelTool,
+  sustainabilityAnalysisTool,
+} from "./tools/architecture_planning";
+import {
   detectPatternsTool,
   suggestRefactoringTool,
   detectAntiPatternsTool,
@@ -172,6 +179,18 @@ import {
   theoryOfMindTool,
   abstractReasoningTool,
 } from "./tools/metacognition";
+// Agent Governance & Sandbox (Capabilities 181-190)
+import {
+  agentPermissionSystemTool,
+  agentActionAuditTool,
+  agentTerminationControlTool,
+  agentSandboxEnforcementTool,
+} from "./tools/agent_sandbox_v2";
+// Code Knowledge Infrastructure (Capabilities 321-330)
+import {
+  codeKnowledgeGraphBuilderTool,
+  codeIndexingPipelineTool,
+} from "./tools/code_knowledge_graph";
 // Code Understanding Enhancements (Capabilities 221-340)
 import {
   dependencyVisualizationTool,
@@ -765,6 +784,20 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   architectureReinforcementLearningTool,
   architectureSolutionRankingTool,
   architectureRecommendationEngineTool,
+  // Architecture Planning (Capabilities 401-405)
+  architectureRollbackPlannerTool,
+  futureGrowthPlannerTool,
+  scalingForecastEngineTool,
+  costProjectionModelTool,
+  sustainabilityAnalysisTool,
+  // Agent Governance & Sandbox (Capabilities 181-190)
+  agentPermissionSystemTool,
+  agentActionAuditTool,
+  agentTerminationControlTool,
+  agentSandboxEnforcementTool,
+  // Code Knowledge Infrastructure (Capabilities 321-330)
+  codeKnowledgeGraphBuilderTool,
+  codeIndexingPipelineTool,
 ];
 // ============================================================================
 // Agent Tool Name Type (derived from TOOL_DEFINITIONS)

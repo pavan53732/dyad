@@ -100,7 +100,7 @@ export const caseRetrievalTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -164,7 +164,7 @@ export const caseMatchTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -229,7 +229,7 @@ export const adaptSolutionTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -300,7 +300,7 @@ export const similarityMetricTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -375,7 +375,7 @@ export const featureExtractionTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -452,7 +452,7 @@ export const caseLibraryTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -495,7 +495,7 @@ export const caseIndexingTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -560,7 +560,7 @@ export const analogicalTransferTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -637,7 +637,7 @@ export const schemaMappingTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -731,7 +731,7 @@ export const caseRevisionTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -799,7 +799,7 @@ export const cbrCycleTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -878,7 +878,7 @@ export const nearestNeighborTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -942,7 +942,7 @@ export const caseValidationTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -1007,7 +1007,7 @@ export const caseStorageTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {
@@ -1060,7 +1060,7 @@ export const analogyQualityTool: ToolDefinition = {
   inputSchema: AnalogicalInputSchema,
   defaultConsent: "always",
   modifiesState: false,
-  handler: async (
+  execute: async (
     input: AnalogicalInput,
     context: AgentContext,
   ): Promise<string> => {

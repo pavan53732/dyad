@@ -484,9 +484,9 @@ function validateSyllogism(
   const conclusionLower = conclusion.toLowerCase();
 
   // Extract terms
-  const majorTerms = majorLower.match(/(\w+)/g) || [];
-  const minorTerms = minorLower.match(/(\w+)/g) || [];
-  const conclusionTerms = conclusionLower.match(/(\w+)/g) || [];
+  const majorTerms = (majorLower.match(/(\w+)/g) || []) as string[];
+  const minorTerms = (minorLower.match(/(\w+)/g) || []) as string[];
+  const conclusionTerms = (conclusionLower.match(/(\w+)/g) || []) as string[];
 
   // Check for valid structure
   let isValid = true;

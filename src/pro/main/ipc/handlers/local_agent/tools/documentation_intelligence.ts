@@ -661,7 +661,6 @@ Creates comprehensive README documentation with customizable sections:
 
   execute: async (args, ctx: AgentContext) => {
     const appPath = ctx.appPath;
-    
 
     // Detect project language
     const language = await detectProjectLanguage(appPath);
@@ -1163,7 +1162,6 @@ Detects:
 
   execute: async (args, ctx: AgentContext) => {
     const appPath = ctx.appPath;
-    
 
     // Find documentation files
     const mdFiles = await glob("**/*.md", {

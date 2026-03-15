@@ -574,7 +574,11 @@ Return as JSON:
       temperature: 0.4,
     });
 
-    let formation = { team: [], leadership: null, justification: "" };
+    let formation: {
+      team: { agentId: string; role: string; level: number }[];
+      leadership: string | null | undefined;
+      justification: string;
+    } = { team: [], leadership: null, justification: "" };
     try {
       formation = JSON.parse(text);
     } catch {

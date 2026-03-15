@@ -130,7 +130,7 @@ function saveLearningStore(ctx: AgentContext, data: LearningStore): void {
 const LearningFeedbackLoopArgs = z.object({
   task: z.string().describe("The task that was executed"),
   outcome: z.enum(["success", "failure", "partial"]).describe("Task outcome"),
-  metrics: z.record(z.number()).describe("Performance metrics from the task"),
+  metrics: z.record(z.string(), z.number()).describe("Performance metrics from the task"),
   strategy: z.string().describe("Strategy used for the task"),
   patterns: z.array(z.string()).describe("Patterns identified in the task"),
   timeSpent: z.number().describe("Time spent on task in milliseconds"),
@@ -460,7 +460,7 @@ const StrategyRefinementArgs = z.object({
     .enum(["success", "efficiency", "reliability"])
     .describe("Desired outcome type"),
   constraints: z
-    .record(z.union([z.string(), z.number()]))
+    .record(z.string(), z.union([z.string(), z.number()]))
     .optional()
     .describe("Strategy constraints"),
 });
@@ -594,7 +594,7 @@ export const strategyRefinementTool: ToolDefinition<StrategyRefinementArgs> = {
 
 const KnowledgeUpdaterArgs = z.object({
   knowledgeId: z.string().describe("ID of knowledge entry to update"),
-  updates: z.record(z.unknown()).describe("Updates to apply"),
+  updates: z.record(z.string(), z.unknown()).describe("Updates to apply"),
   mergeStrategy: z
     .enum(["replace", "merge", "append"])
     .default("merge")
@@ -1068,7 +1068,7 @@ export const adaptiveThresholdLearnerTool: ToolDefinition<AdaptiveThresholdLearn
 
 const RewardCalculatorArgs = z.object({
   outcome: z.enum(["success", "failure", "partial"]).describe("Task outcome"),
-  metrics: z.record(z.number()).describe("Performance metrics"),
+  metrics: z.record(z.string(), z.number()).describe("Performance metrics"),
   effort: z.number().describe("Effort expended (time or steps)"),
   baselineReward: z.number().default(0).describe("Baseline reward value"),
 });

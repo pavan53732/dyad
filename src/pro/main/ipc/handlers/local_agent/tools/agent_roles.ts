@@ -365,14 +365,15 @@ ${analysis}
 
 ${
   tasks
-    .filter(
-      (t) =>
-        matchScores.find((m) => m.taskId === t.id)?.bestMatch.matchScore < 0.5,
-    )
-    .map(
-      (t) =>
-        `⚠️ ${t.id}: Only ${matchScores.find((m) => m.taskId === t.id)?.bestMatch.matchScore * 100}% skill coverage`,
-    )
+    .filter((t) => {
+      const match = matchScores.find((m) => m.taskId === t.id);
+      return match && match.bestMatch.finalScore < 0.5;
+    })
+    .map((t) => {
+      const match = matchScores.find((m) => m.taskId === t.id);
+      const score = match ? match.bestMatch.finalScore : 0;
+      return `⚠️ ${t.id}: Only ${Math.round(score * 100)}% skill coverage`;
+    })
     .join("\n") || "✅ All tasks have adequate skill coverage"
 }`;
 
@@ -680,7 +681,7 @@ export const workloadBalancingTool: ToolDefinition<
 
       // Adjust effort by agent efficiency
       const adjustedEffort = Math.ceil(
-        task.efficiency / selectedAgent.efficiency,
+        (task as any).effort / selectedAgent.efficiency,
       );
 
       if (selectedAgent.remainingCapacity >= adjustedEffort) {
@@ -876,7 +877,7 @@ Return as JSON:
     }
 
     // If agent capabilities provided, analyze coverage
-    let coverageAnalysis = "";
+    let coverageAnalysis: any = { agentCoverage: [] };
     if (agentCapabilities.length > 0) {
       const coveragePrompt = `Analyze how these agents' capabilities map to the required capabilities:
 
@@ -939,23 +940,26 @@ ${
 
 ${
   coverageAnalysis && (coverageAnalysis as any).agentCoverage?.length > 0
-    ? `### Agent Coverage Analysis
-
+    ? `#### Agent Coverage
+ 
 | Agent | Coverage | Covered | Gaps |
 |-------|----------|---------|------|
-${(coverageAnalysis as any).agentCoverage
-  .map(
-    (a: any) =>
-      `| ${a.agentId} | ${Math.round(a.coverage * 100)}% | ${a.covered.join(", ") || "-"} | ${a.gaps.join(", ") || "-"} |`,
-  )
-  .join("\n")}`
+${
+  (coverageAnalysis.agentCoverage || [])
+    .map(
+      (a: any) =>
+        `| ${a.agentId} | ${Math.round(a.coverage * 100)}% | ${a.covered.join(", ")} | ${a.gaps.join(", ")} |`,
+    )
+    .join("\n") || "| - | 0% | - | - |"
+}
+`
     : ""
 }`;
-
+ 
     ctx.onXmlComplete(
       `<dyad-status title="Capability Mapping Complete">${escapeXmlContent(summary)}</dyad-status>`,
     );
-
+ 
     return summary;
   },
 };

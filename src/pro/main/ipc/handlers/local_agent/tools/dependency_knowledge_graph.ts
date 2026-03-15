@@ -19,7 +19,9 @@ import { ToolDefinition, type AgentContext } from "./types";
 const DependencyGraphBuilderArgs = z.object({
   projectPath: z.string().optional(),
   /** Graph type: 'full', 'direct', 'transitive', 'security', 'license' */
-  graphType: z.enum(["full", "direct", "transitive", "security", "license"]).default("full"),
+  graphType: z
+    .enum(["full", "direct", "transitive", "security", "license"])
+    .default("full"),
   /** Include dev dependencies */
   includeDev: z.boolean().default(false),
   /** Maximum depth for transitive analysis */
@@ -47,7 +49,9 @@ const DependencyEdgeAnalyzerArgs = z.object({
   /** Target package */
   targetPackage: z.string().optional(),
   /** Edge type filter */
-  edgeType: z.enum(["direct", "transitive", "peer", "dev", "optional"]).optional(),
+  edgeType: z
+    .enum(["direct", "transitive", "peer", "dev", "optional"])
+    .optional(),
   /** Include strength/weights */
   includeWeights: z.boolean().default(true),
 });
@@ -69,7 +73,9 @@ const DependencyImpactCalculatorArgs = z.object({
 const DependencyConflictDetectorArgs = z.object({
   projectPath: z.string().optional(),
   /** Conflict types to detect */
-  conflictTypes: z.array(z.enum(["version", "license", "peer", "circular"])).default(["version", "license", "peer"]),
+  conflictTypes: z
+    .array(z.enum(["version", "license", "peer", "circular"]))
+    .default(["version", "license", "peer"]),
   /** Minimum severity to report */
   minSeverity: z.enum(["low", "medium", "high", "critical"]).default("low"),
 });
@@ -82,7 +88,9 @@ const DependencyVersionResolverArgs = z.object({
   /** Current version constraint */
   currentConstraint: z.string(),
   /** Resolution strategy */
-  strategy: z.enum(["latest", "compatible", "patch", "minor", "major"]).default("compatible"),
+  strategy: z
+    .enum(["latest", "compatible", "patch", "minor", "major"])
+    .default("compatible"),
   /** Include pre-release versions */
   includePreRelease: z.boolean().default(false),
 });
@@ -117,7 +125,9 @@ const DependencyEvolutionTrackerArgs = z.object({
 const DependencyRedundancyFinderArgs = z.object({
   projectPath: z.string().optional(),
   /** Redundancy types to find */
-  redundancyTypes: z.array(z.enum(["duplicate", "unused", "transitive", "peer"])).default(["duplicate", "unused"]),
+  redundancyTypes: z
+    .array(z.enum(["duplicate", "unused", "transitive", "peer"]))
+    .default(["duplicate", "unused"]),
   /** Minimum savings threshold (bytes) */
   minSavings: z.number().min(0).default(1000),
 });
@@ -126,7 +136,17 @@ const DependencyRedundancyFinderArgs = z.object({
 const DependencyHealthMonitorArgs = z.object({
   projectPath: z.string().optional(),
   /** Health metrics to check */
-  metrics: z.array(z.enum(["outdated", "security", "maintenance", "popularity", "downloads"])).default(["outdated", "security", "maintenance"]),
+  metrics: z
+    .array(
+      z.enum([
+        "outdated",
+        "security",
+        "maintenance",
+        "popularity",
+        "downloads",
+      ]),
+    )
+    .default(["outdated", "security", "maintenance"]),
   /** Health score threshold (0-100) */
   threshold: z.number().min(0).max(100).default(70),
 });
@@ -134,12 +154,24 @@ const DependencyHealthMonitorArgs = z.object({
 type DependencyGraphBuilderArgs = z.infer<typeof DependencyGraphBuilderArgs>;
 type DependencyNodeAnalyzerArgs = z.infer<typeof DependencyNodeAnalyzerArgs>;
 type DependencyEdgeAnalyzerArgs = z.infer<typeof DependencyEdgeAnalyzerArgs>;
-type DependencyImpactCalculatorArgs = z.infer<typeof DependencyImpactCalculatorArgs>;
-type DependencyConflictDetectorArgs = z.infer<typeof DependencyConflictDetectorArgs>;
-type DependencyVersionResolverArgs = z.infer<typeof DependencyVersionResolverArgs>;
-type DependencyVulnerabilityMapperArgs = z.infer<typeof DependencyVulnerabilityMapperArgs>;
-type DependencyEvolutionTrackerArgs = z.infer<typeof DependencyEvolutionTrackerArgs>;
-type DependencyRedundancyFinderArgs = z.infer<typeof DependencyRedundancyFinderArgs>;
+type DependencyImpactCalculatorArgs = z.infer<
+  typeof DependencyImpactCalculatorArgs
+>;
+type DependencyConflictDetectorArgs = z.infer<
+  typeof DependencyConflictDetectorArgs
+>;
+type DependencyVersionResolverArgs = z.infer<
+  typeof DependencyVersionResolverArgs
+>;
+type DependencyVulnerabilityMapperArgs = z.infer<
+  typeof DependencyVulnerabilityMapperArgs
+>;
+type DependencyEvolutionTrackerArgs = z.infer<
+  typeof DependencyEvolutionTrackerArgs
+>;
+type DependencyRedundancyFinderArgs = z.infer<
+  typeof DependencyRedundancyFinderArgs
+>;
 type DependencyHealthMonitorArgs = z.infer<typeof DependencyHealthMonitorArgs>;
 
 // ============================================================================
@@ -261,7 +293,7 @@ interface EvolutionEntry {
   version: string;
   releaseDate: string;
   type: "patch" | "minor" | "major";
-  changelog?: string;
+  changelog?: string[];
   securityFixes: boolean;
   breakingChanges: boolean;
 }
@@ -345,10 +377,16 @@ function parseLockFile(projectPath: string): any {
 }
 
 // Get package metadata from npm
-async function getPackageMetadata(packageName: string, version?: string): Promise<any> {
+async function getPackageMetadata(
+  packageName: string,
+  version?: string,
+): Promise<any> {
   try {
     const versionSuffix = version ? `@${version}` : "";
-    const output = await runNpmCommand(`npm view ${packageName}${versionSuffix} --json`, ".");
+    const output = await runNpmCommand(
+      `npm view ${packageName}${versionSuffix} --json`,
+      ".",
+    );
     return JSON.parse(output);
   } catch {
     return {};
@@ -360,14 +398,16 @@ function calculateHealthScore(metrics: HealthMetrics["metrics"]): number {
   let score = 100;
 
   if (metrics.outdated) score -= 20;
-  if (metrics.securityVulnerabilities > 0) score -= metrics.securityVulnerabilities * 15;
+  if (metrics.securityVulnerabilities > 0)
+    score -= metrics.securityVulnerabilities * 15;
   if (metrics.maintenance === "inactive") score -= 25;
   if (metrics.popularity < 1000) score -= 10;
   if (!metrics.licenseHealth) score -= 30;
 
   // Check if package was modified recently
   const lastModified = new Date(metrics.lastModified);
-  const daysSinceModified = (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
+  const daysSinceModified =
+    (Date.now() - lastModified.getTime()) / (1000 * 60 * 60 * 24);
   if (daysSinceModified > 365) score -= 15;
 
   return Math.max(0, Math.min(100, score));
@@ -388,8 +428,9 @@ async function buildDependencyGraph(
     `<dyad-status title="Dependency Graph Builder">Analyzing ${args.graphType} dependencies...</dyad-status>`,
   );
 
-  const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"));
-  
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
+  );
 
   const nodes: DependencyNode[] = [];
   const edges: DependencyEdge[] = [];
@@ -423,8 +464,13 @@ async function buildDependencyGraph(
     for (const [name] of Object.entries(deps)) {
       const metadata = await getPackageMetadata(name);
       if (metadata.dependencies) {
-        for (const [depName, depVersion] of Object.entries(metadata.dependencies)) {
-          if (nodes.find(n => n.name === depName) || args.graphType === "full") {
+        for (const [depName, depVersion] of Object.entries(
+          metadata.dependencies,
+        )) {
+          if (
+            nodes.find((n) => n.name === depName) ||
+            args.graphType === "full"
+          ) {
             edges.push({
               source: name,
               target: depName,
@@ -465,7 +511,11 @@ async function analyzeDependencyNode(
   const output = await runNpmCommand("npm ls --all --json", projectPath);
   const depTree = JSON.parse(output);
 
-  const findDependents = (tree: any, target: string, path: string[] = []): string[] => {
+  const findDependents = (
+    tree: any,
+    target: string,
+    path: string[] = [],
+  ): string[] => {
     const dependents: string[] = [];
 
     if (tree.dependencies) {
@@ -489,10 +539,12 @@ async function analyzeDependencyNode(
   const healthMetrics = {
     outdated: false, // Would need to check against latest
     securityVulnerabilities: 0, // Would need security audit
-    maintenance: metadata.maintainers?.length > 0 ? "active" : "unknown" as const,
-    popularity: metadata.score?.detail?.popularity || 0,
-    downloads: metadata.downloads || 0,
-    lastModified: metadata.time?.modified || new Date().toISOString(),
+    maintenance: (metadata.maintainers?.length > 0
+      ? "active"
+      : "unknown") as "active" | "inactive" | "unknown",
+    popularity: (metadata.score?.detail?.popularity || 0) as number,
+    downloads: (metadata.downloads || 0) as number,
+    lastModified: (metadata.time?.modified || new Date().toISOString()) as string,
     licenseHealth: !!metadata.license,
   };
 
@@ -552,7 +604,8 @@ async function analyzeDependencyEdges(
         }
 
         // Filter by package names if specified
-        if (args.sourcePackage && !currentPath.includes(args.sourcePackage)) continue;
+        if (args.sourcePackage && !currentPath.includes(args.sourcePackage))
+          continue;
         if (args.targetPackage && name !== args.targetPackage) continue;
 
         // Filter by edge type
@@ -599,7 +652,11 @@ async function calculateDependencyImpact(
   let estimatedEffort = 1;
 
   // Find all packages that depend on the target package
-  const findDependents = (tree: any, target: string, path: string[] = []): string[] => {
+  const findDependents = (
+    tree: any,
+    target: string,
+    path: string[] = [],
+  ): string[] => {
     const dependents: string[] = [];
 
     if (tree.dependencies) {
@@ -624,7 +681,9 @@ async function calculateDependencyImpact(
     else if (dependents.length > 0) riskLevel = "medium";
 
     estimatedEffort = dependents.length * 2; // Rough estimate
-    breakingChanges.push(`Removing ${args.packageName} will break ${dependents.length} dependent packages`);
+    breakingChanges.push(
+      `Removing ${args.packageName} will break ${dependents.length} dependent packages`,
+    );
   }
 
   return {
@@ -679,7 +738,10 @@ async function detectDependencyConflicts(
       for (const [packageName, versions] of versionMap) {
         if (versions.size > 1) {
           const severity = versions.size > 3 ? "high" : "medium";
-          if (["low", "medium", "high", "critical"].indexOf(severity) >= ["low", "medium", "high", "critical"].indexOf(args.minSeverity)) {
+          if (
+            ["low", "medium", "high", "critical"].indexOf(severity) >=
+            ["low", "medium", "high", "critical"].indexOf(args.minSeverity)
+          ) {
             conflicts.push({
               conflictType: "version",
               severity,
@@ -690,7 +752,7 @@ async function detectDependencyConflicts(
           }
         }
       }
-    } catch  {
+    } catch {
       // Handle error
     }
   }
@@ -703,8 +765,6 @@ async function resolveDependencyVersion(
   args: DependencyVersionResolverArgs,
   ctx: AgentContext,
 ): Promise<VersionResolution> {
-  
-
   ctx.onXmlStream(
     `<dyad-status title="Version Resolver">Resolving version for ${args.packageName}...</dyad-status>`,
   );
@@ -716,12 +776,14 @@ async function resolveDependencyVersion(
 
   switch (args.strategy) {
     case "latest":
-      recommendedVersion = metadata["dist-tags"]?.latest || args.currentConstraint;
+      recommendedVersion =
+        metadata["dist-tags"]?.latest || args.currentConstraint;
       compatibility = "breaking"; // Assume breaking for latest
       break;
     case "compatible":
       // Would need semver analysis here
-      recommendedVersion = metadata["dist-tags"]?.latest || args.currentConstraint;
+      recommendedVersion =
+        metadata["dist-tags"]?.latest || args.currentConstraint;
       compatibility = "compatible";
       break;
     case "patch":
@@ -762,7 +824,9 @@ async function mapDependencyVulnerabilities(
     const mappings: VulnerabilityMapping[] = [];
 
     if (auditData.vulnerabilities) {
-      for (const [packageName, vuln] of Object.entries(auditData.vulnerabilities)) {
+      for (const [packageName, vuln] of Object.entries(
+        auditData.vulnerabilities,
+      )) {
         const v = vuln as any;
 
         // Filter by package name if specified
@@ -770,7 +834,11 @@ async function mapDependencyVulnerabilities(
 
         // Filter by severity
         const severityOrder = { low: 0, medium: 1, high: 2, critical: 3 };
-        if (severityOrder[v.severity as keyof typeof severityOrder] < severityOrder[args.minSeverity]) continue;
+        if (
+          severityOrder[v.severity as keyof typeof severityOrder] <
+          severityOrder[args.minSeverity]
+        )
+          continue;
 
         mappings.push({
           cve: v.cve || `TEMP-${packageName}`,
@@ -808,13 +876,18 @@ async function trackDependencyEvolution(
 
   if (args.packageName) {
     try {
-      const output = await runNpmCommand(`npm view ${args.packageName} versions --json`, projectPath);
+      const output = await runNpmCommand(
+        `npm view ${args.packageName} versions --json`,
+        projectPath,
+      );
       const versions = JSON.parse(output);
 
       // Get version history (simplified)
-      for (const version of versions.slice(-10)) { // Last 10 versions
+      for (const version of versions.slice(-10)) {
+        // Last 10 versions
         const metadata = await getPackageMetadata(args.packageName, version);
-        const releaseDate = metadata.time?.[version] || new Date().toISOString();
+        const releaseDate =
+          metadata.time?.[version] || new Date().toISOString();
 
         const entry: EvolutionEntry = {
           package: args.packageName,
@@ -832,7 +905,10 @@ async function trackDependencyEvolution(
     }
   }
 
-  return entries.sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime());
+  return entries.sort(
+    (a, b) =>
+      new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime(),
+  );
 }
 
 // Dependency Redundancy Finder (Capability 479)
@@ -893,7 +969,6 @@ async function findDependencyRedundancy(
         }
       }
     }
-
   } catch {
     // Handle error
   }
@@ -912,21 +987,30 @@ async function monitorDependencyHealth(
     `<dyad-status title="Health Monitor">Monitoring dependency health...</dyad-status>`,
   );
 
-  const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"));
-  const allDeps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
+  );
+  const allDeps = {
+    ...packageJson.dependencies,
+    ...packageJson.devDependencies,
+  };
 
   const healthMetrics: HealthMetrics[] = [];
 
-  for (const [packageName, version] of Object.entries(allDeps).slice(0, 20)) { // Limit for performance
+  for (const [packageName, version] of Object.entries(allDeps).slice(0, 20)) {
+    // Limit for performance
     const metadata = await getPackageMetadata(packageName, version as string);
 
     const metrics: HealthMetrics["metrics"] = {
       outdated: false, // Would need to compare versions
       securityVulnerabilities: 0, // Would need security audit
-      maintenance: (metadata.maintainers?.length > 0 ? "active" : "inactive") as "active" | "inactive" | "unknown",
-      popularity: metadata.score?.detail?.popularity || 0,
-      downloads: metadata.downloads || 0,
-      lastModified: metadata.time?.modified || new Date().toISOString(),
+      maintenance: (metadata.maintainers?.length > 0 ? "active" : "inactive") as
+        | "active"
+        | "inactive"
+        | "unknown",
+      popularity: (metadata.score?.detail?.popularity || 0) as number,
+      downloads: (metadata.downloads || 0) as number,
+      lastModified: (metadata.time?.modified || new Date().toISOString()) as string,
       licenseHealth: !!metadata.license,
     };
 
@@ -934,9 +1018,16 @@ async function monitorDependencyHealth(
 
     const recommendations: string[] = [];
     if (overallScore < args.threshold) {
-      if (!metrics.licenseHealth) recommendations.push("Review license compatibility");
-      if (metrics.maintenance === "inactive") recommendations.push("Consider finding an actively maintained alternative");
-      if (metrics.popularity < 1000) recommendations.push("Package has low popularity - consider alternatives");
+      if (!metrics.licenseHealth)
+        recommendations.push("Review license compatibility");
+      if (metrics.maintenance === "inactive")
+        recommendations.push(
+          "Consider finding an actively maintained alternative",
+        );
+      if (metrics.popularity < 1000)
+        recommendations.push(
+          "Package has low popularity - consider alternatives",
+        );
     }
 
     healthMetrics.push({
@@ -969,13 +1060,16 @@ function generateGraphXml(graph: DependencyGraph): string {
   if (graph.nodes.length > 0) {
     lines.push(`## Top Packages by Size`);
     const sortedNodes = graph.nodes
-      .filter(n => n.size)
+      .filter((n) => n.size)
       .sort((a, b) => (b.size || 0) - (a.size || 0))
       .slice(0, 10);
 
     for (const node of sortedNodes) {
       const size = node.size || 0;
-      const sizeStr = size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(2)} MB` : `${(size / 1024).toFixed(2)} KB`;
+      const sizeStr =
+        size > 1024 * 1024
+          ? `${(size / (1024 * 1024)).toFixed(2)} MB`
+          : `${(size / 1024).toFixed(2)} KB`;
       lines.push(`- **${node.name}**: ${sizeStr}`);
     }
   }
@@ -1004,7 +1098,11 @@ function generateNodeAnalysisXml(analysis: NodeAnalysis): string {
   ];
 
   if (analysis.vulnerabilities > 0) {
-    lines.push(`## ⚠️ Security Issues`, `- ${analysis.vulnerabilities} vulnerabilities found`, ``);
+    lines.push(
+      `## ⚠️ Security Issues`,
+      `- ${analysis.vulnerabilities} vulnerabilities found`,
+      ``,
+    );
   }
 
   if (analysis.isDeprecated) {
@@ -1012,7 +1110,11 @@ function generateNodeAnalysisXml(analysis: NodeAnalysis): string {
   }
 
   if (analysis.maintainers.length > 0) {
-    lines.push(`## Maintainers`, analysis.maintainers.map(m => `- ${m}`).join("\n"), ``);
+    lines.push(
+      `## Maintainers`,
+      analysis.maintainers.map((m) => `- ${m}`).join("\n"),
+      ``,
+    );
   }
 
   return lines.join("\n");
@@ -1027,8 +1129,15 @@ function generateConflictReportXml(conflicts: ConflictReport[]): string {
   ];
 
   for (const conflict of conflicts) {
-    const emoji = conflict.severity === "critical" ? "🔴" : conflict.severity === "high" ? "🟠" : "🟡";
-    lines.push(`## ${emoji} ${conflict.conflictType.toUpperCase()} - ${conflict.severity.toUpperCase()}`);
+    const emoji =
+      conflict.severity === "critical"
+        ? "🔴"
+        : conflict.severity === "high"
+          ? "🟠"
+          : "🟡";
+    lines.push(
+      `## ${emoji} ${conflict.conflictType.toUpperCase()} - ${conflict.severity.toUpperCase()}`,
+    );
     lines.push(`${conflict.description}`);
     lines.push(``);
     lines.push(`**Affected Packages:**`);
@@ -1047,13 +1156,10 @@ function generateConflictReportXml(conflicts: ConflictReport[]): string {
 }
 
 function generateHealthReportXml(healthMetrics: HealthMetrics[]): string {
-  const lines: string[] = [
-    `# Dependency Health Report`,
-    ``,
-  ];
+  const lines: string[] = [`# Dependency Health Report`, ``];
 
-  const unhealthy = healthMetrics.filter(h => h.overallScore < 70);
-  const healthy = healthMetrics.filter(h => h.overallScore >= 70);
+  const unhealthy = healthMetrics.filter((h) => h.overallScore < 70);
+  const healthy = healthMetrics.filter((h) => h.overallScore >= 70);
 
   lines.push(`## Summary`);
   lines.push(`- **Total Packages**: ${healthMetrics.length}`);
@@ -1063,11 +1169,14 @@ function generateHealthReportXml(healthMetrics: HealthMetrics[]): string {
 
   if (unhealthy.length > 0) {
     lines.push(`## ⚠️ Packages Needing Attention`);
-    for (const health of unhealthy.sort((a, b) => a.overallScore - b.overallScore)) {
+    for (const health of unhealthy.sort(
+      (a, b) => a.overallScore - b.overallScore,
+    )) {
       lines.push(`### ${health.package} - Score: ${health.overallScore}/100`);
       lines.push(`**Issues:**`);
       if (!health.metrics.licenseHealth) lines.push(`- License issues`);
-      if (health.metrics.maintenance === "inactive") lines.push(`- Inactive maintenance`);
+      if (health.metrics.maintenance === "inactive")
+        lines.push(`- Inactive maintenance`);
       if (health.metrics.popularity < 1000) lines.push(`- Low popularity`);
       lines.push(``);
       lines.push(`**Recommendations:**`);
@@ -1086,306 +1195,357 @@ function generateHealthReportXml(healthMetrics: HealthMetrics[]): string {
 // ============================================================================
 
 // Dependency Graph Builder (Capability 471)
-export const dependencyGraphBuilderTool: ToolDefinition<DependencyGraphBuilderArgs> = {
-  name: "dependency_graph_builder",
-  description: "Build comprehensive dependency graphs showing relationships between packages. Supports different graph types including full dependency trees, direct dependencies, and specialized views for security and licensing.",
-  inputSchema: DependencyGraphBuilderArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyGraphBuilderTool: ToolDefinition<DependencyGraphBuilderArgs> =
+  {
+    name: "dependency_graph_builder",
+    description:
+      "Build comprehensive dependency graphs showing relationships between packages. Supports different graph types including full dependency trees, direct dependencies, and specialized views for security and licensing.",
+    inputSchema: DependencyGraphBuilderArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const graph = await buildDependencyGraph(args, ctx);
-    const report = generateGraphXml(graph);
+    execute: async (args, ctx) => {
+      const graph = await buildDependencyGraph(args, ctx);
+      const report = generateGraphXml(graph);
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Dependency Graph Built">${graph.metadata.totalNodes} nodes, ${graph.metadata.totalEdges} edges</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Dependency Graph Built">${graph.metadata.totalNodes} nodes, ${graph.metadata.totalEdges} edges</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };
 
 // Dependency Node Analyzer (Capability 472)
-export const dependencyNodeAnalyzerTool: ToolDefinition<DependencyNodeAnalyzerArgs> = {
-  name: "dependency_node_analyzer",
-  description: "Analyze individual dependency nodes in detail, including metadata, dependents, dependencies, health metrics, and security information.",
-  inputSchema: DependencyNodeAnalyzerArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyNodeAnalyzerTool: ToolDefinition<DependencyNodeAnalyzerArgs> =
+  {
+    name: "dependency_node_analyzer",
+    description:
+      "Analyze individual dependency nodes in detail, including metadata, dependents, dependencies, health metrics, and security information.",
+    inputSchema: DependencyNodeAnalyzerArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const analysis = await analyzeDependencyNode(args, ctx);
-    const report = generateNodeAnalysisXml(analysis);
+    execute: async (args, ctx) => {
+      const analysis = await analyzeDependencyNode(args, ctx);
+      const report = generateNodeAnalysisXml(analysis);
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Node Analysis Complete">Health score: ${analysis.healthScore}/100</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Node Analysis Complete">Health score: ${analysis.healthScore}/100</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };
 
 // Dependency Edge Analyzer (Capability 473)
-export const dependencyEdgeAnalyzerTool: ToolDefinition<DependencyEdgeAnalyzerArgs> = {
-  name: "dependency_edge_analyzer",
-  description: "Analyze dependency relationships and edges, including strength, criticality, constraints, and alternative options.",
-  inputSchema: DependencyEdgeAnalyzerArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyEdgeAnalyzerTool: ToolDefinition<DependencyEdgeAnalyzerArgs> =
+  {
+    name: "dependency_edge_analyzer",
+    description:
+      "Analyze dependency relationships and edges, including strength, criticality, constraints, and alternative options.",
+    inputSchema: DependencyEdgeAnalyzerArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const edges = await analyzeDependencyEdges(args, ctx);
+    execute: async (args, ctx) => {
+      const edges = await analyzeDependencyEdges(args, ctx);
 
-    const lines = [
-      `# Dependency Edge Analysis`,
-      ``,
-      `Found ${edges.length} dependency relationships`,
-      ``,
-    ];
+      const lines = [
+        `# Dependency Edge Analysis`,
+        ``,
+        `Found ${edges.length} dependency relationships`,
+        ``,
+      ];
 
-    for (const edge of edges.slice(0, 20)) {
-      lines.push(`## ${edge.source} → ${edge.target}`);
-      lines.push(`- **Type**: ${edge.relationshipType}`);
-      lines.push(`- **Strength**: ${edge.strength}/10`);
-      lines.push(`- **Criticality**: ${edge.criticality.toUpperCase()}`);
-      lines.push(`- **Constraints**: ${edge.constraints.join(", ")}`);
-      lines.push(``);
-    }
+      for (const edge of edges.slice(0, 20)) {
+        lines.push(`## ${edge.source} → ${edge.target}`);
+        lines.push(`- **Type**: ${edge.relationshipType}`);
+        lines.push(`- **Strength**: ${edge.strength}/10`);
+        lines.push(`- **Criticality**: ${edge.criticality.toUpperCase()}`);
+        lines.push(`- **Constraints**: ${edge.constraints.join(", ")}`);
+        lines.push(``);
+      }
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Edge Analysis Complete">${edges.length} relationships analyzed</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Edge Analysis Complete">${edges.length} relationships analyzed</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Impact Calculator (Capability 474)
-export const dependencyImpactCalculatorTool: ToolDefinition<DependencyImpactCalculatorArgs> = {
-  name: "dependency_impact_calculator",
-  description: "Calculate the impact of dependency changes including removal, updates, and downgrades. Shows affected packages, risk levels, and migration paths.",
-  inputSchema: DependencyImpactCalculatorArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyImpactCalculatorTool: ToolDefinition<DependencyImpactCalculatorArgs> =
+  {
+    name: "dependency_impact_calculator",
+    description:
+      "Calculate the impact of dependency changes including removal, updates, and downgrades. Shows affected packages, risk levels, and migration paths.",
+    inputSchema: DependencyImpactCalculatorArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const impact = await calculateDependencyImpact(args, ctx);
+    execute: async (args, ctx) => {
+      const impact = await calculateDependencyImpact(args, ctx);
 
-    const lines = [
-      `# Dependency Impact Analysis: ${args.impactType}`,
-      ``,
-      `## Package: ${impact.package}`,
-      `- **Risk Level**: ${impact.riskLevel.toUpperCase()}`,
-      `- **Affected Packages**: ${impact.affectedPackages.length}`,
-      `- **Estimated Effort**: ${impact.estimatedEffort} hours`,
-      ``,
-      `## Breaking Changes`,
-    ];
+      const lines = [
+        `# Dependency Impact Analysis: ${args.impactType}`,
+        ``,
+        `## Package: ${impact.package}`,
+        `- **Risk Level**: ${impact.riskLevel.toUpperCase()}`,
+        `- **Affected Packages**: ${impact.affectedPackages.length}`,
+        `- **Estimated Effort**: ${impact.estimatedEffort} hours`,
+        ``,
+        `## Breaking Changes`,
+      ];
 
-    for (const change of impact.breakingChanges) {
-      lines.push(`- ${change}`);
-    }
+      for (const change of impact.breakingChanges) {
+        lines.push(`- ${change}`);
+      }
 
-    lines.push(``, `## Alternative Solutions`);
-    for (const solution of impact.alternativeSolutions) {
-      lines.push(`- ${solution}`);
-    }
+      lines.push(``, `## Alternative Solutions`);
+      for (const solution of impact.alternativeSolutions) {
+        lines.push(`- ${solution}`);
+      }
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Impact Calculated">Risk: ${impact.riskLevel}, ${impact.affectedPackages.length} affected</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Impact Calculated">Risk: ${impact.riskLevel}, ${impact.affectedPackages.length} affected</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Conflict Detector (Capability 475)
-export const dependencyConflictDetectorTool: ToolDefinition<DependencyConflictDetectorArgs> = {
-  name: "dependency_conflict_detector",
-  description: "Detect various types of dependency conflicts including version conflicts, license incompatibilities, peer dependency issues, and circular dependencies.",
-  inputSchema: DependencyConflictDetectorArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyConflictDetectorTool: ToolDefinition<DependencyConflictDetectorArgs> =
+  {
+    name: "dependency_conflict_detector",
+    description:
+      "Detect various types of dependency conflicts including version conflicts, license incompatibilities, peer dependency issues, and circular dependencies.",
+    inputSchema: DependencyConflictDetectorArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const conflicts = await detectDependencyConflicts(args, ctx);
-    const report = generateConflictReportXml(conflicts);
+    execute: async (args, ctx) => {
+      const conflicts = await detectDependencyConflicts(args, ctx);
+      const report = generateConflictReportXml(conflicts);
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Conflicts Detected">${conflicts.length} conflicts found</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Conflicts Detected">${conflicts.length} conflicts found</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };
 
 // Dependency Version Resolver (Capability 476)
-export const dependencyVersionResolverTool: ToolDefinition<DependencyVersionResolverArgs> = {
-  name: "dependency_version_resolver",
-  description: "Resolve dependency versions with different strategies including latest, compatible, patch, minor, and major updates. Analyzes compatibility and breaking changes.",
-  inputSchema: DependencyVersionResolverArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyVersionResolverTool: ToolDefinition<DependencyVersionResolverArgs> =
+  {
+    name: "dependency_version_resolver",
+    description:
+      "Resolve dependency versions with different strategies including latest, compatible, patch, minor, and major updates. Analyzes compatibility and breaking changes.",
+    inputSchema: DependencyVersionResolverArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const resolution = await resolveDependencyVersion(args, ctx);
+    execute: async (args, ctx) => {
+      const resolution = await resolveDependencyVersion(args, ctx);
 
-    const lines = [
-      `# Version Resolution: ${resolution.package}`,
-      ``,
-      `- **Current**: ${resolution.currentConstraint}`,
-      `- **Recommended**: ${resolution.recommendedVersion}`,
-      `- **Compatibility**: ${resolution.compatibility.toUpperCase()}`,
-      ``,
-    ];
+      const lines = [
+        `# Version Resolution: ${resolution.package}`,
+        ``,
+        `- **Current**: ${resolution.currentConstraint}`,
+        `- **Recommended**: ${resolution.recommendedVersion}`,
+        `- **Compatibility**: ${resolution.compatibility.toUpperCase()}`,
+        ``,
+      ];
 
-    if (resolution.securityFixes && resolution.securityFixes.length > 0) {
-      lines.push(`## Security Fixes`, resolution.securityFixes.map(f => `- ${f}`).join("\n"), ``);
-    }
+      if (resolution.securityFixes && resolution.securityFixes.length > 0) {
+        lines.push(
+          `## Security Fixes`,
+          resolution.securityFixes.map((f) => `- ${f}`).join("\n"),
+          ``,
+        );
+      }
 
-    if (resolution.breakingChanges && resolution.breakingChanges.length > 0) {
-      lines.push(`## ⚠️ Breaking Changes`, resolution.breakingChanges.map(c => `- ${c}`).join("\n"), ``);
-    }
+      if (resolution.breakingChanges && resolution.breakingChanges.length > 0) {
+        lines.push(
+          `## ⚠️ Breaking Changes`,
+          resolution.breakingChanges.map((c) => `- ${c}`).join("\n"),
+          ``,
+        );
+      }
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Version Resolved">${resolution.recommendedVersion} (${resolution.compatibility})</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Version Resolved">${resolution.recommendedVersion} (${resolution.compatibility})</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Vulnerability Mapper (Capability 477)
-export const dependencyVulnerabilityMapperTool: ToolDefinition<DependencyVulnerabilityMapperArgs> = {
-  name: "dependency_vulnerability_mapper",
-  description: "Map security vulnerabilities to specific dependencies, showing CVE details, affected versions, severity levels, and available fixes.",
-  inputSchema: DependencyVulnerabilityMapperArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyVulnerabilityMapperTool: ToolDefinition<DependencyVulnerabilityMapperArgs> =
+  {
+    name: "dependency_vulnerability_mapper",
+    description:
+      "Map security vulnerabilities to specific dependencies, showing CVE details, affected versions, severity levels, and available fixes.",
+    inputSchema: DependencyVulnerabilityMapperArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const mappings = await mapDependencyVulnerabilities(args, ctx);
+    execute: async (args, ctx) => {
+      const mappings = await mapDependencyVulnerabilities(args, ctx);
 
-    const lines = [
-      `# Vulnerability Mapping Report`,
-      ``,
-      `Found ${mappings.length} vulnerabilities`,
-      ``,
-    ];
+      const lines = [
+        `# Vulnerability Mapping Report`,
+        ``,
+        `Found ${mappings.length} vulnerabilities`,
+        ``,
+      ];
 
-    for (const mapping of mappings.slice(0, 20)) {
-      const emoji = mapping.severity === "critical" ? "🔴" : mapping.severity === "high" ? "🟠" : "🟡";
-      lines.push(`## ${emoji} ${mapping.cve}`);
-      lines.push(`**Package:** ${mapping.affectedPackage}`);
-      lines.push(`**Severity:** ${mapping.severity.toUpperCase()}`);
-      lines.push(`**Vulnerable Range:** ${mapping.vulnerableRange}`);
-      lines.push(`**Fix Available:** ${mapping.fixAvailable ? `Yes (${mapping.fixVersion})` : "No"}`);
-      lines.push(`**Description:** ${mapping.description}`);
-      lines.push(``);
-    }
+      for (const mapping of mappings.slice(0, 20)) {
+        const emoji =
+          mapping.severity === "critical"
+            ? "🔴"
+            : mapping.severity === "high"
+              ? "🟠"
+              : "🟡";
+        lines.push(`## ${emoji} ${mapping.cve}`);
+        lines.push(`**Package:** ${mapping.affectedPackage}`);
+        lines.push(`**Severity:** ${mapping.severity.toUpperCase()}`);
+        lines.push(`**Vulnerable Range:** ${mapping.vulnerableRange}`);
+        lines.push(
+          `**Fix Available:** ${mapping.fixAvailable ? `Yes (${mapping.fixVersion})` : "No"}`,
+        );
+        lines.push(`**Description:** ${mapping.description}`);
+        lines.push(``);
+      }
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Vulnerabilities Mapped">${mappings.length} CVEs found</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Vulnerabilities Mapped">${mappings.length} CVEs found</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Evolution Tracker (Capability 478)
-export const dependencyEvolutionTrackerTool: ToolDefinition<DependencyEvolutionTrackerArgs> = {
-  name: "dependency_evolution_tracker",
-  description: "Track dependency evolution over time, showing version history, release patterns, security fixes, and breaking changes.",
-  inputSchema: DependencyEvolutionTrackerArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyEvolutionTrackerTool: ToolDefinition<DependencyEvolutionTrackerArgs> =
+  {
+    name: "dependency_evolution_tracker",
+    description:
+      "Track dependency evolution over time, showing version history, release patterns, security fixes, and breaking changes.",
+    inputSchema: DependencyEvolutionTrackerArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const evolution = await trackDependencyEvolution(args, ctx);
+    execute: async (args, ctx) => {
+      const evolution = await trackDependencyEvolution(args, ctx);
 
-    const lines = [
-      `# Dependency Evolution Report`,
-      ``,
-      `Tracking ${evolution.length} versions`,
-      ``,
-    ];
+      const lines = [
+        `# Dependency Evolution Report`,
+        ``,
+        `Tracking ${evolution.length} versions`,
+        ``,
+      ];
 
-    for (const entry of evolution.slice(0, 10)) {
-      const securityIcon = entry.securityFixes ? "🛡️" : "";
-      const breakingIcon = entry.breakingChanges ? "⚠️" : "";
-      lines.push(`## ${entry.version} ${securityIcon}${breakingIcon}`);
-      lines.push(`- **Released**: ${new Date(entry.releaseDate).toLocaleDateString()}`);
-      lines.push(`- **Type**: ${entry.type}`);
-      if (entry.changelog && Array.isArray(entry.changelog) && entry.changelog.length > 0) {
-        lines.push(`- **Changes**: ${entry.changelog.slice(0, 3).join(", ")}`);
+      for (const entry of evolution.slice(0, 10)) {
+        const securityIcon = entry.securityFixes ? "🛡️" : "";
+        const breakingIcon = entry.breakingChanges ? "⚠️" : "";
+        lines.push(`## ${entry.version} ${securityIcon}${breakingIcon}`);
+        lines.push(
+          `- **Released**: ${new Date(entry.releaseDate).toLocaleDateString()}`,
+        );
+        lines.push(`- **Type**: ${entry.type}`);
+        if (
+          entry.changelog &&
+          Array.isArray(entry.changelog) &&
+          entry.changelog.length > 0
+        ) {
+          lines.push(
+            `- **Changes**: ${entry.changelog.slice(0, 3).join(", ")}`,
+          );
+        }
+        lines.push(``);
       }
-      lines.push(``);
-    }
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Evolution Tracked">${evolution.length} versions analyzed</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Evolution Tracked">${evolution.length} versions analyzed</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Redundancy Finder (Capability 479)
-export const dependencyRedundancyFinderTool: ToolDefinition<DependencyRedundancyFinderArgs> = {
-  name: "dependency_redundancy_finder",
-  description: "Find redundant dependencies including duplicates, unused packages, and transitive dependencies that could be optimized.",
-  inputSchema: DependencyRedundancyFinderArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyRedundancyFinderTool: ToolDefinition<DependencyRedundancyFinderArgs> =
+  {
+    name: "dependency_redundancy_finder",
+    description:
+      "Find redundant dependencies including duplicates, unused packages, and transitive dependencies that could be optimized.",
+    inputSchema: DependencyRedundancyFinderArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const redundancies = await findDependencyRedundancy(args, ctx);
+    execute: async (args, ctx) => {
+      const redundancies = await findDependencyRedundancy(args, ctx);
 
-    const lines = [
-      `# Dependency Redundancy Report`,
-      ``,
-      `Found ${redundancies.length} redundancies`,
-      ``,
-    ];
+      const lines = [
+        `# Dependency Redundancy Report`,
+        ``,
+        `Found ${redundancies.length} redundancies`,
+        ``,
+      ];
 
-    let totalSavings = 0;
-    for (const redundancy of redundancies) {
-      totalSavings += redundancy.potentialSavings;
-      lines.push(`## ${redundancy.redundancyType.toUpperCase()}: ${redundancy.package}`);
-      lines.push(`- **Severity**: ${redundancy.severity.toUpperCase()}`);
-      lines.push(`- **Potential Savings**: ${(redundancy.potentialSavings / 1024).toFixed(2)} KB`);
-      lines.push(`- **Locations**: ${redundancy.locations.length}`);
-      lines.push(`- **Action**: ${redundancy.action}`);
-      lines.push(``);
-    }
+      let totalSavings = 0;
+      for (const redundancy of redundancies) {
+        totalSavings += redundancy.potentialSavings;
+        lines.push(
+          `## ${redundancy.redundancyType.toUpperCase()}: ${redundancy.package}`,
+        );
+        lines.push(`- **Severity**: ${redundancy.severity.toUpperCase()}`);
+        lines.push(
+          `- **Potential Savings**: ${(redundancy.potentialSavings / 1024).toFixed(2)} KB`,
+        );
+        lines.push(`- **Locations**: ${redundancy.locations.length}`);
+        lines.push(`- **Action**: ${redundancy.action}`);
+        lines.push(``);
+      }
 
-    lines.push(`**Total Potential Savings**: ${(totalSavings / (1024 * 1024)).toFixed(2)} MB`);
+      lines.push(
+        `**Total Potential Savings**: ${(totalSavings / (1024 * 1024)).toFixed(2)} MB`,
+      );
 
-    ctx.onXmlComplete(
-      `<dyad-status title="Redundancies Found">${redundancies.length} issues, ${(totalSavings / (1024 * 1024)).toFixed(2)} MB savings</dyad-status>`,
-    );
+      ctx.onXmlComplete(
+        `<dyad-status title="Redundancies Found">${redundancies.length} issues, ${(totalSavings / (1024 * 1024)).toFixed(2)} MB savings</dyad-status>`,
+      );
 
-    return lines.join("\n");
-  },
-};
+      return lines.join("\n");
+    },
+  };
 
 // Dependency Health Monitor (Capability 480)
-export const dependencyHealthMonitorTool: ToolDefinition<DependencyHealthMonitorArgs> = {
-  name: "dependency_health_monitor",
-  description: "Monitor overall dependency health including outdated status, security vulnerabilities, maintenance activity, and popularity metrics.",
-  inputSchema: DependencyHealthMonitorArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyHealthMonitorTool: ToolDefinition<DependencyHealthMonitorArgs> =
+  {
+    name: "dependency_health_monitor",
+    description:
+      "Monitor overall dependency health including outdated status, security vulnerabilities, maintenance activity, and popularity metrics.",
+    inputSchema: DependencyHealthMonitorArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    const healthMetrics = await monitorDependencyHealth(args, ctx);
-    const report = generateHealthReportXml(healthMetrics);
+    execute: async (args, ctx) => {
+      const healthMetrics = await monitorDependencyHealth(args, ctx);
+      const report = generateHealthReportXml(healthMetrics);
 
-    const unhealthy = healthMetrics.filter(h => h.overallScore < args.threshold);
-    ctx.onXmlComplete(
-      `<dyad-status title="Health Monitored">${unhealthy.length}/${healthMetrics.length} packages need attention</dyad-status>`,
-    );
+      const unhealthy = healthMetrics.filter(
+        (h) => h.overallScore < args.threshold,
+      );
+      ctx.onXmlComplete(
+        `<dyad-status title="Health Monitored">${unhealthy.length}/${healthMetrics.length} packages need attention</dyad-status>`,
+      );
 
-    return report;
-  },
-};
+      return report;
+    },
+  };

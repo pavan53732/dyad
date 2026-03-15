@@ -7,11 +7,7 @@
 
 import { z } from "zod";
 import { generateText } from "ai";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlContent } from "./types";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { readSettings } from "@/main/settings";
 
@@ -82,10 +78,7 @@ const agentCloningSchema = z.object({
     .string()
     .optional()
     .describe("Source agent ID to clone from"),
-  newAgentName: z
-    .string()
-    .optional()
-    .describe("Name for the cloned agent"),
+  newAgentName: z.string().optional().describe("Name for the cloned agent"),
   configuration: z
     .record(z.string(), z.unknown())
     .optional()
@@ -107,81 +100,84 @@ const agentCloningSchema = z.object({
     .describe("Search criteria for finding cloned agents"),
 });
 
-export const agentCloningTool: ToolDefinition<z.infer<typeof agentCloningSchema>> =
-  {
-    name: "agent_cloning",
-    description: `Clone successful agent configurations to create new agents with proven successful patterns. Enables rapid agent population from best-performing templates, preserves successful agent configurations, and supports A/B testing of agent configurations.`,
-    inputSchema: agentCloningSchema,
-    defaultConsent: "always",
-    modifiesState: true,
+export const agentCloningTool: ToolDefinition<
+  z.infer<typeof agentCloningSchema>
+> = {
+  name: "agent_cloning",
+  description: `Clone successful agent configurations to create new agents with proven successful patterns. Enables rapid agent population from best-performing templates, preserves successful agent configurations, and supports A/B testing of agent configurations.`,
+  inputSchema: agentCloningSchema,
+  defaultConsent: "always",
+  modifiesState: true,
 
-    getConsentPreview: (args) => {
-      if (args.action === "clone") {
-        return `Clone agent configuration: ${args.sourceAgentId}`;
-      }
-      return `${args.action} agent clone`;
-    },
+  getConsentPreview: (args) => {
+    if (args.action === "clone") {
+      return `Clone agent configuration: ${args.sourceAgentId}`;
+    }
+    return `${args.action} agent clone`;
+  },
 
-    buildXml: (args, isComplete) => {
-      let xml = `<dyad-agent-cloning action="${args.action}">`;
-      if (isComplete) {
-        xml += "</dyad-agent-cloning>";
-      }
-      return xml;
-    },
+  buildXml: (args, isComplete) => {
+    let xml = `<dyad-agent-cloning action="${args.action}">`;
+    if (isComplete) {
+      xml += "</dyad-agent-cloning>";
+    }
+    return xml;
+  },
 
-    execute: async (args, ctx: AgentContext) => {
-      const {
-        action,
-        sourceAgentId,
-        newAgentName,
-        configuration,
-        capabilities,
-        agentId,
-        searchCriteria,
-      } = args;
+  execute: async (args, ctx: AgentContext) => {
+    const {
+      action,
+      sourceAgentId,
+      newAgentName,
+      configuration,
+      capabilities,
+      agentId,
+      searchCriteria,
+    } = args;
 
-      if (action === "clone") {
-        if (!sourceAgentId || !newAgentName) {
-          throw new Error("sourceAgentId and newAgentName are required for cloning");
-        }
-
-        const settings = readSettings();
-        const { modelClient } = await getModelClient(
-          settings.selectedModel || "gpt-4o",
-          settings,
+    if (action === "clone") {
+      if (!sourceAgentId || !newAgentName) {
+        throw new Error(
+          "sourceAgentId and newAgentName are required for cloning",
         );
+      }
 
-        // Analyze the source agent and create an optimized clone
-        const analyzePrompt = `Analyze this agent configuration and suggest an optimized clone:
+      const settings = readSettings();
+      const { modelClient } = await getModelClient(
+        settings.selectedModel || "gpt-4o",
+        settings,
+      );
+
+      // Analyze the source agent and create an optimized clone
+      const analyzePrompt = `Analyze this agent configuration and suggest an optimized clone:
 
 Source Agent ID: ${sourceAgentId}
 Desired Name: ${newAgentName}
 
 Generate a configuration that improves upon the source while maintaining its core strengths.`;
 
-        const { text: analysisResult } = await generateText({
-          model: modelClient.model,
-          prompt: analyzePrompt,
-          temperature: 0.4,
-        });
+      const { text: analysisResult } = await generateText({
+        model: modelClient.model,
+        prompt: analyzePrompt,
+        temperature: 0.4,
+      });
 
-        const cloneId = `clone_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-        const cloneConfig: ClonedAgentConfig = {
-          id: cloneId,
-          name: newAgentName,
-          capabilities: capabilities || ["general_task"],
-          configuration: configuration || {},
-          successRate: 0.85, // Initial success rate based on source
-          totalTasks: 0,
-          createdAt: new Date().toISOString(),
-          lastUsed: new Date().toISOString(),
-        };
+      const cloneId = `clone_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      const cloneConfig: ClonedAgentConfig = {
+        id: cloneId,
+        name: newAgentName,
+        capabilities: capabilities || ["general_task"],
+        configuration: configuration || {},
+        successRate: 0.85, // Initial success rate based on source
+        totalTasks: 0,
+        createdAt: new Date().toISOString(),
+        lastUsed: new Date().toISOString(),
+      };
 
-        clonedAgentsRegistry.set(cloneId, cloneConfig);
+      clonedAgentsRegistry.set(cloneId, cloneConfig);
 
-        ctx.onXmlComplete(
-          `<dyad-status title="Agent Cloned">${escapeXmlContent(`## Agent Cloned Successfully
+      ctx.onXmlComplete(
+        `<dyad-status title="Agent Cloned">${escapeXmlContent(`## Agent Cloned Successfully
 
 **Clone ID:** ${cloneId}
 **Name:** ${newAgentName}
@@ -189,9 +185,9 @@ Generate a configuration that improves upon the source while maintaining its cor
 **Capabilities:** ${cloneConfig.capabilities.join(", ")}
 
 ${analysisResult}`)}</dyad-status>`,
-        );
+      );
 
-        return `## Agent Cloned Successfully
+      return `## Agent Cloned Successfully
 
 **Clone ID:** ${cloneId}
 **Name:** ${newAgentName}
@@ -199,12 +195,12 @@ ${analysisResult}`)}</dyad-status>`,
 **Capabilities:** ${cloneConfig.capabilities.join(", ")}
 
 Clone created with optimized configuration.`;
-      }
+    }
 
-      if (action === "list") {
-        const allClones = Array.from(clonedAgentsRegistry.values());
+    if (action === "list") {
+      const allClones = Array.from(clonedAgentsRegistry.values());
 
-        const summary = `## Cloned Agents
+      const summary = `## Cloned Agents
 
 **Total:** ${allClones.length}
 
@@ -218,69 +214,70 @@ ${allClones
   )
   .join("\n\n")}`;
 
-        ctx.onXmlComplete(
-          `<dyad-status title="Cloned Agents">${escapeXmlContent(summary)}</dyad-status>`,
-        );
+      ctx.onXmlComplete(
+        `<dyad-status title="Cloned Agents">${escapeXmlContent(summary)}</dyad-status>`,
+      );
 
-        return JSON.stringify(allClones, null, 2);
+      return JSON.stringify(allClones, null, 2);
+    }
+
+    if (action === "delete") {
+      if (!agentId) {
+        throw new Error("agentId required for delete action");
       }
 
-      if (action === "delete") {
-        if (!agentId) {
-          throw new Error("agentId required for delete action");
-        }
+      const deleted = clonedAgentsRegistry.delete(agentId);
+      if (!deleted) {
+        throw new Error("Agent clone not found");
+      }
 
-        const deleted = clonedAgentsRegistry.delete(agentId);
-        if (!deleted) {
-          throw new Error("Agent clone not found");
-        }
-
-        const summary = `## Agent Clone Deleted
+      const summary = `## Agent Clone Deleted
 
 **Agent ID:** ${agentId}
 
 ✅ Agent clone removed`;
 
-        ctx.onXmlComplete(
-          `<dyad-status title="Clone Deleted">${escapeXmlContent(summary)}</dyad-status>`,
-        );
+      ctx.onXmlComplete(
+        `<dyad-status title="Clone Deleted">${escapeXmlContent(summary)}</dyad-status>`,
+      );
 
-        return summary;
+      return summary;
+    }
+
+    if (action === "update") {
+      if (!agentId || !configuration) {
+        throw new Error("agentId and configuration required for update");
       }
 
-      if (action === "update") {
-        if (!agentId || !configuration) {
-          throw new Error("agentId and configuration required for update");
-        }
+      const agent = clonedAgentsRegistry.get(agentId);
+      if (!agent) {
+        throw new Error("Agent clone not found");
+      }
 
-        const agent = clonedAgentsRegistry.get(agentId);
-        if (!agent) {
-          throw new Error("Agent clone not found");
-        }
+      agent.configuration = { ...agent.configuration, ...configuration };
+      agent.lastUsed = new Date().toISOString();
 
-        agent.configuration = { ...agent.configuration, ...configuration };
-        agent.lastUsed = new Date().toISOString();
-
-        const summary = `## Agent Clone Updated
+      const summary = `## Agent Clone Updated
 
 **Agent ID:** ${agentId}
 **Name:** ${agent.name}
 
 ✅ Configuration updated`;
 
-        ctx.onXmlComplete(
-          `<dyad-status title="Clone Updated">${escapeXmlContent(summary)}</dyad-status>`,
-        );
+      ctx.onXmlComplete(
+        `<dyad-status title="Clone Updated">${escapeXmlContent(summary)}</dyad-status>`,
+      );
 
-        return summary;
+      return summary;
+    }
+
+    if (action === "search") {
+      if (!searchCriteria) {
+        throw new Error("searchCriteria required for search");
       }
 
-      if (action === "search") {
-        if (!searchCriteria) {
-          throw new Error("searchCriteria required for search");
-        }
-
-        const results = Array.from(clonedAgentsRegistry.values()).filter((agent) => {
+      const results = Array.from(clonedAgentsRegistry.values()).filter(
+        (agent) => {
           if (
             searchCriteria.minSuccessRate &&
             agent.successRate < searchCriteria.minSuccessRate
@@ -294,9 +291,10 @@ ${allClones
             return false;
           }
           return true;
-        });
+        },
+      );
 
-        const summary = `## Clone Search Results
+      const summary = `## Clone Search Results
 
 **Found:** ${results.length}
 
@@ -309,16 +307,16 @@ ${results
   )
   .join("\n\n")}`;
 
-        ctx.onXmlComplete(
-          `<dyad-status title="Search Results">${escapeXmlContent(summary)}</dyad-status>`,
-        );
+      ctx.onXmlComplete(
+        `<dyad-status title="Search Results">${escapeXmlContent(summary)}</dyad-status>`,
+      );
 
-        return JSON.stringify(results, null, 2);
-      }
+      return JSON.stringify(results, null, 2);
+    }
 
-      throw new Error("Invalid action");
-    },
-  };
+    throw new Error("Invalid action");
+  },
+};
 
 // ============================================================================
 // Tool 2: swarm_coordination (Capability 203)
@@ -367,8 +365,7 @@ export const swarmCoordinationTool: ToolDefinition<
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) =>
-    `${args.action} swarm: ${args.swarmId || "new"}`,
+  getConsentPreview: (args) => `${args.action} swarm: ${args.swarmId || "new"}`,
 
   buildXml: (args, isComplete) => {
     let xml = `<dyad-swarm-coordination action="${args.action}">`;
@@ -491,10 +488,13 @@ export const swarmCoordinationTool: ToolDefinition<
 
       // Auto-assign using round-robin
       const availableAgents = swarm.agents.filter(
-        (a) => !swarm.tasks.some((t) => t.assignee === a && t.status === "pending"),
+        (a) =>
+          !swarm.tasks.some((t) => t.assignee === a && t.status === "pending"),
       );
       if (availableAgents.length > 0) {
-        const assignIndex = swarm.tasks.filter((t) => t.status === "pending").length % availableAgents.length;
+        const assignIndex =
+          swarm.tasks.filter((t) => t.status === "pending").length %
+          availableAgents.length;
         taskObj.assignee = availableAgents[assignIndex];
         taskObj.status = "assigned";
       }
@@ -529,7 +529,10 @@ export const swarmCoordinationTool: ToolDefinition<
       // Simulate state synchronization
       swarm.syncState = {
         lastSync: new Date().toISOString(),
-        agentStates: swarm.agents.map((a) => ({ agentId: a, status: "synced" })),
+        agentStates: swarm.agents.map((a) => ({
+          agentId: a,
+          status: "synced",
+        })),
         pendingTasks: swarm.tasks.filter((t) => t.status === "pending").length,
         activeTasks: swarm.tasks.filter((t) => t.status === "assigned").length,
       };
@@ -644,7 +647,8 @@ export const distributedAgentClusterTool: ToolDefinition<
 
     if (action === "create") {
       const newClusterId =
-        clusterId || `cluster_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        clusterId ||
+        `cluster_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       const cluster: AgentCluster = {
         id: newClusterId,
@@ -856,10 +860,7 @@ const crossAgentReasoningSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Agents to involve in reasoning"),
-  reasoningPrompt: z
-    .string()
-    .optional()
-    .describe("Prompt for reasoning"),
+  reasoningPrompt: z.string().optional().describe("Prompt for reasoning"),
   context: z
     .record(z.string(), z.unknown())
     .optional()
@@ -918,7 +919,8 @@ export const crossAgentReasoningTool: ToolDefinition<
       }
 
       const newSessionId =
-        sessionId || `reasoning_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        sessionId ||
+        `reasoning_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       const session: ReasoningSession = {
         id: newSessionId,
@@ -937,7 +939,6 @@ export const crossAgentReasoningTool: ToolDefinition<
 
       // Start first round of reasoning
       const firstAgent = agents[0];
-      
 
       const { text: reasoning } = await generateText({
         model: modelClient.model,
@@ -985,7 +986,8 @@ ${reasoning.substring(0, 200)}...
       }
 
       const nextRound = session.rounds.length + 1;
-      const nextAgent = session.participants[nextRound % session.participants.length];
+      const nextAgent =
+        session.participants[nextRound % session.participants.length];
 
       const { text: reasoning } = await generateText({
         model: modelClient.model,
@@ -1072,7 +1074,9 @@ ${consensus}
 
       // Find last agent's reasoning for counter-argument
       const lastRound = session.rounds[session.rounds.length - 1];
-      const opponent = session.participants.find((a) => a !== lastRound?.agentId);
+      const opponent = session.participants.find(
+        (a) => a !== lastRound?.agentId,
+      );
 
       const { text: counterArgument } = await generateText({
         model: modelClient.model,
@@ -1416,14 +1420,18 @@ ${filtered
 
 const agentRedundancySchema = z.object({
   action: z
-    .enum(["create", "add_backup", "remove_backup", "trigger_failover", "status", "test"])
+    .enum([
+      "create",
+      "add_backup",
+      "remove_backup",
+      "trigger_failover",
+      "status",
+      "test",
+    ])
     .describe("Redundancy action"),
   groupId: z.string().optional().describe("Redundancy group ID"),
   primaryAgentId: z.string().optional().describe("Primary agent ID"),
-  backupAgentIds: z
-    .array(z.string())
-    .optional()
-    .describe("Backup agent IDs"),
+  backupAgentIds: z.array(z.string()).optional().describe("Backup agent IDs"),
   failoverThreshold: z
     .number()
     .optional()
@@ -1470,7 +1478,8 @@ export const agentRedundancyTool: ToolDefinition<
       }
 
       const newGroupId =
-        groupId || `redundancy_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        groupId ||
+        `redundancy_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       const group: RedundancyGroup = {
         id: newGroupId,
@@ -1674,7 +1683,10 @@ const agentFailoverSchema = z.object({
     .optional()
     .default("automatic")
     .describe("Type of failover"),
-  condition: z.string().optional().describe("Condition for conditional failover"),
+  condition: z
+    .string()
+    .optional()
+    .describe("Condition for conditional failover"),
 });
 
 interface FailoverConfig {
@@ -1715,7 +1727,8 @@ export const agentFailoverMechanismTool: ToolDefinition<
   },
 
   execute: async (args, ctx: AgentContext) => {
-    const { action, agentId, backupAgentId, config, failoverType, condition } = args;
+    const { action, agentId, backupAgentId, config, failoverType, condition } =
+      args;
 
     if (action === "configure") {
       if (!agentId || !backupAgentId) {
@@ -1930,10 +1943,7 @@ const emergentCoordinationSchema = z.object({
     .enum(["initialize", "observe", "evolve", "stabilize", "metrics"])
     .describe("Emergent coordination action"),
   systemId: z.string().optional().describe("System ID"),
-  agents: z
-    .array(z.string())
-    .optional()
-    .describe("Agent IDs"),
+  agents: z.array(z.string()).optional().describe("Agent IDs"),
   rules: z
     .array(
       z.object({
@@ -2002,7 +2012,8 @@ export const emergentCoordinationTool: ToolDefinition<
       }
 
       const newSystemId =
-        systemId || `emergent_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        systemId ||
+        `emergent_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
       const system: EmergentSystem = {
         id: newSystemId,
@@ -2121,7 +2132,10 @@ Suggest rule modifications to improve coordination.`,
         1.0,
       );
 
-      if (system.metrics.coordinationScore >= system.parameters.convergenceThreshold) {
+      if (
+        system.metrics.coordinationScore >=
+        system.parameters.convergenceThreshold
+      ) {
         system.state = "stable";
       }
 
@@ -2226,10 +2240,7 @@ const agentTopologyOptimizerSchema = z.object({
     .enum(["star", "ring", "mesh", "hierarchical", "tree", "hybrid"])
     .optional()
     .describe("Topology type"),
-  agents: z
-    .array(z.string())
-    .optional()
-    .describe("Agent IDs"),
+  agents: z.array(z.string()).optional().describe("Agent IDs"),
   constraints: z
     .object({
       maxLatency: z.number().optional(),
@@ -2298,27 +2309,62 @@ export const agentTopologyOptimizerTool: ToolDefinition<
       let metrics;
       switch (topologyType) {
         case "star":
-          metrics = { averageLatency: 1.0, reliability: 0.95, throughput: 0.8, faultTolerance: 0.6 };
+          metrics = {
+            averageLatency: 1.0,
+            reliability: 0.95,
+            throughput: 0.8,
+            faultTolerance: 0.6,
+          };
           break;
         case "ring":
-          metrics = { averageLatency: 2.0, reliability: 0.85, throughput: 0.7, faultTolerance: 0.8 };
+          metrics = {
+            averageLatency: 2.0,
+            reliability: 0.85,
+            throughput: 0.7,
+            faultTolerance: 0.8,
+          };
           break;
         case "mesh":
-          metrics = { averageLatency: 1.5, reliability: 0.9, throughput: 0.9, faultTolerance: 0.9 };
+          metrics = {
+            averageLatency: 1.5,
+            reliability: 0.9,
+            throughput: 0.9,
+            faultTolerance: 0.9,
+          };
           break;
         case "hierarchical":
-          metrics = { averageLatency: 2.5, reliability: 0.88, throughput: 0.85, faultTolerance: 0.75 };
+          metrics = {
+            averageLatency: 2.5,
+            reliability: 0.88,
+            throughput: 0.85,
+            faultTolerance: 0.75,
+          };
           break;
         default:
-          metrics = { averageLatency: 2.0, reliability: 0.85, throughput: 0.75, faultTolerance: 0.7 };
+          metrics = {
+            averageLatency: 2.0,
+            reliability: 0.85,
+            throughput: 0.75,
+            faultTolerance: 0.7,
+          };
       }
 
       const issues: string[] = [];
-      if (constraints?.maxLatency && metrics.averageLatency > constraints.maxLatency) {
-        issues.push(`Latency exceeds threshold: ${metrics.averageLatency} > ${constraints.maxLatency}`);
+      if (
+        constraints?.maxLatency &&
+        metrics.averageLatency > constraints.maxLatency
+      ) {
+        issues.push(
+          `Latency exceeds threshold: ${metrics.averageLatency} > ${constraints.maxLatency}`,
+        );
       }
-      if (constraints?.minReliability && metrics.reliability < constraints.minReliability) {
-        issues.push(`Reliability below threshold: ${metrics.reliability} < ${constraints.minReliability}`);
+      if (
+        constraints?.minReliability &&
+        metrics.reliability < constraints.minReliability
+      ) {
+        issues.push(
+          `Reliability below threshold: ${metrics.reliability} < ${constraints.minReliability}`,
+        );
       }
 
       const analysis: TopologyAnalysis = {
@@ -2331,12 +2377,18 @@ export const agentTopologyOptimizerTool: ToolDefinition<
 
       // Generate recommendations
       if (issues.length > 0) {
-        analysis.recommendations.push("Consider switching to mesh topology for higher fault tolerance");
+        analysis.recommendations.push(
+          "Consider switching to mesh topology for higher fault tolerance",
+        );
         if (metrics.averageLatency > 1.5) {
-          analysis.recommendations.push("Star topology may reduce latency for centralized workloads");
+          analysis.recommendations.push(
+            "Star topology may reduce latency for centralized workloads",
+          );
         }
       } else {
-        analysis.recommendations.push("Current topology is well-suited for the workload");
+        analysis.recommendations.push(
+          "Current topology is well-suited for the workload",
+        );
       }
 
       const summary = `## Topology Analysis
@@ -2424,13 +2476,14 @@ ${optimization.substring(0, 400)}...`;
         const latency = Math.random() * 2 + 0.5;
         const reliability = Math.random() * 0.3 + 0.7;
         const throughput = Math.random() * 0.3 + 0.7;
-        const score = objective === "latency"
-          ? 1 / latency
-          : objective === "reliability"
-            ? reliability
-            : objective === "throughput"
-              ? throughput
-              : (reliability + throughput) / (latency / 2);
+        const score =
+          objective === "latency"
+            ? 1 / latency
+            : objective === "reliability"
+              ? reliability
+              : objective === "throughput"
+                ? throughput
+                : (reliability + throughput) / (latency / 2);
         return { topology: t, latency, reliability, throughput, score };
       });
 
