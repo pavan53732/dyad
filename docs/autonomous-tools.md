@@ -411,26 +411,20 @@ The `autonomous_software_engineer` orchestrates the entire development lifecycle
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Planning  │───▶│ Execution   │───▶│   Heal      │───▶│  Verify     │
-│  (AI)      │    │ (Sub-agent) │    │ (Fix Loop) │    │ (Test Gen)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                                                │              │
-                                                ▼              ▼
-                   ┌──────────────────────────────────────────────────┐
-                   │              Submission Phase                     │
-                   │  ┌──────────────────┐  ┌────────────────────┐   │
-                   │  │ git_commit_       │─▶│ autonomous_        │   │
-                   │  │ and_push          │  │ pull_request      │   │
-                   │  └──────────────────┘  └────────────────────┘   │
-                   └──────────────────────────────────────────────────┘
+│  Planning   │───▶│  Execution  │───▶│    Heal     │───▶│   Verify    │
+│  (Safety)   │    │  (Gated)    │    │ (Fix Loop)  │    │ (Sim Audit) │
+└──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+       │                  │                  │                  │
+       ▼                  ▼                  ▼                  ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│ Institutional│   │ Deterministic│   │ Fact Grounding│   │ Extreme      │
+│ Memory Loop  │   │ Dispatcher   │   │ Engine        │   │ Simulation   │
+└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 #### Example Usage
 
-```
-User: "Implement a new feature that adds dark mode to the application"
-
-Agent calls:
+```typescript
 {
   tool: "autonomous_software_engineer",
   args: {
@@ -439,15 +433,62 @@ Agent calls:
     maxTasks: 10
   }
 }
-
-// The tool will:
-// 1. Generate a TODO.md plan (if not exists)
-// 2. Execute each task with code changes
-// 3. Fix any TypeScript errors
-// 4. Generate tests to verify
-// 5. Commit and push changes
-// 6. Create a PR on GitHub
 ```
+
+---
+
+## The Aegis Safety Cluster (Level 7.0)
+
+These tools provide the deterministic gatekeeping and semantic grounding that define Level 7.0 Sovereignty.
+
+### 7. deterministic_dispatcher
+
+**Purpose:** Acts as a hard gatekeeper (Mechanism 171) for all state-changing tool calls.
+
+**File:** [`src/pro/main/ipc/handlers/local_agent/tools/deterministic_dispatcher.ts`](src/pro/main/ipc/handlers/local_agent/tools/deterministic_dispatcher.ts)
+
+- **Verification**: It parses the mission plan (TODO.md) and verifies that every tool call aligns with an uncompleted task.
+- **Mission Lock**: If the agent attempts an out-of-scope action, the dispatcher returns an `ACCESS DENIED` error, blocking the LLM from making unauthorized changes.
+
+### 8. fact_grounding_engine
+
+**Purpose:** Mathematically grounds AI claims in the physical codebase (Mechanism 7).
+
+**File:** [`src/pro/main/ipc/handlers/local_agent/tools/fact_grounding_engine.ts`](src/pro/main/ipc/handlers/local_agent/tools/fact_grounding_engine.ts)
+
+- **Bayesian Verification**: Cross-references claims with the `knowledge_base.json` and the source code (via Ripgrep).
+- **Confidence Scoring**: Returns a grounding score. Low-score claims are flagged as potential hallucinations.
+
+### 9. aegis_containment_coordinator
+
+**Purpose:** Triggers emergency protocols if risk signals exceed defined thresholds (Mechanism 181).
+
+**File:** [`src/pro/main/ipc/handlers/local_agent/tools/aegis_containment_coordinator.ts`](src/pro/main/ipc/handlers/local_agent/tools/aegis_containment_coordinator.ts)
+
+- **Quotas**: Enforces MB/token limits on tool calls.
+- **Termination**: Can terminate a session or revoke tool access if "Predictive Drift" or "Hallucination" signals are critical.
+
+---
+
+## Intelligence & Reasoning Clusters
+
+### 10. metacognition
+
+**Purpose:** Performs higher-order reasoning and monitors for mission drift (Mechanism 151).
+
+**File:** [`src/pro/main/ipc/handlers/local_agent/tools/metacognition.ts`](src/pro/main/ipc/handlers/local_agent/tools/metacognition.ts)
+
+- **Simulation Branching**: Predicts outcomes before execution to detect drift.
+- **Theory of Mind**: Analyzes user intent for ambiguity or conflicting instructions.
+
+### 11. self_improver / failure_repository
+
+**Purpose:** Implements Institutional Memory (Mechanism 61) to prevent repetitive errors.
+
+**File:** [`src/pro/main/ipc/handlers/local_agent/tools/self_improver.ts`](src/pro/main/ipc/handlers/local_agent/tools/self_improver.ts)
+
+- **Anti-Pattern Logging**: Records technical failures in `.dyad/failure_repository.json`.
+- **Recursive Learning**: Future planning cycles ingest these anti-patterns to hearth the agent's strategy against historical pitfalls.
 
 ---
 

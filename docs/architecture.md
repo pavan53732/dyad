@@ -33,13 +33,18 @@ I think the two main reasons to use this XML-like format instead of actual tool 
 
 However, many AI editors _do_ heavily rely on tool calling and this is something that we're evaluating, particularly with upcoming MCP support.
 
-### Why isn't Dyad more agentic?
+### Why is Dyad's architecture so sovereign?
 
-Many other systems (e.g. Cursor) are much more agentic than Dyad. For example, they will call many tools and do things like create a plan, use command-line tools to search through the codebase, run linters and tests and automatically fix the code based on those output.
+Unlike many other systems (e.g., Cursor) that rely on unpredictable prompt-chaining, Dyad utilizes a **Sovereign Factory** model. This is a rigorous, deterministic architecture that prioritizes safety and alignment through physical state machines.
 
-Dyad, on the other hand, has a relatively simple agentic loop. We will fix TypeScript compiler errors if Auto-fix problems is enabled, but otherwise it's usually a single request to the AI.
+Dyad implements **Level 7.0 Autonomous Sovereignty**, which means the agent is governed by:
 
-The biggest issue with complex agentic workflows is that they can get very expensive very quickly! It's not uncommon to see users report spending a few dollars with a single request because under the hood, that single user requests turns into dozens of LLM requests. To keep Dyad as cost-efficient as possible, we've avoided complex agentic workflows at least until the cost of LLMs is more affordable.
+- **Mechanism 171 (Deterministic Dispatcher)**: A hard gatekeeper that blocks any tool call not explicitly authorized by the Mission Plan (`TODO.md`).
+- **Aegis Sentinel Framework**: A multi-layered control hierarchy that prevents mission drift and hallucinations through Bayesian fact-grounding and cross-model verification.
+
+This approach ensures that while Dyad is highly agentic—capable of complex multi-step reasoning and autonomous self-correction—it remains **perfectly aligned** with the user's intent, avoiding the cost and transparency issues of unconstrained "black-box" agents.
+
+For more details on these mechanisms, see the [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) and the [AI Sovereignty Rules](../rules/ai-sovereignty.md).
 
 ### Why does Dyad send the entire codebase with each AI request?
 
@@ -49,4 +54,4 @@ Sending the entire codebase is the simplest approach and quite effective for sma
 
 However, both of these approaches require users to manually select the right files which isn't always practical. Dyad's [Smart Context](https://www.dyad.sh/docs/guides/ai-models/pro-modes#smart-context) feature essentially uses smaller models to filter out the most important files in the given chat. That said, we are constantly experimenting with new approaches to context selection as it's quite a difficult problem.
 
-One approach that we don't use is a more agentic-style like what Claude Code and Cursor does where it iteratively searches and navigates through a codebase using tool calls. The main reason we don't do this is due to cost (see the above question: [Why isn't Dyad more agentic](#why-isnt-dyad-more-agentic)).
+One approach that we don't use is a more agentic-style like what Claude Code and Cursor does where it iteratively searches and navigates through a codebase using tool calls. The main reason we don't do this is due to cost (see the above question: [Why is Dyad's architecture so sovereign?](#why-is-dyads-architecture-so-sovereign)).

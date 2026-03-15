@@ -20,7 +20,7 @@ import { sendTelemetryEvent } from "@/ipc/utils/telemetry";
 
 const logger = log.scope("search_replace");
 
-const searchReplaceSchema = z.object({
+export const searchReplaceSchema = z.object({
   file_path: z
     .string()
     .describe("The path to the file you want to search and replace in."),

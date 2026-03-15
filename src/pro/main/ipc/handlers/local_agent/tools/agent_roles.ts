@@ -955,11 +955,11 @@ ${
 `
     : ""
 }`;
- 
+
     ctx.onXmlComplete(
       `<dyad-status title="Capability Mapping Complete">${escapeXmlContent(summary)}</dyad-status>`,
     );
- 
+
     return summary;
   },
 };

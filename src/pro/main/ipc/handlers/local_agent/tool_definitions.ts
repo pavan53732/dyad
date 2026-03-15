@@ -41,11 +41,15 @@ import { autonomousFixLoopTool } from "./tools/autonomous_fix_loop";
 import { selfImproverTool } from "./tools/self_improver";
 import { autonomousTestGeneratorTool } from "./tools/autonomous_test_generator";
 import { autonomousSoftwareEngineerTool } from "./tools/autonomous_software_engineer";
+import { toolSynthesizerTool } from "./tools/tool_synthesizer";
+import { entropy_validatorTool } from "./tools/entropy_validator";
 import { autonomousCodeReviewTool } from "./tools/autonomous_code_review";
 import { memoryStoreTool } from "./tools/memory_store";
 import { agentNegotiationTools } from "./tools/agent_negotiation";
 import { dynamicAgentTools } from "./tools/dynamic_agents";
 import { multiAgentCoordinatorTool } from "./tools/multi_agent_coordinator";
+import { crossModelVerifierTool } from "./tools/cross_model_verifier";
+import { aegisContainmentCoordinatorTool } from "./tools/aegis_containment_coordinator";
 import {
   messageBusTool,
   eventBroadcastTool,
@@ -66,6 +70,7 @@ import {
   duplicateDepsTool,
   orphanDepsTool,
   deprecatedCheckTool,
+  verifyImportsTool,
 } from "./tools/dependency_analyzer";
 import {
   dependencyGraphBuilderTool,
@@ -91,6 +96,7 @@ import {
   conflictResolverTool,
   environmentCompatibilityTool,
   platformValidationTool,
+  containerAnalysisTool,
 } from "./tools/dependency_governance";
 import { dependencyUpgraderTool } from "./tools/dependency_upgrader";
 import {
@@ -153,6 +159,9 @@ import { securityScannerTool } from "./tools/security_scanner";
 import { vulnerabilityDetectorTool } from "./tools/vulnerability_detector";
 import { complianceCheckerTool } from "./tools/compliance_checker";
 import { securityRemediationTool } from "./tools/security_remediation";
+import { factGroundingTool } from "./tools/fact_grounding_engine";
+import { deterministicDispatcherTool } from "./tools/deterministic_dispatcher";
+import { planRepairTool } from "./tools/plan_repair_orchestrator";
 import { runtimeProfilerTool } from "./tools/runtime_profiler";
 import { cachingStrategiesTool } from "./tools/caching_strategies";
 import { resourceOptimizerTool } from "./tools/resource_optimizer";
@@ -434,6 +443,10 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   autonomousTestGeneratorTool,
   autonomousPullRequestTool,
   autonomousSoftwareEngineerTool,
+  toolSynthesizerTool,
+  entropy_validatorTool,
+  crossModelVerifierTool,
+  aegisContainmentCoordinatorTool,
   autonomousCodeReviewTool,
   memoryStoreTool,
   multiAgentCoordinatorTool,
@@ -465,6 +478,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   duplicateDepsTool,
   orphanDepsTool,
   deprecatedCheckTool,
+  verifyImportsTool,
   // Dependency Knowledge Graph (Capabilities 471-480)
   dependencyGraphBuilderTool,
   dependencyNodeAnalyzerTool,
@@ -487,6 +501,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   conflictResolverTool,
   environmentCompatibilityTool,
   platformValidationTool,
+  containerAnalysisTool,
   architectureAnalyzerTool,
   architectureGraphBuilderTool,
   architectureValidatorTool,
@@ -523,6 +538,9 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   vulnerabilityDetectorTool,
   complianceCheckerTool,
   securityRemediationTool,
+  factGroundingTool,
+  deterministicDispatcherTool,
+  planRepairTool,
   runtimeProfilerTool,
   cachingStrategiesTool,
   resourceOptimizerTool,

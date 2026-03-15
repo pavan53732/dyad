@@ -1574,7 +1574,7 @@ async function planModernization(
   args: z.infer<typeof ModernizationPlanArgs>,
   ctx: AgentContext,
 ): Promise<ModernizationPlanResult> {
-  const { rootPath, targetStack } = args;
+  const { targetStack } = args;
 
   ctx.onXmlStream(
     `<dyad-status title="Code Modernization Planner">Creating modernization plan...</dyad-status>`,

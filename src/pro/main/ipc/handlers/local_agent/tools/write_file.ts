@@ -11,7 +11,7 @@ import {
 } from "../../../../../../supabase_admin/supabase_utils";
 const logger = log.scope("write_file");
 
-const writeFileSchema = z.object({
+export const writeFileSchema = z.object({
   path: z.string().describe("The file path relative to the app root"),
   content: z.string().describe("The content to write to the file"),
   description: z

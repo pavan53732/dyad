@@ -5,7 +5,7 @@ import { safeJoin } from "@/ipc/utils/path_utils";
 
 const readFile = fs.promises.readFile;
 
-const readFileSchema = z
+export const readFileSchema = z
   .object({
     path: z.string().describe("The file path to read"),
     start_line_one_indexed: z

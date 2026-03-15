@@ -110,6 +110,13 @@ const DeprecatedCheckArgs = z.object({
   packages: z.array(z.string()).optional(),
 });
 
+// Verify imports args (Mechanism 13)
+const VerifyImportsArgs = z.object({
+  projectPath: z.string().optional(),
+  /** Code snippet to analyze */
+  code: z.string(),
+});
+
 type DependencyAnalyzerArgs = z.infer<typeof DependencyAnalyzerArgs>;
 type TransitiveScanArgs = z.infer<typeof TransitiveScanArgs>;
 type TransitiveVulnerabilitiesArgs = z.infer<
@@ -125,6 +132,7 @@ type BundleImpactArgs = z.infer<typeof BundleImpactArgs>;
 type DuplicateDepsArgs = z.infer<typeof DuplicateDepsArgs>;
 type OrphanDepsArgs = z.infer<typeof OrphanDepsArgs>;
 type DeprecatedCheckArgs = z.infer<typeof DeprecatedCheckArgs>;
+type VerifyImportsArgs = z.infer<typeof VerifyImportsArgs>;
 
 // ============================================================================
 // Result Types
@@ -617,6 +625,58 @@ async function checkDeprecated(
   }
 
   return issues;
+}
+
+/**
+ * Verify Library Existence (Mechanism 13)
+ * Checks imports in a code snippet against the declared dependencies in package.json.
+ */
+function verifyImports(code: string, packageJson: any): string[] {
+  const missing: string[] = [];
+  const declaredDeps = new Set([
+    ...Object.keys(packageJson.dependencies || {}),
+    ...Object.keys(packageJson.devDependencies || {}),
+    ...Object.keys(packageJson.peerDependencies || {}),
+    ...Object.keys(packageJson.optionalDependencies || {}),
+    // Built-in node modules (common)
+    "fs",
+    "path",
+    "os",
+    "http",
+    "https",
+    "crypto",
+    "stream",
+    "buffer",
+    "util",
+    "events",
+    "child_process",
+  ]);
+
+  // Simple regex to find imports (both ES6 and CommonJS)
+  const importRegex =
+    /(?:import\s+.*\s+from\s+['"]|require\(['"])(@?[\w\d\-./]+)['"]/g;
+  let match;
+  while ((match = importRegex.exec(code)) !== null) {
+    const importPath = match[1];
+    // Extract base package name (e.g., '@org/package/foo' -> '@org/package', 'lodash/fp' -> 'lodash')
+    let pkgName = importPath;
+    if (importPath.startsWith("@")) {
+      const parts = importPath.split("/");
+      if (parts.length >= 2) pkgName = `${parts[0]}/${parts[1]}`;
+    } else {
+      pkgName = importPath.split("/")[0];
+    }
+
+    if (
+      !declaredDeps.has(pkgName) &&
+      !pkgName.startsWith(".") &&
+      !pkgName.startsWith("/")
+    ) {
+      missing.push(pkgName);
+    }
+  }
+
+  return [...new Set(missing)];
 }
 
 // ============================================================================
@@ -1595,5 +1655,28 @@ export const deprecatedCheckTool: ToolDefinition<DeprecatedCheckArgs> = {
     );
 
     return report;
+  },
+};
+
+// Verify Imports Tool (Mechanism 13)
+export const verifyImportsTool: ToolDefinition<VerifyImportsArgs> = {
+  name: "verify_imports",
+  description:
+    "Verifies that all imports in a code snippet exist in the project dependencies.",
+  inputSchema: VerifyImportsArgs,
+  defaultConsent: "always",
+  modifiesState: false,
+  execute: async (args, ctx) => {
+    const projectPath = getProjectPath(args, ctx);
+    const packageJsonPath = path.join(projectPath, "package.json");
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+
+    const missing = verifyImports(args.code, packageJson);
+
+    if (missing.length === 0) {
+      return "✅ All imports are valid and declared in package.json.";
+    }
+
+    return `❌ Missing dependencies detected: ${missing.join(", ")}\n\nPlease ensure these packages are installed before using the code.`;
   },
 };

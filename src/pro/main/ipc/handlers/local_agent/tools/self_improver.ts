@@ -22,6 +22,15 @@ const SelfImproverArgs = z.object({
   createSummary: z.boolean().default(true),
   /** Time window to analyze (in hours) */
   timeWindowHours: z.number().default(24),
+  /** Log a specific failure for persistent learning */
+  logFailure: z
+    .object({
+      pattern: z.string(),
+      description: z.string(),
+      context: z.string(),
+      fix: z.string(),
+    })
+    .optional(),
 });
 
 type SelfImproverArgs = z.infer<typeof SelfImproverArgs>;
@@ -51,6 +60,19 @@ interface ImprovementRecommendation {
   description: string;
   expectedImpact: string;
   implementation: string;
+}
+
+interface failureEntry {
+  patternId: string;
+  description: string;
+  context: string;
+  suggestedFix: string;
+  occurrenceCount: number;
+  lastOccurred: string;
+}
+
+interface FailureRepository {
+  antiPatterns: failureEntry[];
 }
 
 interface SelfImproverResult {
@@ -107,6 +129,26 @@ function _saveTaskRecord(ctx: AgentContext, record: TaskRecord): void {
   }
 
   fs.writeFileSync(historyPath, JSON.stringify(data, null, 2), "utf-8");
+}
+
+function loadFailureRepository(ctx: AgentContext): FailureRepository {
+  const filePath = path.join(ctx.appPath, ".dyad", "failure_repository.json");
+  if (!fs.existsSync(filePath)) return { antiPatterns: [] };
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  } catch {
+    return { antiPatterns: [] };
+  }
+}
+
+function saveFailureRepository(
+  ctx: AgentContext,
+  repo: FailureRepository,
+): void {
+  const filePath = path.join(ctx.appPath, ".dyad", "failure_repository.json");
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(repo, null, 2), "utf-8");
 }
 
 // Analyze failure patterns
@@ -395,6 +437,31 @@ async function analyzeSelfImprovement(
         recommendations,
       )
     : "";
+
+  // Handle manual logFailure
+  if (args.logFailure) {
+    const repo = loadFailureRepository(ctx);
+    const existing = repo.antiPatterns.find(
+      (p) => p.patternId === args.logFailure!.pattern,
+    );
+    if (existing) {
+      existing.occurrenceCount++;
+      existing.lastOccurred = new Date().toISOString();
+    } else {
+      repo.antiPatterns.push({
+        patternId: args.logFailure.pattern,
+        description: args.logFailure.description,
+        context: args.logFailure.context,
+        suggestedFix: args.logFailure.fix,
+        occurrenceCount: 1,
+        lastOccurred: new Date().toISOString(),
+      });
+    }
+    saveFailureRepository(ctx, repo);
+    ctx.onXmlStream(
+      `<dyad-status title="Recursive Learning">Anti-pattern recorded: ${args.logFailure.pattern}</dyad-status>`,
+    );
+  }
 
   return {
     analysisPeriod: `${args.timeWindowHours}h`,

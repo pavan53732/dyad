@@ -133,6 +133,17 @@ const PlatformValidationArgs = z.object({
   checkNative: z.boolean().default(true),
 });
 
+// Dependency Container Image Analyzer (Capability 510)
+const ContainerAnalysisArgs = z.object({
+  projectPath: z.string().optional(),
+  /** Dockerfile path or image name */
+  target: z.string().default("Dockerfile"),
+  /** Analysis depth: basic, security, layers */
+  depth: z.enum(["basic", "security", "layers"]).default("security"),
+  /** Include base image audit */
+  auditBaseImage: z.boolean().default(true),
+});
+
 type DependencyOptimizationArgs = z.infer<typeof DependencyOptimizationArgs>;
 type DependencyPolicyArgs = z.infer<typeof DependencyPolicyArgs>;
 type DependencyHealthMonitorArgs = z.infer<typeof DependencyHealthMonitorArgs>;
@@ -141,8 +152,11 @@ type ComplianceCheckerArgs = z.infer<typeof ComplianceCheckerArgs>;
 type LicenseManagerArgs = z.infer<typeof LicenseManagerArgs>;
 type UpdatePlannerArgs = z.infer<typeof UpdatePlannerArgs>;
 type ConflictResolverArgs = z.infer<typeof ConflictResolverArgs>;
-type EnvironmentCompatibilityArgs = z.infer<typeof EnvironmentCompatibilityArgs>;
+type EnvironmentCompatibilityArgs = z.infer<
+  typeof EnvironmentCompatibilityArgs
+>;
 type PlatformValidationArgs = z.infer<typeof PlatformValidationArgs>;
+type ContainerAnalysisArgs = z.infer<typeof ContainerAnalysisArgs>;
 
 // ============================================================================
 // Result Types
@@ -315,7 +329,9 @@ async function optimizeDependencies(
       ...packageJson.devDependencies,
     };
 
-    for (const [name, version] of Object.entries(allDeps as Record<string, string>)) {
+    for (const [name, version] of Object.entries(
+      allDeps as Record<string, string>,
+    )) {
       const depInfo = (depTree as any).dependencies?.[name];
       if (!depInfo) {
         recommendations.push({
@@ -333,7 +349,8 @@ async function optimizeDependencies(
           currentVersion: version,
           suggestedVersion: "dayjs@^1.11.0",
           type: "replace",
-          reason: "Replace with lighter alternative (dayjs) for better tree-shaking",
+          reason:
+            "Replace with lighter alternative (dayjs) for better tree-shaking",
           impact: "high",
         });
       }
@@ -349,7 +366,7 @@ async function optimizeDependencies(
         });
       }
     }
-  } catch (error) {
+  } catch {
     // Continue with partial results
   }
 
@@ -370,10 +387,9 @@ async function optimizeDependencies(
   const filtered = recommendations.slice(0, args.maxRecommendations);
 
   for (const rec of filtered) {
-    const emoji = rec.type === "remove" ? "🗑️" : rec.type === "replace" ? "🔄" : "⬆️";
-    report.push(
-      `${emoji} **${rec.package}** (${rec.impact} impact)`,
-    );
+    const emoji =
+      rec.type === "remove" ? "🗑️" : rec.type === "replace" ? "🔄" : "⬆️";
+    report.push(`${emoji} **${rec.package}** (${rec.impact} impact)`);
     report.push(`   Current: ${rec.currentVersion}`);
     if (rec.suggestedVersion) {
       report.push(`   Suggested: ${rec.suggestedVersion}`);
@@ -399,8 +415,6 @@ async function enforcePolicies(
   ctx: AgentContext,
 ): Promise<string> {
   const projectPath = getProjectPath(args, ctx);
-  const packageJsonPath = path.join(projectPath, "package.json");
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 
   ctx.onXmlStream(
     `<dyad-status title="Policy Enforcer">Checking dependency policies...</dyad-status>`,
@@ -543,7 +557,10 @@ async function monitorHealth(
   };
 
   try {
-    const outdatedOutput = await runNpmCommand("npm outdated --json", projectPath);
+    const outdatedOutput = await runNpmCommand(
+      "npm outdated --json",
+      projectPath,
+    );
     const outdated = JSON.parse(outdatedOutput);
     health.issues.outdated = Object.keys(outdated).length;
     health.score -= health.issues.outdated * 5;
@@ -633,7 +650,8 @@ async function scanVulnerabilities(
         auditData.vulnerabilities,
       )) {
         const vuln = details as any;
-        const vulnSeverity = severityOrder[vuln.severity as keyof typeof severityOrder] || 3;
+        const vulnSeverity =
+          severityOrder[vuln.severity as keyof typeof severityOrder] || 3;
 
         if (vulnSeverity <= minSeverityIdx) {
           vulnerabilities.push({
@@ -730,7 +748,8 @@ async function checkCompliance(
       custom: [],
     };
 
-    const allowedLicenses = complianceRules[args.framework] || args.customRules || ["MIT", "Apache-2.0"];
+    const allowedLicenses = complianceRules[args.framework] ||
+      args.customRules || ["MIT", "Apache-2.0"];
 
     const checkLicenses = (deps: any): void => {
       for (const [name, info] of Object.entries(deps || {})) {
@@ -869,7 +888,10 @@ async function planUpdates(
   const updates: UpdatePlan[] = [];
 
   try {
-    const output = await runNpmCommand("npm outdated --json --long", projectPath);
+    const output = await runNpmCommand(
+      "npm outdated --json --long",
+      projectPath,
+    );
     const outdated = JSON.parse(output);
 
     for (const [name, info] of Object.entries(outdated)) {
@@ -896,7 +918,10 @@ async function planUpdates(
         package: name,
         currentVersion: dep.current || "unknown",
         targetVersion: dep.latest || "unknown",
-        breakingChanges: majorJumps > 0 ? ["Major version bump may contain breaking changes"] : [],
+        breakingChanges:
+          majorJumps > 0
+            ? ["Major version bump may contain breaking changes"]
+            : [],
         risk,
         priority,
       });
@@ -923,7 +948,9 @@ async function planUpdates(
   if (critical.length > 0) {
     report.push(`## 🔴 Critical (${critical.length})`);
     for (const u of critical) {
-      report.push(`- **${u.package}**: ${u.currentVersion} → ${u.targetVersion} (${u.risk} risk)`);
+      report.push(
+        `- **${u.package}**: ${u.currentVersion} → ${u.targetVersion} (${u.risk} risk)`,
+      );
     }
     report.push("");
   }
@@ -931,7 +958,9 @@ async function planUpdates(
   if (high.length > 0) {
     report.push(`## 🟠 High (${high.length})`);
     for (const u of high.slice(0, 10)) {
-      report.push(`- **${u.package}**: ${u.currentVersion} → ${u.targetVersion}`);
+      report.push(
+        `- **${u.package}**: ${u.currentVersion} → ${u.targetVersion}`,
+      );
     }
     report.push("");
   }
@@ -939,7 +968,9 @@ async function planUpdates(
   if (medium.length > 0) {
     report.push(`## 🟡 Medium (${medium.length})`);
     for (const u of medium.slice(0, 5)) {
-      report.push(`- **${u.package}**: ${u.currentVersion} → ${u.targetVersion}`);
+      report.push(
+        `- **${u.package}**: ${u.currentVersion} → ${u.targetVersion}`,
+      );
     }
     report.push("");
   }
@@ -983,17 +1014,29 @@ async function resolveConflicts(
               if (mainDep.version !== subDep.version) {
                 resolutions.push({
                   package: subName,
-                  conflicts: [{
-                    requested: subDep.version,
-                    conflicting: mainDep.version,
-                    via: parent,
-                  }],
-                  resolution: args.strategy === "newest" ? mainDep.version :
-                    args.strategy === "oldest" ? subDep.version :
-                    args.strategy === "minimal" ? mainDep.version : "manual",
-                  version: args.strategy === "newest" ? mainDep.version :
-                    args.strategy === "oldest" ? subDep.version :
-                    args.strategy === "minimal" ? mainDep.version : "manual",
+                  conflicts: [
+                    {
+                      requested: subDep.version,
+                      conflicting: mainDep.version,
+                      via: parent,
+                    },
+                  ],
+                  resolution:
+                    args.strategy === "newest"
+                      ? mainDep.version
+                      : args.strategy === "oldest"
+                        ? subDep.version
+                        : args.strategy === "minimal"
+                          ? mainDep.version
+                          : "manual",
+                  version:
+                    args.strategy === "newest"
+                      ? mainDep.version
+                      : args.strategy === "oldest"
+                        ? subDep.version
+                        : args.strategy === "minimal"
+                          ? mainDep.version
+                          : "manual",
                 });
               }
             }
@@ -1019,7 +1062,9 @@ async function resolveConflicts(
     report.push(`## ${res.package}`);
     report.push(`Resolved Version: ${res.version}`);
     for (const conf of res.conflicts) {
-      report.push(`- Requested: ${conf.requested}, Conflicting: ${conf.conflicting} (via ${conf.via})`);
+      report.push(
+        `- Requested: ${conf.requested}, Conflicting: ${conf.conflicting} (via ${conf.via})`,
+      );
     }
     report.push("");
   }
@@ -1047,7 +1092,9 @@ async function checkEnvironmentCompatibility(
   );
 
   const results: CompatibilityResult[] = [];
-  const packageJson = JSON.parse(fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"));
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
+  );
 
   for (const env of args.targetEnvironments) {
     const result: CompatibilityResult = {
@@ -1058,7 +1105,10 @@ async function checkEnvironmentCompatibility(
 
     // Check for browser-only or node-only packages
     if (env === "browser") {
-      if (packageJson.dependencies?.["fs"] || packageJson.dependencies?.["path"]) {
+      if (
+        packageJson.dependencies?.["fs"] ||
+        packageJson.dependencies?.["path"]
+      ) {
         result.issues.push({
           package: "node built-ins",
           issue: "Uses Node.js built-in modules not available in browser",
@@ -1126,7 +1176,15 @@ async function validatePlatform(
         const output = await runNpmCommand("npm ls --json --all", projectPath);
         const depTree = JSON.parse(output);
 
-        const knownNativeModules = ["sharp", "bcrypt", "sqlite3", "grpc", "node-sass", "canvas", "better-sqlite3"];
+        const knownNativeModules = [
+          "sharp",
+          "bcrypt",
+          "sqlite3",
+          "grpc",
+          "node-sass",
+          "canvas",
+          "better-sqlite3",
+        ];
 
         const checkNative = (deps: any): void => {
           for (const [name] of Object.entries(deps || {})) {
@@ -1134,7 +1192,10 @@ async function validatePlatform(
               result.nativeModules.push({
                 name,
                 status: platform === "web" ? "unsupported" : "needs-build",
-                issues: platform === "web" ? ["Native module not available in web environment"] : [],
+                issues:
+                  platform === "web"
+                    ? ["Native module not available in web environment"]
+                    : [],
               });
               result.valid = false;
             }
@@ -1186,18 +1247,19 @@ async function validatePlatform(
 // ============================================================================
 
 // Dependency Optimization Engine (Capability 491)
-export const dependencyOptimizationTool: ToolDefinition<DependencyOptimizationArgs> = {
-  name: "dependency_optimization_engine",
-  description:
-    "Analyze and optimize dependency usage in the project. Identifies opportunities to reduce bundle size, remove unused dependencies, and replace heavy packages with lighter alternatives.",
-  inputSchema: DependencyOptimizationArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyOptimizationTool: ToolDefinition<DependencyOptimizationArgs> =
+  {
+    name: "dependency_optimization_engine",
+    description:
+      "Analyze and optimize dependency usage in the project. Identifies opportunities to reduce bundle size, remove unused dependencies, and replace heavy packages with lighter alternatives.",
+    inputSchema: DependencyOptimizationArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    return await optimizeDependencies(args, ctx);
-  },
-};
+    execute: async (args, ctx) => {
+      return await optimizeDependencies(args, ctx);
+    },
+  };
 
 // Dependency Policy Enforcer (Capability 492)
 export const dependencyPolicyTool: ToolDefinition<DependencyPolicyArgs> = {
@@ -1214,46 +1276,49 @@ export const dependencyPolicyTool: ToolDefinition<DependencyPolicyArgs> = {
 };
 
 // Dependency Health Monitor (Capability 493)
-export const dependencyGovernanceHealthMonitorTool: ToolDefinition<DependencyHealthMonitorArgs> = {
-  name: "dependency_health_monitor",
-  description:
-    "Monitor the health of project dependencies over time. Tracks metrics like outdated packages, vulnerabilities, deprecated packages, and provides trend analysis.",
-  inputSchema: DependencyHealthMonitorArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyGovernanceHealthMonitorTool: ToolDefinition<DependencyHealthMonitorArgs> =
+  {
+    name: "dependency_health_monitor",
+    description:
+      "Monitor the health of project dependencies over time. Tracks metrics like outdated packages, vulnerabilities, deprecated packages, and provides trend analysis.",
+    inputSchema: DependencyHealthMonitorArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    return await monitorHealth(args, ctx);
-  },
-};
+    execute: async (args, ctx) => {
+      return await monitorHealth(args, ctx);
+    },
+  };
 
 // Dependency Vulnerability Scanner (Capability 494)
-export const vulnerabilityScannerTool: ToolDefinition<VulnerabilityScannerArgs> = {
-  name: "dependency_vulnerability_scanner",
-  description:
-    "Scan for security vulnerabilities in dependencies. Uses npm audit to detect known CVEs and provides detailed reports with severity levels.",
-  inputSchema: VulnerabilityScannerArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const vulnerabilityScannerTool: ToolDefinition<VulnerabilityScannerArgs> =
+  {
+    name: "dependency_vulnerability_scanner",
+    description:
+      "Scan for security vulnerabilities in dependencies. Uses npm audit to detect known CVEs and provides detailed reports with severity levels.",
+    inputSchema: VulnerabilityScannerArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    return await scanVulnerabilities(args, ctx);
-  },
-};
+    execute: async (args, ctx) => {
+      return await scanVulnerabilities(args, ctx);
+    },
+  };
 
 // Dependency Compliance Checker (Capability 495)
-export const dependencyComplianceCheckerTool: ToolDefinition<ComplianceCheckerArgs> = {
-  name: "dependency_compliance_checker",
-  description:
-    "Check dependency compliance against various frameworks like SOX, GDPR, HIPAA, or PCI-DSS. Validates licenses and identifies compliance issues.",
-  inputSchema: ComplianceCheckerArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const dependencyComplianceCheckerTool: ToolDefinition<ComplianceCheckerArgs> =
+  {
+    name: "dependency_compliance_checker",
+    description:
+      "Check dependency compliance against various frameworks like SOX, GDPR, HIPAA, or PCI-DSS. Validates licenses and identifies compliance issues.",
+    inputSchema: ComplianceCheckerArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    return await checkCompliance(args, ctx);
-  },
-};
+    execute: async (args, ctx) => {
+      return await checkCompliance(args, ctx);
+    },
+  };
 
 // Dependency License Manager (Capability 496)
 export const licenseManagerTool: ToolDefinition<LicenseManagerArgs> = {
@@ -1298,18 +1363,19 @@ export const conflictResolverTool: ToolDefinition<ConflictResolverArgs> = {
 };
 
 // Environment Compatibility Checker (Capability 499)
-export const environmentCompatibilityTool: ToolDefinition<EnvironmentCompatibilityArgs> = {
-  name: "environment_compatibility_checker",
-  description:
-    "Check cross-platform compatibility of dependencies. Validates that packages work in different environments like Node.js, browser, and Deno.",
-  inputSchema: EnvironmentCompatibilityArgs,
-  defaultConsent: "always",
-  modifiesState: false,
+export const environmentCompatibilityTool: ToolDefinition<EnvironmentCompatibilityArgs> =
+  {
+    name: "environment_compatibility_checker",
+    description:
+      "Check cross-platform compatibility of dependencies. Validates that packages work in different environments like Node.js, browser, and Deno.",
+    inputSchema: EnvironmentCompatibilityArgs,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    return await checkEnvironmentCompatibility(args, ctx);
-  },
-};
+    execute: async (args, ctx) => {
+      return await checkEnvironmentCompatibility(args, ctx);
+    },
+  };
 
 // Platform Specific Validation (Capability 500)
 export const platformValidationTool: ToolDefinition<PlatformValidationArgs> = {
@@ -1322,5 +1388,166 @@ export const platformValidationTool: ToolDefinition<PlatformValidationArgs> = {
 
   execute: async (args, ctx) => {
     return await validatePlatform(args, ctx);
+  },
+};
+
+// Dependency Container Image Analyzer (Capability 510)
+export const containerAnalysisTool: ToolDefinition<ContainerAnalysisArgs> = {
+  name: "dependency_container_analysis",
+  description:
+    "Perform static analysis on Docker/OCI images and Dockerfiles to detect dependency vulnerabilities and compliance issues.",
+  inputSchema: ContainerAnalysisArgs,
+  defaultConsent: "always",
+  modifiesState: false,
+  execute: async (args, ctx) => {
+    const projectPath = getProjectPath(args, ctx);
+    const dockerfilePath = path.isAbsolute(args.target)
+      ? args.target
+      : path.join(projectPath, args.target);
+
+    ctx.onXmlStream(
+      `<dyad-status title="Container Analyzer">Performing deep static analysis on ${args.target}...</dyad-status>`,
+    );
+
+    if (!fs.existsSync(dockerfilePath)) {
+      return `Error: Target ${args.target} not found. Ensure Dockerfile exists in project root.`;
+    }
+
+    let content: string;
+    try {
+      content = fs.readFileSync(dockerfilePath, "utf-8");
+    } catch (error) {
+      return `Error: Failed to read ${args.target}: ${error}`;
+    }
+    const lines = content.split("\n");
+    const issues = [];
+    const observations = [];
+
+    // 1. Multi-stage build detection
+    const fromStages = lines.filter((l) => /^\s*FROM\s+/i.test(l));
+    if (fromStages.length > 1) {
+      observations.push(
+        `✅ Multi-stage build detected (${fromStages.length} stages).`,
+      );
+    } else {
+      issues.push(
+        "🟡 MEDIUM: Single-stage build detected. Consider multi-stage builds to reduce image size and attack surface.",
+      );
+    }
+
+    // 2. Secret Detection (Hardcoded values in ENV or ARG)
+    const secretPattern =
+      /(ARG|ENV)\s+.*(PASSWORD|TOKEN|SECRET|API_KEY|PRIVATE_KEY|GITHUB_TOKEN|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)\s*=/i;
+    lines.forEach((line, index) => {
+      if (secretPattern.test(line)) {
+        issues.push(
+          `🔴 CRITICAL: Potential hardcoded secret found on line ${index + 1}: "${line.trim().substring(0, 30)}..."`,
+        );
+      }
+    });
+
+    // 3. Base Image Security
+    if (/FROM\s+.*:latest/i.test(content)) {
+      issues.push(
+        "🔴 HIGH: Using ':latest' tag for base image. Use specific version tags (SHA256 or version number) for repeatable builds.",
+      );
+    }
+
+    // 4. User Privileges
+    if (!/USER\s+/i.test(content)) {
+      issues.push(
+        "🟡 MEDIUM: No USER instruction found. Container will likely run as root, which is a security risk.",
+      );
+    } else if (/USER\s+root/i.test(content)) {
+      issues.push(
+        "🔴 HIGH: Explicitly running as USER root. Switch to a non-privileged user.",
+      );
+    }
+
+    // 5. Best Practices: HEALTHCHECK, LABEL, .dockerignore
+    if (!/HEALTHCHECK/i.test(content)) {
+      issues.push(
+        "🔵 INFO: No HEALTHCHECK instruction found. It is recommended to define how to check if the container is still healthy.",
+      );
+    }
+
+    if (!/LABEL/i.test(content)) {
+      observations.push(
+        "🔵 INFO: No LABEL instructions found for metadata. Consider adding labels for version, author, and description.",
+      );
+    }
+
+    const dockerignorePath = path.join(
+      path.dirname(dockerfilePath),
+      ".dockerignore",
+    );
+    if (fs.existsSync(dockerignorePath)) {
+      observations.push("✅ .dockerignore file found and being respected.");
+    } else {
+      issues.push(
+        "🟡 MEDIUM: No .dockerignore file found. This may lead to bloated images and leaked local secrets/configs.",
+      );
+    }
+
+    // 6. Layer Analysis
+    const layerInstructions = [
+      "FROM",
+      "RUN",
+      "COPY",
+      "ADD",
+      "ENTRYPOINT",
+      "CMD",
+      "ENV",
+      "ARG",
+      "EXPOSE",
+      "VOLUME",
+      "WORKDIR",
+      "USER",
+      "ONBUILD",
+      "STOPSIGNAL",
+      "HEALTHCHECK",
+      "SHELL",
+    ];
+    let layerCount = 0;
+    lines.forEach((l) => {
+      const trimmed = l.trim();
+      if (layerInstructions.some((instr) => trimmed.startsWith(instr))) {
+        layerCount++;
+      }
+    });
+
+    observations.push(`📊 Instruction count: ${layerCount} layers.`);
+    if (layerCount > 20) {
+      issues.push(
+        "🟡 MEDIUM: High number of instructions detected. Consider combining RUN commands or using multi-stage builds to optimize layers.",
+      );
+    }
+
+    const results = [
+      `# Advanced Container Analysis Report for ${args.target}`,
+      "",
+      `**Analysis Depth:** ${args.depth}`,
+      `**Target File:** \`${args.target}\``,
+      "",
+      "## 🔍 Observations",
+      observations.map((o) => `- ${o}`).join("\n"),
+      "",
+      "## ⚠️ Security & Optimization Findings",
+      issues.length > 0
+        ? issues.map((i) => `- ${i}`).join("\n")
+        : "✅ No major security or optimization issues found in static analysis.",
+      "",
+      "## 🛠️ Recommendations",
+      "1. **Pin Versions**: Always use immutable tags or digests (e.g., `node:18.1.0-alpine` or `node@sha256:...`).",
+      "2. **Least Privilege**: Always create a non-root user and switch to it using the `USER` instruction.",
+      "3. **Minimize Layers**: Combine related `RUN` commands with `&&` and clear caches in the same layer.",
+      "4. **Secrets Management**: Never use `ARG` or `ENV` for secrets. Use Docker Secrets or environment variables at runtime.",
+    ];
+
+    ctx.onXmlComplete(
+      `<dyad-status title="Container Analysis Complete">${issues.length} findings, ${observations.length} observations</dyad-status>`,
+    );
+
+    return results.join("\n");
   },
 };

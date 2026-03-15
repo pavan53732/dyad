@@ -539,12 +539,14 @@ async function analyzeDependencyNode(
   const healthMetrics = {
     outdated: false, // Would need to check against latest
     securityVulnerabilities: 0, // Would need security audit
-    maintenance: (metadata.maintainers?.length > 0
-      ? "active"
-      : "unknown") as "active" | "inactive" | "unknown",
+    maintenance: (metadata.maintainers?.length > 0 ? "active" : "unknown") as
+      | "active"
+      | "inactive"
+      | "unknown",
     popularity: (metadata.score?.detail?.popularity || 0) as number,
     downloads: (metadata.downloads || 0) as number,
-    lastModified: (metadata.time?.modified || new Date().toISOString()) as string,
+    lastModified: (metadata.time?.modified ||
+      new Date().toISOString()) as string,
     licenseHealth: !!metadata.license,
   };
 
@@ -1010,7 +1012,8 @@ async function monitorDependencyHealth(
         | "unknown",
       popularity: (metadata.score?.detail?.popularity || 0) as number,
       downloads: (metadata.downloads || 0) as number,
-      lastModified: (metadata.time?.modified || new Date().toISOString()) as string,
+      lastModified: (metadata.time?.modified ||
+        new Date().toISOString()) as string,
       licenseHealth: !!metadata.license,
     };
 

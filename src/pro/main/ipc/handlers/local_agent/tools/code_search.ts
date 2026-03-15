@@ -11,7 +11,7 @@ import { engineFetch } from "./engine_fetch";
 
 const logger = log.scope("code_search");
 
-const codeSearchSchema = z.object({
+export const codeSearchSchema = z.object({
   query: z.string().describe("Search query to find relevant files"),
 });
 
@@ -51,6 +51,35 @@ async function callCodeSearch(
 
   const data = codeSearchResponseSchema.parse(await response.json());
   return data.relevantFiles;
+}
+
+/**
+ * Real-time Retrieval Relevance Scorer (Mechanism 2)
+ * Ranks search results based on keyword overlap with the query.
+ */
+function scoreRelevance(query: string, filePaths: string[]): string[] {
+  const queryTerms = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 2);
+  if (queryTerms.length === 0) return filePaths;
+
+  const scoredFiles = filePaths.map((filePath) => {
+    const fileName = filePath.toLowerCase();
+    let score = 0;
+
+    for (const term of queryTerms) {
+      if (fileName.includes(term)) {
+        score += 2; // Filename matches carry more weight
+      }
+    }
+    return { path: filePath, score };
+  });
+
+  // Sort by score (descending)
+  return scoredFiles
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.path);
 }
 
 const DESCRIPTION = `Search the codebase semantically to find files relevant to a query. Use this tool when you need to discover which files contain code related to a specific concept, feature, or functionality. Returns a list of file paths that are most relevant to the search query.
@@ -111,13 +140,16 @@ export const codeSearchTool: ToolDefinition<z.infer<typeof codeSearchSchema>> =
       );
 
       // Call the code-search endpoint
-      const relevantFiles = await callCodeSearch(
+      const rawRelevantFiles = await callCodeSearch(
         {
           query: args.query,
           filesContext,
         },
         ctx,
       );
+
+      // Apply relevance scoring (Mechanism 2)
+      const relevantFiles = scoreRelevance(args.query, rawRelevantFiles);
 
       // Format results
       const resultText =

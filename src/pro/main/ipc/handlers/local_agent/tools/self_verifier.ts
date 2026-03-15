@@ -47,7 +47,8 @@ type IssueType =
   | "incorrect"
   | "missing_edge_case"
   | "inefficient"
-  | "inconsistent";
+  | "inconsistent"
+  | "hallucination";
 
 /** Severity of the issue */
 type IssueSeverity = "critical" | "high" | "medium" | "low";
@@ -94,7 +95,7 @@ interface SelfCritique {
 }
 
 /** Complete verification result */
-interface VerificationResult {
+export interface VerificationResult {
   isValid: boolean;
   issues: DetectedIssue[];
   issueCount: {
@@ -103,6 +104,10 @@ interface VerificationResult {
     medium: number;
     low: number;
   };
+  /** Hallucination probability score (0.0 to 1.0) - Mechanism 5 */
+  hallucinationProbability: number;
+  /** Explanation for the hallucination score */
+  hallucinationExplanation: string;
   consistency: ConsistencyResult;
   confidence: ConfidenceEstimation;
   critique: SelfCritique;
@@ -406,6 +411,141 @@ function checkConsistency(
   };
 }
 
+/** Calculate Shannon entropy of a string */
+function calculateEntropy(str: string): number {
+  if (!str) return 0;
+  // Performance guard: multi-MB strings can hang the calculation
+  const MAX_ENTROPY_INPUT = 1024 * 1024; // 1MB
+  const source =
+    str.length > MAX_ENTROPY_INPUT ? str.slice(0, MAX_ENTROPY_INPUT) : str;
+
+  const frequencies: Record<string, number> = {};
+  for (const char of source) {
+    frequencies[char] = (frequencies[char] || 0) + 1;
+  }
+  let entropy = 0;
+  const len = source.length;
+  for (const char in frequencies) {
+    const p = frequencies[char] / len;
+    entropy -= p * Math.log2(p);
+  }
+  return entropy;
+}
+
+/**
+ * Estimate Hallucination Probability (Mechanism 5)
+ * Uses Bayesian-inspired weighing of entropy, density, and consistency.
+ */
+function estimateHallucinationProbability(
+  output: string,
+  consistency: ConsistencyResult,
+  issues: DetectedIssue[],
+): { probability: number; explanation: string } {
+  let score = 0.5; // Neutral starting point
+  const factors: string[] = [];
+
+  // Factor 1: Shannon Entropy of the output
+  const entropy = calculateEntropy(output);
+  // Ideal entropy for natural language is around 4.0 - 5.0 bits per char
+  // Extremely low entropy (< 2.5) suggests repetition or boilerplate (hallucinated looping)
+  // Extremely high entropy (> 6.5) suggests garbage/unstructured data
+  if (entropy < 3.0) {
+    score += 0.2;
+    factors.push("Extremely low entropy (repetitive/boilerplate)");
+  } else if (entropy > 6.0) {
+    score += 0.15;
+    factors.push("High entropy (unstructured/randomized content)");
+  } else {
+    score -= 0.1;
+  }
+
+  // Factor 2: Reasoning Density
+  const claims =
+    output.match(/(?:is|was|will be|has|have|contains)[^.]+\./gi) || [];
+  const steps =
+    output.match(/(?:step|first|second|then|next|because|since)[^.]+\./gi) ||
+    [];
+
+  if (claims.length > 0) {
+    const density = steps.length / claims.length;
+    if (density < 0.2) {
+      score += 0.15;
+      factors.push("Low reasoning density (claims without supporting logic)");
+    } else {
+      score -= 0.1;
+    }
+  }
+
+  // Factor 3: Consistency & Contradictions
+  if (!consistency.isConsistent) {
+    score += 0.25;
+    factors.push(
+      `${consistency.contradictions.length} logical contradictions detected`,
+    );
+  }
+
+  // Factor 4: Critical Issues
+  const criticalIssues = issues.filter((i) => i.severity === "critical");
+  if (criticalIssues.length > 0) {
+    score += 0.2;
+    factors.push("Critical verification issues found");
+  }
+
+  const finalProbability = Math.max(0, Math.min(1, score));
+  const explanation =
+    factors.length > 0
+      ? `Probability influenced by: ${factors.join("; ")}.`
+      : "Output shows high structural integrity and low hallucinatory signaling.";
+
+  return { probability: finalProbability, explanation };
+}
+
+/**
+ * Verify Source Citations (Mechanism 3)
+ * Ensures that code snippets or citations in the output actually exist
+ * in the provided code context.
+ */
+function verifyCitations(
+  output: string,
+  codeContext?: string,
+): DetectedIssue[] {
+  if (!codeContext) return [];
+  const issues: DetectedIssue[] = [];
+
+  // Extract potential code blocks or quoted snippets
+  const codeBlocks = output.match(/```(?:[a-z]+)?\n([\s\S]*?)```/g) || [];
+  const inlineCode = output.match(/`([^`]{10,})`/g) || []; // Only check 10+ char strings
+
+  const allSnippets = [...codeBlocks, ...inlineCode].map((s) =>
+    s
+      .replace(/^```(\w+)?\n/, "")
+      .replace(/```$/, "")
+      .replace(/^`/, "")
+      .replace(/`$/, "")
+      .trim(),
+  );
+
+  for (const snippet of allSnippets) {
+    if (snippet.length < 20) continue; // Skip very small snippets
+
+    // Check if the snippet exists in the context
+    // We use a normalized check (lowercase/whitespace trimmed)
+    const normalizedSnippet = snippet.toLowerCase().replace(/\s+/g, " ");
+    const normalizedContext = codeContext.toLowerCase().replace(/\s+/g, " ");
+
+    if (!normalizedContext.includes(normalizedSnippet)) {
+      issues.push({
+        type: "hallucination",
+        severity: "high",
+        description: `Source citation mismatch: Code snippet not found in provided context.`,
+        suggestion: "Ensure citations are verbatim from the source files.",
+      });
+    }
+  }
+
+  return issues;
+}
+
 /** Estimate confidence in the output */
 function estimateConfidence(
   output: string,
@@ -644,11 +784,10 @@ function generateSelfCritique(
   };
 }
 
-// ============================================================================
-// Main Verification Function
-// ============================================================================
-
-async function verifyOutput(
+/**
+ * Main Verification Function
+ */
+export async function verifyOutput(
   args: SelfVerifierArgs,
   _ctx: AgentContext,
 ): Promise<VerificationResult> {
@@ -665,9 +804,10 @@ async function verifyOutput(
   // Detect issues
   const syntaxIssues = detectSyntaxIssues(output);
   const securityIssues = detectSecurityIssues(output);
+  const citationIssues = verifyCitations(output, args.codeContext);
 
   // Combine all issues
-  const allIssues = [...syntaxIssues, ...securityIssues];
+  const allIssues = [...syntaxIssues, ...securityIssues, ...citationIssues];
 
   // Check consistency
   const consistency = doCheckConsistency
@@ -707,16 +847,26 @@ async function verifyOutput(
     low: allIssues.filter((i) => i.severity === "low").length,
   };
 
+  // Mechanism 5: Bayesian Hallucination Estimation
+  const hallucination = estimateHallucinationProbability(
+    output,
+    consistency,
+    allIssues,
+  );
+
   // Determine if output is valid
   const isValid =
     issueCount.critical === 0 &&
     issueCount.high === 0 &&
     consistency.isConsistent &&
-    confidence.overallConfidence > 0.5;
+    confidence.overallConfidence > 0.5 &&
+    hallucination.probability < 0.4; // Strict Level 6 threshold
 
   // Generate summary
   let summary = "";
-  if (!isValid) {
+  if (hallucination.probability > 0.5) {
+    summary = "Verification FAILED: High Hallucination Probability detected.";
+  } else if (!isValid) {
     summary = "Verification failed - issues detected";
   } else if (confidence.overallConfidence > 0.8) {
     summary = "Verification passed with high confidence";
@@ -728,6 +878,8 @@ async function verifyOutput(
     isValid,
     issues: allIssues,
     issueCount,
+    hallucinationProbability: Math.round(hallucination.probability * 100) / 100,
+    hallucinationExplanation: hallucination.explanation,
     consistency,
     confidence,
     critique,
@@ -747,6 +899,8 @@ function generateVerificationXml(result: VerificationResult): string {
     ``,
     `**Status:** ${status}`,
     `**Confidence:** ${(result.confidence.overallConfidence * 100).toFixed(0)}%`,
+    `**Hallucination Probability:** ${(result.hallucinationProbability * 100).toFixed(0)}%`,
+    `> ${result.hallucinationExplanation}`,
     `**Risk:** ${result.critique.riskAssessment}`,
     ``,
   ];

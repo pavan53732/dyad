@@ -130,7 +130,9 @@ function saveLearningStore(ctx: AgentContext, data: LearningStore): void {
 const LearningFeedbackLoopArgs = z.object({
   task: z.string().describe("The task that was executed"),
   outcome: z.enum(["success", "failure", "partial"]).describe("Task outcome"),
-  metrics: z.record(z.string(), z.number()).describe("Performance metrics from the task"),
+  metrics: z
+    .record(z.string(), z.number())
+    .describe("Performance metrics from the task"),
   strategy: z.string().describe("Strategy used for the task"),
   patterns: z.array(z.string()).describe("Patterns identified in the task"),
   timeSpent: z.number().describe("Time spent on task in milliseconds"),

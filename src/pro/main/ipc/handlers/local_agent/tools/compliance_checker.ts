@@ -59,7 +59,8 @@ type ComplianceCategory =
   | "encryption"
   | "session_management"
   | "error_handling"
-  | "logging";
+  | "logging"
+  | "framework_compatibility";
 
 interface ComplianceFinding {
   id: string;
@@ -348,6 +349,31 @@ const COMPLIANCE_RULES: ComplianceRule[] = [
     pattern: /(?:res\.status|next)\s*\(\s*(?:500|400|error)/i,
     recommendation: "Return generic error messages in production",
     cwe: "CWE-209",
+  },
+  // Technology Compatibility Rules (Mechanism 17)
+  {
+    id: "framework-mismatch-nextjs-api",
+    category: "framework_compatibility",
+    severity: "high",
+    frameworks: ["owasp"], // Generic framework for internal rules
+    title: "Framework API Mismatch (Next.js in non-Next.js)",
+    description:
+      "Next.js specific API (getServerSideProps/getStaticProps) detected in a non-Next.js project.",
+    pattern:
+      /(?:export\s+const\s+getServerSideProps|export\s+const\s+getStaticProps)/i,
+    recommendation:
+      "Use framework-agnostic data fetching or the correct framework equivalent.",
+  },
+  {
+    id: "framework-mismatch-react-in-vue",
+    category: "framework_compatibility",
+    severity: "high",
+    frameworks: ["owasp"],
+    title: "Framework Component Mismatch (React in non-React)",
+    description: "React JSX/Component pattern detected in a non-React project.",
+    pattern:
+      /import\s+React\s+from\s+['"]react['"]|export\s+default\s+function\s+\w+\s*\(\)\s*\{\s*return\s+\(/i,
+    recommendation: "Use the native component system for the target framework.",
   },
 ];
 

@@ -10,7 +10,7 @@ import {
 import { extractCodebase } from "../../../../../../utils/codebase";
 import { resolveDirectoryWithinAppPath } from "./path_safety";
 
-const listFilesSchema = z.object({
+export const listFilesSchema = z.object({
   directory: z.string().optional().describe("Optional subdirectory to list"),
   recursive: z
     .boolean()

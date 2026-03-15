@@ -9,7 +9,7 @@ Please read `CONTRIBUTING.md` which includes information for human code contribu
 Detailed rules and learnings are in the `rules/` directory. Read the relevant file when working in that area.
 
 | File                                                                 | Read when...                                                                                     |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| :------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
 | [rules/electron-ipc.md](rules/electron-ipc.md)                       | Adding/modifying IPC endpoints, handlers, React Query hooks, or renderer-to-main communication   |
 | [rules/local-agent-tools.md](rules/local-agent-tools.md)             | Adding/modifying local agent tools, tool flags (`modifiesState`), or read-only/plan-only guards  |
 | [rules/e2e-testing.md](rules/e2e-testing.md)                         | Writing or debugging E2E tests (Playwright, Base UI radio clicks, Lexical editor, test fixtures) |
@@ -21,6 +21,7 @@ Detailed rules and learnings are in the `rules/` directory. Read the relevant fi
 | [rules/adding-settings.md](rules/adding-settings.md)                 | Adding a new user-facing setting or toggle to the Settings page                                  |
 | [rules/chat-message-indicators.md](rules/chat-message-indicators.md) | Using `<dyad-status>` tags in chat messages for system indicators                                |
 | [rules/product-principles.md](rules/product-principles.md)           | Planning new features, especially via `dyad:swarm-to-plan`, to guide design trade-offs           |
+| [rules/ai-sovereignty.md](rules/ai-sovereignty.md)                   | Working with Level 7.0 Sovereignty, Deterministic Dispatcher, or Aegis Safety Protocols          |
 
 ## Project setup and lints
 
@@ -38,19 +39,19 @@ RUN THE FOLLOWING CHECKS before you do a commit.
 
 If you have access to the `/dyad:lint` skill, use it to run all pre-commit checks automatically:
 
-```
+```bash
 /dyad:lint
 ```
 
 Otherwise, run the following commands directly:
 
-**Formatting**
+### Formatting
 
 ```sh
 npm run fmt
 ```
 
-**Linting**
+### Linting
 
 ```sh
 npm run lint
@@ -62,13 +63,21 @@ If you get any lint errors, you can usually fix it by doing:
 npm run lint:fix
 ```
 
-**Type-checks**
+### Type-checks
 
 ```sh
 npm run ts
 ```
 
 Note: if you do this, then you will need to re-add the changes and commit again.
+
+### Aegis Audit (Sovereignty Verification)
+
+Before committing, you MUST perform an **Aegis Audit** if your changes affect core autonomous loops or safety tools:
+
+1. Verify alignment with `rules/ai-sovereignty.md`.
+2. Ensure state-changing tools are correctly gated by the `deterministic_dispatcher` and tracked in `TODO.md`.
+3. Check that no mechanisms (1-701) are inadvertently compromised.
 
 ## Running TypeScript
 
@@ -97,6 +106,7 @@ You should test your changes before committing or pushing. Run relevant unit tes
 - Favor descriptive module/function names that mirror IPC channel semantics.
 - Keep Electron security practices in mind (no `remote`, validate/lock by `appId` when mutating shared resources).
 - Add tests in the same folder tree when touching renderer components.
+- **Mission Plan Grounding**: Always ensure your work aligns with the tasks in `TODO.md` (or the specific mission plan provided). The Level 7.0 Deterministic Dispatcher will block any state-changing tool calls that do not have an associated active task.
 - **Always use Base UI (`@base-ui/react`) for UI primitives, never Radix UI.** This includes menus, tooltips, accordions, context menus, and other headless UI components. See [rules/base-ui-components.md](rules/base-ui-components.md) for component-specific guidance.
 
 Use these guidelines whenever you work within this repository.

@@ -5,6 +5,22 @@ Previously, Dyad used a pseudo tool-calling strategy using custom XML instead of
 - The heart of the local agent is in `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` which contains the core agent loop: which keeps calling the LLM until it chooses not to do a tool call or hits the maximum number of steps for the turn.
 - `src/pro/main/ipc/handlers/local_agent/tool_definitions.ts` contains the list of all the tools available to the Dyad local agent.
 
+## The Sovereign Execution Loop (Level 7.0)
+
+For high-complexity tasks, Dyad uses the `autonomous_software_engineer.ts` meta-orchestrator. This isn't just a tool; it's a hardened development persona that implements a **Sovereign Execution Loop**:
+
+1.  **Deterministic Dispatching**: Every state-changing tool call is intercepted by the `deterministic_dispatcher`. It verifies the call against the active mission plan in `TODO.md`. If the tool isn't sanctioned by the plan, the execution is blocked (Mechanism 171).
+2.  **Simulation Branching**: Before execution, the system (via `metacognition.ts`) simulates the tool's intended effect. If the predicted outcome deviates from the goal, it triggers a `PREDICTIVE DRIFT` warning (Mechanism 151).
+3.  **Recursive Healing**: The loop is closed via `autonomous_fix_loop` (fixing TS errors) and `autonomous_test_generator` (creating and running E2E tests).
+
+## Institutional Memory (Mechanism 61)
+
+To prevent regression and the repetition of historical engineering errors, Dyad maintains a persistent Failure Repository at `.dyad/failure_repository.json`.
+
+- Agents consult this repository during the planning phase of complex tasks.
+- Anti-patterns (e.g., "Mismatched IPC signatures") are logged by the `self_improver` tool.
+- This memory is used to "hearth" the agent's strategy, ensuring it avoids known pitfalls recorded in past sessions.
+
 ## Add a tool
 
 If you want to add a new tool, you will want to create a new tool in the `src/pro/main/ipc/handlers/local_agent/tools` directory. You can look at the existing tools as examples.

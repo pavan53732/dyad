@@ -546,40 +546,76 @@ mcp_servers (1) ───< mcp_tool_consents (N)
 
 ---
 
-## 11. Structural Risks
+## 13. Level 7.0 Autonomous Sovereignty
 
-### 11.1 Identified Risks
+As of Version 0.39.0, Dyad has transitioned to a **Level 7.0: Total Autonomous Sovereignty** architecture. This framework represents a shift from "Guided Assistance" to a "Sovereign Factory" model where safety and alignment are enforced by deterministic engineering logic rather than just model instructions.
 
-| Risk                              | Severity | Description                                                                                           |
-| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| **Large IPC Handlers**            | Medium   | Some handlers (e.g., `chat_stream_handlers.ts` - 73K+ chars) are monolithic and difficult to maintain |
-| **Context Compaction Complexity** | Medium   | AI message compaction logic is intricate with backup/restore mechanisms                               |
-| **Free Agent Quota Tracking**     | Medium   | Complex quota enforcement logic across multiple handlers                                              |
-| **Migration Conflicts**           | Medium   | 26+ migrations can cause conflicts in collaborative environments                                      |
-| **MCP Security**                  | Medium   | Executing arbitrary commands from MCP servers requires careful consent management                     |
+### 13.1 Aegis Sentinel Framework (701 Mechanisms)
 
-### 11.2 Mitigation Strategies
+The system is governed by a multi-layered control hierarchy consisting of 701 distinct mechanisms across six architectural domains.
 
-- Modular handler structure with base classes
-- Comprehensive E2E test coverage
-- Strict TypeScript mode enforcement
-- Consent-based MCP tool execution
+#### 🏰 Core Sovereignty Mechanisms
+
+1. **Mechanism 171 (Deterministic Dispatcher)**:
+   - Acts as a physical state machine gatekeeping all state-changing tools (`write_file`, `edit_file`, `tool_synthesizer`).
+   - Tool calls are only approved if they mathematically align with an active, uncompleted task in the `TODO.md` mission plan.
+
+2. **Mechanism 151 (Predictive Drift Monitoring)**:
+   - Implements "Simulation Branching" within `metacognition.ts`.
+   - Predicts the outcome of a tool call and blocks execution if the predicted state deviates from the original user intent.
+
+3. **Mechanism 7 (Bayesian Fact Grounding)**:
+   - All AI claims are verified against the persistent Knowledge Base and Source Code via high-performance search engines (Ripgrep).
+   - Prevents hallucinations by forcing the model to ground its reasoning in the physical codebase.
+
+4. **Mechanism 61 (Institutional Memory)**:
+   - Maintains a `failure_repository.json` to record reasoning anti-patterns.
+   - Prevents repeating historical engineering errors by injecting failure context into relevant tasks.
+
+5. **Mechanism 181 (Quota Enforcement)**:
+   - Implements resource buckets in the sandbox to monitor and throttle memory, token, and CPU usage.
+   - Prevents resource exhaustion and "infinite reasoning" loops.
+
+6. **Mechanism 371 (Extreme Simulation)**:
+   - High-fidelity verification using sandboxed UI trials (Playwright).
+   - Verifies that frontend changes render and function correctly before they are committed.
+
+### 13.2 Sovereign Execution Loop
+
+The `autonomous_software_engineer` persona has been upgraded with a self-healing loop:
+
+- **Planning**: Generates or reads a structured mission plan.
+- **Execution**: Implementation via sub-agents gated by the Dispatcher.
+- **Heal**: Automatic TypeScript error correction via `autonomous_fix_loop`.
+- **Verify**: High-fidelity testing via `autonomous_test_generator`.
 
 ---
 
-## 12. Unknown/Unclear Areas
+## 14. Structural Risks
 
-### 12.1 Areas Needing Investigation
+| Risk                              | Severity | Description                                                                                            | Mitigation                                                               |
+| :-------------------------------- | :------- | :----------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------- |
+| **Mission Drift**                 | High     | Agent might forget original constraints during complex multi-step tasks.                               | **Mechanism 151**: Predictive Drift Monitoring and Metacognitive Audits. |
+| **Hallucination Vectors**         | High     | Models generating convincing but incorrect technical "facts" about the codebase.                       | **Mechanism 7**: Bayesian Fact Grounding Engine.                         |
+| **Institutional Amnesia**         | Medium   | Loss of context regarding past failures leading to repeated mistakes.                                  | **Mechanism 61**: Failure Repository & Recursive Learning.               |
+| **Large IPC Handlers**            | Medium   | Some handlers (e.g., `chat_stream_handlers.ts` - 73K+ chars) are monolithic and difficult to maintain. | Refactoring into granular capability-based handlers (520 Framework).     |
+| **Context Compaction Complexity** | Medium   | AI message compaction logic is intricate with backup/restore mechanisms.                               | Robust backup management and deterministic summary verification.         |
+
+---
+
+## 15. Unknown/Unclear Areas
+
+### 15.1 Areas Needing Investigation
 
 | Area                      | Notes                                                                                        |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
+| :------------------------ | :------------------------------------------------------------------------------------------- |
 | **Worker Architecture**   | `worker/` and `workers/` directories - their exact purpose and interaction with main process |
 | **Convex Backend**        | Plans mention Convex support but implementation unclear                                      |
 | **Web Fetch Integration** | `plans/web-fetch-local-agent.md` - web fetching capabilities for local agent                 |
 | **Mobile Support**        | `capacitor_handlers.ts` suggests mobile app support that needs exploration                   |
 | **Cloud Sandboxes**       | `plans/cloud-sandboxes.md` - future architecture for cloud-based development environments    |
 
-### 12.2 Architectural Questions
+### 15.2 Architectural Questions
 
 1. **Backup Manager**: `src/backup_manager.ts` - How does it interact with compaction?
 2. **Portal Handlers**: `src/ipc/handlers/portal_handlers.ts` - What's the portal architecture?

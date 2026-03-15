@@ -22,12 +22,18 @@ const MetacognitionArgs = z.object({
     .default("all"),
   /** Conversation history for context */
   conversationHistory: z.string().optional(),
+  /** The original intent/goal of the entire session */
+  originalIntent: z.string().optional(),
   /** User's apparent skill level (auto-detected if not provided) */
   userSkillLevel: z
     .enum(["beginner", "intermediate", "advanced", "expert"])
     .optional(),
   /** Current reasoning steps (for monitoring) */
   reasoningSteps: z.array(z.string()).default([]),
+  /** Intended tool call (for predictive drift) */
+  intendedToolCall: z.string().optional(),
+  /** Expected outcome of the tool call */
+  expectedOutcome: z.string().optional(),
 });
 
 type MetacognitionArgs = z.infer<typeof MetacognitionArgs>;
@@ -82,7 +88,7 @@ interface AbstractReasoningResult {
 }
 
 /** Reasoning monitoring result */
-interface ReasoningMonitorResult {
+export interface ReasoningMonitorResult {
   currentStep: number;
   totalSteps: number;
   progress: number;
@@ -90,6 +96,14 @@ interface ReasoningMonitorResult {
   potentialIssues: string[];
   recommendations: string[];
   isOnTrack: boolean;
+  /** Semantic drift score (0.0 to 1.0) - Mechanism 131 */
+  driftScore: number;
+  /** Explanation of any detected drift */
+  driftExplanation?: string;
+  /** Predictive drift score (Mechanism 151) */
+  predictiveDriftScore?: number;
+  /** Warning if predictive drift is high */
+  predictiveDriftWarning?: string;
 }
 
 /** Complete metacognition result */
@@ -205,9 +219,12 @@ function orchestrateContext(
 }
 
 /** Monitor reasoning progress */
-function monitorReasoning(
+export function monitorReasoning(
   task: string,
   reasoningSteps: string[] = [],
+  originalIntent?: string,
+  intendedToolCall?: string,
+  expectedOutcome?: string,
 ): ReasoningMonitorResult {
   const currentStep = reasoningSteps.length;
   const totalSteps = Math.max(3, Math.ceil(task.length / 200));
@@ -245,6 +262,73 @@ function monitorReasoning(
     );
   }
 
+  // Mechanism 131: Semantic Goal Alignment Monitor
+  let driftScore = 0;
+  let driftExplanation = "Trajectory remains aligned with original intent.";
+
+  if (originalIntent) {
+    const intentKeywords = new Set(
+      originalIntent
+        .toLowerCase()
+        .split(/\W+/)
+        .filter((w) => w.length > 4),
+    );
+    const taskKeywords = new Set(
+      task
+        .toLowerCase()
+        .split(/\W+/)
+        .filter((w) => w.length > 4),
+    );
+
+    if (intentKeywords.size > 0) {
+      let matches = 0;
+      for (const word of intentKeywords) {
+        if (taskKeywords.has(word)) matches++;
+      }
+
+      const overlap = matches / intentKeywords.size;
+      // Drift is the inverse of overlap, capped at 1.0
+      driftScore = Math.max(0, 1 - overlap);
+
+      if (driftScore > 0.5) {
+        driftExplanation = `High semantic drift detected (${(driftScore * 100).toFixed(0)}%). The current task trajectory has significantly diverged from the original mission goal.`;
+        potentialIssues.push(
+          "MISSION DRIFT: Current task deviates from original intent.",
+        );
+      } else if (driftScore > 0.3) {
+        driftExplanation = `Moderate drift detected (${(driftScore * 100).toFixed(0)}%). Trajectory is softening.`;
+      }
+    }
+  }
+
+  // Mechanism 151: Predictive Drift (Early Warning)
+  let predictiveDriftScore = 0;
+  let predictiveDriftWarning = "";
+
+  if (intendedToolCall && expectedOutcome && originalIntent) {
+    const intentLower = originalIntent.toLowerCase();
+    const outcomeLower = expectedOutcome.toLowerCase();
+
+    // Check if expected outcome aligns with original intent keywords
+    const keywords = intentLower.split(/\W+/).filter((w) => w.length > 5);
+    let matches = 0;
+    for (const kw of keywords) {
+      if (outcomeLower.includes(kw)) matches++;
+    }
+
+    if (keywords.length > 0) {
+      const alignment = matches / keywords.length;
+      predictiveDriftScore = Math.max(0, 1 - alignment);
+
+      if (predictiveDriftScore > 0.4) {
+        predictiveDriftWarning = `PREDICTIVE DRIFT DETECTED: The intended tool call (${intendedToolCall}) has an expected outcome that only aligns ${(alignment * 100).toFixed(0)}% with the original mission.`;
+        potentialIssues.push(
+          `PREDICTIVE DRIFT: High risk of deviation in next step.`,
+        );
+      }
+    }
+  }
+
   // Generate recommendations
   const recommendations: string[] = [];
   if (progress < 0.3) {
@@ -257,6 +341,13 @@ function monitorReasoning(
     recommendations.push("Verify the solution covers edge cases");
   }
 
+  // If drift is too high, recommendation is to re-align
+  if (driftScore > 0.4 || predictiveDriftScore > 0.4) {
+    recommendations.push(
+      "EMERGENCY: Re-read original user intent and pivot back to original goals.",
+    );
+  }
+
   const isOnTrack = potentialIssues.length === 0 || progress > 0.5;
 
   return {
@@ -267,6 +358,10 @@ function monitorReasoning(
     potentialIssues,
     recommendations,
     isOnTrack,
+    driftScore: Math.round(driftScore * 100) / 100,
+    driftExplanation,
+    predictiveDriftScore: Math.round(predictiveDriftScore * 100) / 100,
+    predictiveDriftWarning,
   };
 }
 
@@ -580,8 +675,11 @@ async function performMetacognition(
     task,
     analysisType,
     conversationHistory,
+    originalIntent,
     userSkillLevel,
     reasoningSteps,
+    intendedToolCall,
+    expectedOutcome,
   } = args;
 
   let contextOrchestration: ContextOrchestration | null = null;
@@ -607,7 +705,13 @@ async function performMetacognition(
   }
 
   // Always run reasoning monitoring
-  reasoningMonitor = monitorReasoning(task, reasoningSteps);
+  reasoningMonitor = monitorReasoning(
+    task,
+    reasoningSteps,
+    originalIntent,
+    intendedToolCall,
+    expectedOutcome,
+  );
 
   const processingTime = Date.now() - startTime;
 
@@ -749,6 +853,10 @@ function generateMetacognitionXml(result: MetacognitionResult): string {
     lines.push(
       `**Status:** ${rm.isOnTrack ? "✅ On Track" : "⚠️ Potential Issues"}`,
     );
+    lines.push(`**Mission Drift:** ${(rm.driftScore * 100).toFixed(0)}%`);
+    if (rm.driftScore > 0) {
+      lines.push(`> ${rm.driftExplanation}`);
+    }
     lines.push(``);
 
     if (rm.potentialIssues.length > 0) {

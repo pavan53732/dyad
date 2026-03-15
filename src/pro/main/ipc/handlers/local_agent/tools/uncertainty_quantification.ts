@@ -226,8 +226,18 @@ export const evidenceStrengthTool: ToolDefinition = {
     <evidence_provided>${evidence ? "yes" : "no"}</evidence_provided>
     <evidence_length>${evidence?.length || 0}</evidence_length>
     <reliable_sources>${(() => {
-      const reliableSources = ["study", "research", "data", "experiment", "survey", "analysis"];
-      return evidence && reliableSources.some((s) => evidence.toLowerCase().includes(s)) ? "detected" : "none";
+      const reliableSources = [
+        "study",
+        "research",
+        "data",
+        "experiment",
+        "survey",
+        "analysis",
+      ];
+      return evidence &&
+        reliableSources.some((s) => evidence.toLowerCase().includes(s))
+        ? "detected"
+        : "none";
     })()}</reliable_sources>
     <quantitative_data>${evidence && /\d+/.test(evidence) ? "present" : "absent"}</quantitative_data>
   </assessment>
@@ -435,7 +445,8 @@ export const confidenceIntervalTool: ToolDefinition = {
     // Estimate point and interval based on statement characteristics
     // This is a simplified estimation - real implementation would use actual data
     const hasNumbers = statement.match(/\d+/g) || [];
-    const baseEstimate = hasNumbers.length > 0 ? parseFloat(hasNumbers[0]!) : 50;
+    const baseEstimate =
+      hasNumbers.length > 0 ? parseFloat(hasNumbers[0]!) : 50;
 
     // Base uncertainty from evidence
     const evidenceLength = evidence?.length || 0;

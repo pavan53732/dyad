@@ -14,7 +14,7 @@ import { engineFetch } from "./engine_fetch";
 const readFile = fs.promises.readFile;
 const logger = log.scope("edit_file");
 
-const editFileSchema = z.object({
+export const editFileSchema = z.object({
   path: z.string().describe("The file path relative to the app root"),
   content: z.string().describe("The updated code snippet to apply"),
   instructions: z

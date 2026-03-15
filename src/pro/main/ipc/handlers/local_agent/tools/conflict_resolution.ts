@@ -496,7 +496,9 @@ export const resourceArbitrationTool: ToolDefinition<
         };
       }
 
-      let finalAllocations: (typeof claimants[number] & { allocated: number })[] = [];
+      let finalAllocations: ((typeof claimants)[number] & {
+        allocated: number;
+      })[] = [];
 
       switch (fairnessPolicy) {
         case "priority_first": {
@@ -570,7 +572,7 @@ export const resourceArbitrationTool: ToolDefinition<
 
         default:
           // This default case was previously empty, now it's explicitly setting allocated to 0
-          finalAllocations = claimants.map(c => ({ ...c, allocated: 0 }));
+          finalAllocations = claimants.map((c) => ({ ...c, allocated: 0 }));
       }
 
       const rejected = claimants.filter(
@@ -1180,7 +1182,7 @@ export const fairnessOptimizationTool: ToolDefinition<
           agent.historicalUsage && agent.historicalUsage.length > 0
             ? agent.historicalUsage.reduce((a, b) => a + b, 0) /
               agent.historicalUsage.length
-            : (agent.resourceUsage[resourceType] || 0),
+            : agent.resourceUsage[resourceType] || 0,
       }));
 
       let allocations: {
@@ -1208,11 +1210,15 @@ export const fairnessOptimizationTool: ToolDefinition<
             0,
           );
           allocations = agentRequests.map((a) => {
-            const allocated = totalRequested > 0 ? Math.floor((a.requested / totalRequested) * available) : 0;
+            const allocated =
+              totalRequested > 0
+                ? Math.floor((a.requested / totalRequested) * available)
+                : 0;
             return {
               agentId: a.id,
               allocated,
-              fairnessScore: a.requested > 0 ? allocated / (a.requested || 1) : 1,
+              fairnessScore:
+                a.requested > 0 ? allocated / (a.requested || 1) : 1,
             };
           });
           break;
@@ -1225,16 +1231,20 @@ export const fairnessOptimizationTool: ToolDefinition<
             0,
           );
           allocations = agentRequests.map((a) => {
-            const allocated = totalHistorical > 0
-              ? Math.min(
-                  a.requested,
-                  Math.floor((a.historicalAvg / totalHistorical) * available),
-                )
-              : 0;
+            const allocated =
+              totalHistorical > 0
+                ? Math.min(
+                    a.requested,
+                    Math.floor((a.historicalAvg / totalHistorical) * available),
+                  )
+                : 0;
             return {
               agentId: a.id,
               allocated,
-              fairnessScore: a.historicalAvg > 0 ? Math.min(1, allocated / (a.requested || 1)) : 1,
+              fairnessScore:
+                a.historicalAvg > 0
+                  ? Math.min(1, allocated / (a.requested || 1))
+                  : 1,
             };
           });
           break;
