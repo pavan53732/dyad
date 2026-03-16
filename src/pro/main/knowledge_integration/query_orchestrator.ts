@@ -1,9 +1,11 @@
 /**
  * Query Orchestrator - Unified Knowledge Query Interface
- * 
+ *
  * Provides a single entry point for querying all knowledge sources.
  * Orchestrates queries across Code Graph, Vector Memory, Dependency Graph,
  * Architecture Repository, and Reasoning Infrastructure.
+ *
+ * Evolution Cycle 2: Wired to actual source connectors
  */
 
 import type {
@@ -14,8 +16,12 @@ import type {
   KnowledgeInsight,
   SourceQueryResult,
   KnowledgeIntegrationConfig,
-  DEFAULT_KIL_CONFIG,
 } from "./types";
+import { DEFAULT_KIL_CONFIG } from "./types";
+import {
+  sourceConnectorRegistry,
+  type SourceConnector,
+} from "./source_connectors";
 
 /**
  * Query Orchestrator
@@ -189,14 +195,11 @@ export class QueryOrchestrator {
   // ============================================================================
 
   private initializeSourceConnectors(): void {
-    // Initialize source connectors
-    // These will be connected to actual modules via dependency injection
-    this.sourceConnectors.set("code_graph", new CodeGraphConnector());
-    this.sourceConnectors.set("vector_memory", new VectorMemoryConnector());
-    this.sourceConnectors.set("dependency_graph", new DependencyGraphConnector());
-    this.sourceConnectors.set("architecture", new ArchitectureConnector());
-    this.sourceConnectors.set("reasoning", new ReasoningConnector());
-    this.sourceConnectors.set("memory", new MemoryConnector());
+    // Wire to actual source connectors from the registry
+    // Evolution Cycle 2: Now uses real connectors instead of stubs
+    for (const connector of sourceConnectorRegistry.getAll()) {
+      this.sourceConnectors.set(connector.source, connector);
+    }
   }
 
   private getDefaultSources(): KnowledgeSource[] {
@@ -537,105 +540,6 @@ export class QueryOrchestrator {
 }
 
 // ============================================================================
-// SOURCE CONNECTORS
-// ============================================================================
-
-/**
- * Base connector interface for knowledge sources
- */
-interface SourceConnector {
-  query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]>;
-  getById?(id: string): Promise<UnifiedKnowledgeEntity | null>;
-  getByPath?(appId: number, path: string): Promise<UnifiedKnowledgeEntity[]>;
-  findSimilar?(entity: UnifiedKnowledgeEntity, options?: { minSimilarity?: number; limit?: number }): Promise<UnifiedKnowledgeEntity[]>;
-}
-
-/**
- * Code Graph Connector
- * Connects to the Knowledge Graph module
- */
-class CodeGraphConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // This would be connected to the actual Knowledge Graph module
-    // For now, return empty array - will be wired in integration phase
-    return [];
-  }
-
-  async getById(id: string): Promise<UnifiedKnowledgeEntity | null> {
-    // Query knowledge graph by ID
-    return null;
-  }
-
-  async getByPath(appId: number, path: string): Promise<UnifiedKnowledgeEntity[]> {
-    // Query knowledge graph by file path
-    return [];
-  }
-}
-
-/**
- * Vector Memory Connector
- * Connects to the Vector Memory module
- */
-class VectorMemoryConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // This would be connected to the actual Vector Memory module
-    return [];
-  }
-
-  async findSimilar(
-    entity: UnifiedKnowledgeEntity,
-    options?: { minSimilarity?: number; limit?: number }
-  ): Promise<UnifiedKnowledgeEntity[]> {
-    // Semantic similarity search using embeddings
-    return [];
-  }
-}
-
-/**
- * Dependency Graph Connector
- * Connects to dependency analysis tools
- */
-class DependencyGraphConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // Query dependency graph
-    return [];
-  }
-}
-
-/**
- * Architecture Connector
- * Connects to architecture decision repository
- */
-class ArchitectureConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // Query architecture decisions
-    return [];
-  }
-}
-
-/**
- * Reasoning Connector
- * Connects to reasoning infrastructure
- */
-class ReasoningConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // Query reasoning traces
-    return [];
-  }
-}
-
-/**
- * Memory Connector
- * Connects to session/memory storage
- */
-class MemoryConnector implements SourceConnector {
-  async query(query: KnowledgeQuery): Promise<UnifiedKnowledgeEntity[]> {
-    // Query memory/state
-    return [];
-  }
-}
-
-// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -651,6 +555,5 @@ interface QueryStats {
   sourceStats: Map<KnowledgeSource, { queries: number; totalTime: number }>;
 }
 
-// Import DEFAULT_KIL_CONFIG from types
-import { DEFAULT_KIL_CONFIG as importedConfig } from "./types";
-const DEFAULT_KIL_CONFIG = importedConfig;
+// Re-export for convenience
+export type { SourceConnector } from "./source_connectors";
