@@ -401,4 +401,4 @@ export type {
   ChunkingOptions,
 };
 
-export { DEFAULT_EMBEDDING_CONFIGS };
+// Note: DEFAULT_EMBEDDING_CONFIGS is already exported inline at definition

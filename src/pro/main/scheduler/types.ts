@@ -531,4 +531,4 @@ export type {
   ExecutionHandler,
 };
 
-export { DEFAULT_RETRY_CONFIGS };
+// Note: DEFAULT_RETRY_CONFIGS is already exported inline at definition

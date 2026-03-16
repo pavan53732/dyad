@@ -939,5 +939,5 @@ export class AgentScheduler {
 // Exports
 // ============================================================================
 
-export { AgentScheduler, DEFAULT_SCHEDULER_CONFIG };
+// Note: AgentScheduler and DEFAULT_SCHEDULER_CONFIG are already exported inline at definition
 export type { SchedulerConfig };

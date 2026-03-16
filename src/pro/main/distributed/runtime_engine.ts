@@ -876,5 +876,5 @@ export class DistributedRuntime {
 // Exports
 // ============================================================================
 
-export { DistributedRuntime, DEFAULT_RUNTIME_CONFIG };
+// Note: DistributedRuntime and DEFAULT_RUNTIME_CONFIG are already exported inline at definition
 export type { DistributedRuntimeConfig };

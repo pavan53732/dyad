@@ -1077,11 +1077,7 @@ export class PipelineOrchestrator {
 // Exports
 // ============================================================================
 
-export {
-  PipelineOrchestrator,
-  DEFAULT_PIPELINE_CONFIG,
-};
-
+// Note: PipelineOrchestrator and DEFAULT_PIPELINE_CONFIG are already exported inline at definition
 export type {
   PipelineConfig,
   PipelineState,

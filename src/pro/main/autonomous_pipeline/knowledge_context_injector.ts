@@ -778,11 +778,7 @@ export function resetKnowledgeContextInjector(): void {
 // Exports
 // ============================================================================
 
-export {
-  KnowledgeContextInjector,
-  DEFAULT_KNOWLEDGE_INJECTION_CONFIG,
-};
-
+// Note: KnowledgeContextInjector and DEFAULT_KNOWLEDGE_INJECTION_CONFIG are already exported inline at definition
 export type {
   KnowledgeInjectionConfig,
   KnowledgeInjectionResult,

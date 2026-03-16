@@ -1047,5 +1047,5 @@ export class PlanningEngine {
 // Exports
 // ============================================================================
 
-export { PlanningEngine, DEFAULT_PLANNING_CONFIG };
+// Note: PlanningEngine and DEFAULT_PLANNING_CONFIG are already exported inline at definition
 export type { PlanningEngineConfig };
