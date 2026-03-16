@@ -10,6 +10,137 @@
 
 ---
 
+# RUNTIME INTEGRATION PHASE
+
+**Date:** March 16, 2026  
+**Status:** ✅ COMPLETED
+
+## Overview
+
+The Runtime Integration Phase connected the isolated autonomous subsystems (Phases 1-5, Evolution Cycles 1-3) to the agent runtime pipeline. Before this phase, approximately 15,446 lines of code existed as isolated infrastructure that was never executed.
+
+## Integration Summary
+
+| Component | Integration Point | Status |
+|-----------|-------------------|--------|
+| Knowledge Integration Layer (KIL) | IPC registration + AgentContext | ✅ Connected |
+| Planning Engine | IPC registration | ✅ Connected |
+| Agent Scheduler | IPC registration | ✅ Connected |
+| Distributed Runtime | IPC registration | ✅ Connected |
+| Knowledge Graph | IPC registration | ✅ Connected |
+| Vector Memory | KIL source connector | ✅ Connected |
+| Learning Repository | Agent context + KIL tools | ✅ Connected |
+| Decision Persistence | Learning repository | ✅ Connected |
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/ipc/ipc_host.ts` | Added IPC handler registrations for all autonomous systems |
+| `src/pro/main/ipc/handlers/local_agent/tools/types.ts` | Extended AgentContext with KIL components |
+| `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` | Instantiated KIL in agent context |
+| `src/pro/main/ipc/handlers/local_agent/tools/kil_query_tool.ts` | NEW: KIL query tools for agent |
+| `src/pro/main/ipc/handlers/local_agent/tool_definitions.ts` | Added KIL tools to registry |
+
+## New IPC Channels Activated
+
+### Knowledge Integration Layer
+- `kil:query` - Unified knowledge queries
+- `kil:query-similar` - Similarity search
+- `kil:get-entity` - Entity retrieval
+- `kil:record-decision` - Decision persistence
+- `kil:get-recommendations` - Learning-based recommendations
+- `kil:build-context` - Context aggregation
+
+### Planning Engine
+- `planner:generate-plan` - Task decomposition
+- `planner:get-plan` - Plan retrieval
+- `planner:start-plan` - Execution control
+
+### Agent Scheduler
+- `scheduler:schedule-task` - Task scheduling
+- `scheduler:get-queue` - Queue management
+- `scheduler:start` / `scheduler:stop` - Lifecycle control
+
+### Distributed Runtime
+- `distributed:spawn-agent` - Agent spawning
+- `distributed:coordinate` - Multi-agent coordination
+
+## New Tools Added to TOOL_DEFINITIONS
+
+| Tool | Purpose |
+|------|---------|
+| `kil_query` | Query unified knowledge across all sources |
+| `kil_query_similar` | Find similar entities across sources |
+| `kil_get_recommendations` | Get learning-based recommendations |
+| `kil_record_decision` | Record architecture decisions |
+| `kil_build_context` | Build aggregated task context |
+
+## Runtime Architecture After Integration
+
+```
+UI
+ ↓
+IPC Host (ipc_host.ts)
+ ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    AUTONOMOUS SYSTEMS                           │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐    │
+│  │ Planner     │  │ Scheduler   │  │ Distributed Runtime │    │
+│  │ (WIRED)     │  │ (WIRED)     │  │ (WIRED)             │    │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘    │
+│         │                │                    │                │
+│         └────────────────┼────────────────────┘                │
+│                          │                                     │
+│                          ▼                                     │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │              Agent Runtime (local_agent_handler)          │ │
+│  │                                                           │ │
+│  │  AgentContext {                                           │ │
+│  │    knowledgeOrchestrator: QueryOrchestrator               │ │
+│  │    learningRepository: LearningRepository                 │ │
+│  │  }                                                        │ │
+│  └───────────────────────────┬───────────────────────────────┘ │
+│                              │                                 │
+│                              ▼                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │              TOOL_DEFINITIONS (400+ tools)               │ │
+│  │  + kil_query, kil_query_similar, kil_get_recommendations │ │
+│  │  + kil_record_decision, kil_build_context                │ │
+│  └───────────────────────────┬───────────────────────────────┘ │
+│                              │                                 │
+│                              ▼                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │           KNOWLEDGE INTEGRATION LAYER (WIRED)            │ │
+│  │  QueryOrchestrator → SourceConnectors → Knowledge Sources│ │
+│  │  LearningRepository → DecisionPersistence → Database     │ │
+│  └───────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Verification Checklist
+
+- [x] KIL modules are imported by runtime modules
+- [x] IPC channels are registered and callable
+- [x] New tools appear inside TOOL_DEFINITIONS
+- [x] Agent context includes knowledgeOrchestrator
+- [x] Agent context includes learningRepository
+- [x] TypeScript compilation passes
+- [x] Lint checks pass (minor warnings only)
+
+## Lines of Code Impact
+
+| Category | Lines |
+|----------|-------|
+| IPC Registration | ~50 |
+| AgentContext Extension | ~70 |
+| KIL Query Tools | ~250 |
+| Context Integration | ~70 |
+| **Total** | **~440** |
+
+---
+
 # DETAILED CATEGORY-BY-CATEGORY BREAKDOWN
 
 ## 1. AI REASONING PIPELINES (Items 1-120)

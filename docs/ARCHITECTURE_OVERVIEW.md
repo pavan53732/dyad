@@ -272,21 +272,77 @@ The Knowledge Integration Layer provides a unified interface for accessing and c
 
 ### 5.4.1 Evolution History
 
-The Knowledge Integration Layer was implemented through a 3-cycle evolution process:
+The Knowledge Integration Layer was implemented through a 4-cycle evolution process:
 
 | Cycle | Improvement | Lines | Date |
 |-------|-------------|-------|------|
 | 1 | Knowledge Integration Layer | 2,703 | March 2026 |
 | 2 | Source Connector Wiring | 1,019 | March 2026 |
 | 3 | Database Persistence | 664 | March 2026 |
-| **TOTAL** | | **4,386** | |
+| 4 | **Runtime Integration** | 518 | March 2026 |
+| **TOTAL** | | **4,904** | |
 
 **Key Achievements:**
 - Unified query interface across all knowledge sources
 - Real source connectors to actual modules
 - Database persistence for continuous learning
+- **Full runtime integration with agent tools**
 - Cross-source entity resolution and deduplication
 - Architecture decision recording with outcome tracking
+
+### 5.4.2 Runtime Integration (Cycle 4)
+
+The final evolution cycle connected all autonomous systems to the agent runtime:
+
+**IPC Handler Registration:**
+```typescript
+// src/ipc/ipc_host.ts
+initKnowledgeIntegrationIpcHandlers();
+initPlannerIpcHandlers();
+initSchedulerIpcHandlers();
+initDistributedIpcHandlers();
+registerKnowledgeGraphHandlers();
+```
+
+**Agent Context Extension:**
+```typescript
+// AgentContext now includes KIL components
+interface AgentContext {
+  knowledgeOrchestrator?: {
+    query: (query, sources?, limit?) => Promise<QueryResult>;
+    findSimilar: (entityId, options?) => Promise<SimilarResult[]>;
+    buildContext: (task, options?) => Promise<BuildContext>;
+  };
+  learningRepository?: {
+    recordDecision: (decision) => Promise<{ id: string }>;
+    getRecommendations: (context) => Promise<Recommendation[]>;
+    updateOutcome: (decisionId, outcome) => Promise<void>;
+  };
+}
+```
+
+**New Tools Added:**
+- `kil_query` - Query unified knowledge across all sources
+- `kil_query_similar` - Find similar entities across sources
+- `kil_get_recommendations` - Get learning-based recommendations
+- `kil_record_decision` - Record architecture decisions
+- `kil_build_context` - Build aggregated task context
+
+### 5.4.3 Active IPC Channels
+
+The following KIL IPC channels are now active:
+
+| Channel | Purpose |
+|---------|---------|
+| `kil:query` | Unified knowledge queries |
+| `kil:query-similar` | Similarity search |
+| `kil:get-entity` | Entity retrieval |
+| `kil:record-decision` | Decision persistence |
+| `kil:get-recommendations` | Learning-based recommendations |
+| `kil:build-context` | Context aggregation |
+| `planner:generate-plan` | Task decomposition |
+| `scheduler:schedule-task` | Task scheduling |
+| `distributed:spawn-agent` | Agent spawning |
 
 ### 5.5 State Management
 

@@ -86,6 +86,16 @@ import {
 } from "@/ipc/handlers/compaction/compaction_handler";
 import { getPostCompactionMessages } from "@/ipc/handlers/compaction/compaction_utils";
 
+// ============================================================================
+// KNOWLEDGE INTEGRATION LAYER IMPORTS (Runtime Integration Phase)
+// These imports connect the KIL subsystems to the agent runtime.
+// ============================================================================
+
+import {
+  QueryOrchestrator,
+  LearningRepository,
+} from "@/pro/main/knowledge_integration";
+
 const logger = log.scope("local_agent_handler");
 const PLANNING_QUESTIONNAIRE_TOOL_NAME = "planning_questionnaire";
 const MAX_TERMINATED_STREAM_RETRIES = 3;
@@ -498,6 +508,16 @@ export async function handleLocalAgentStream(
 
     // Build tool execute context
     const fileEditTracker: FileEditTracker = Object.create(null);
+
+    // ============================================================================
+    // KNOWLEDGE INTEGRATION LAYER INITIALIZATION (Runtime Integration Phase)
+    // These instances are created once per agent session and shared across tools.
+    // They provide unified access to knowledge across all sources.
+    // ============================================================================
+
+    const queryOrchestrator = new QueryOrchestrator();
+    const learningRepository = new LearningRepository();
+
     const ctx: AgentContext = {
       event,
       appId: chat.app.id,
@@ -559,6 +579,96 @@ export async function handleLocalAgentStream(
           todos,
         });
       },
+      // ============================================================================
+      // KNOWLEDGE INTEGRATION LAYER CONTEXT (Runtime Integration Phase)
+      // These provide the agent with unified knowledge access capabilities.
+      // ============================================================================
+      knowledgeOrchestrator: isDyadProEnabled(settings)
+        ? {
+            query: async (query, sources, limit) => {
+              const result = await queryOrchestrator.query({
+                id: `ctx_query_${Date.now()}`,
+                appId: chat.app.id,
+                query,
+                sources: sources as any,
+                limit: limit || 10,
+              });
+              return {
+                success: result.success,
+                entities: result.entities.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  type: e.type,
+                  source: e.source,
+                  filePath: e.filePath,
+                  description: e.description,
+                  metadata: e.metadata,
+                })),
+                error: result.error,
+              };
+            },
+            findSimilar: async (entityId, options) => {
+              const results = await queryOrchestrator.findSimilar(entityId, options as any);
+              return results.map((e) => ({
+                id: e.id,
+                name: e.name,
+                metadata: e.metadata,
+              }));
+            },
+            buildContext: async (task, options) => {
+              const result = await queryOrchestrator.query({
+                id: `ctx_context_${Date.now()}`,
+                appId: chat.app.id,
+                query: task,
+                sources: ["code_graph", "vector_memory", "architecture"],
+                limit: options?.maxEntities || 20,
+              });
+              return {
+                entities: result.entities.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  type: e.type,
+                  source: e.source,
+                  filePath: e.filePath,
+                  description: e.description,
+                })),
+              };
+            },
+          }
+        : undefined,
+      learningRepository: isDyadProEnabled(settings)
+        ? {
+            recordDecision: async (decision) => {
+              const record = await learningRepository.recordDecision({
+                appId: chat.app.id,
+                title: decision.title,
+                type: decision.type as any,
+                context: decision.context as any,
+                alternatives: decision.alternatives.map((a) => ({
+                  name: a.name,
+                  pros: a.pros || [],
+                  cons: a.cons || [],
+                  description: "",
+                })),
+                selectedOption: decision.selectedOption,
+                rationale: decision.rationale,
+                outcome: { status: "pending" },
+                confidence: decision.confidence || 0.8,
+              });
+              return { id: record.id };
+            },
+            getRecommendations: async (context) => {
+              const recs = await learningRepository.getRecommendations(chat.app.id, context as any);
+              return recs.map((r: any) => ({
+                suggestion: typeof r === "string" ? r : JSON.stringify(r),
+                confidence: 0.8,
+              }));
+            },
+            updateOutcome: async (decisionId, outcome) => {
+              await learningRepository.updateOutcome(decisionId, outcome);
+            },
+          }
+        : undefined,
     };
 
     // Build tool set (agent tools + MCP tools)

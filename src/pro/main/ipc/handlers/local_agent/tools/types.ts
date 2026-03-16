@@ -88,6 +88,88 @@ export interface AgentContext {
    * Call this when todos are updated to show them in the chat input area.
    */
   onUpdateTodos: (todos: Todo[]) => void;
+  // ============================================================================
+  // KNOWLEDGE INTEGRATION LAYER (Runtime Integration Phase)
+  // These provide unified access to knowledge across all sources.
+  // ============================================================================
+  /**
+   * Knowledge orchestrator for unified queries across code graph, vector memory,
+   * architecture decisions, and learned patterns.
+   * Available when isDyadPro is true.
+   */
+  knowledgeOrchestrator?: {
+    query: (query: string, sources?: string[], limit?: number) => Promise<{
+      success: boolean;
+      entities: Array<{
+        id: string;
+        name: string;
+        type: string;
+        source: string;
+        filePath?: string;
+        description?: string;
+        metadata: { confidence: number };
+      }>;
+      error?: string;
+    }>;
+    findSimilar: (entityId: string, options?: {
+      sources?: string[];
+      limit?: number;
+      minSimilarity?: number;
+    }) => Promise<Array<{
+      id: string;
+      name: string;
+      metadata: { confidence: number };
+    }>>;
+    buildContext: (task: string, options?: {
+      includeDecisions?: boolean;
+      includePatterns?: boolean;
+      maxEntities?: number;
+    }) => Promise<{
+      entities: Array<{
+        id: string;
+        name: string;
+        type: string;
+        source: string;
+        filePath?: string;
+        description?: string;
+      }>;
+      recommendations?: string[];
+    }>;
+  };
+  /**
+   * Learning repository for recording architecture decisions and retrieving
+   * recommendations based on past successful patterns.
+   * Available when isDyadPro is true.
+   */
+  learningRepository?: {
+    recordDecision: (decision: {
+      title: string;
+      type: string;
+      context: {
+        problem: string;
+        constraints?: string[];
+        goals?: string[];
+        relevantPaths?: string[];
+      };
+      alternatives: Array<{
+        name: string;
+        pros?: string[];
+        cons?: string[];
+      }>;
+      selectedOption: string;
+      rationale: string;
+      confidence?: number;
+    }) => Promise<{ id: string }>;
+    getRecommendations: (context: {
+      problem: string;
+      constraints?: string[];
+      goals?: string[];
+    }) => Promise<Array<{ suggestion: string; confidence: number }>>;
+    updateOutcome: (decisionId: string, outcome: {
+      status: "success" | "partial" | "failure";
+      lessonsLearned?: string[];
+    }) => Promise<void>;
+  };
 }
 
 // ============================================================================

@@ -411,6 +411,22 @@ import {
 } from "./tools/types";
 import { AgentToolConsent } from "@/lib/schemas";
 import { getSupabaseClientCode } from "@/supabase_admin/supabase_context";
+
+// ============================================================================
+// KNOWLEDGE INTEGRATION LAYER TOOLS (Runtime Integration Phase)
+// These tools provide unified access to the Knowledge Integration Layer,
+// enabling the agent to query across code graph, vector memory, architecture
+// decisions, and learned patterns.
+// ============================================================================
+
+import {
+  kilQueryTool,
+  kilQuerySimilarTool,
+  kilGetRecommendationsTool,
+  kilRecordDecisionTool,
+  kilBuildContextTool,
+} from "./tools/kil_query_tool";
+
 // Combined tool definitions array
 export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   writeFileTool,
@@ -816,6 +832,17 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   // Code Knowledge Infrastructure (Capabilities 321-330)
   codeKnowledgeGraphBuilderTool,
   codeIndexingPipelineTool,
+  // ============================================================================
+  // KNOWLEDGE INTEGRATION LAYER TOOLS (Runtime Integration Phase)
+  // These tools provide unified access to the Knowledge Integration Layer,
+  // enabling the agent to query across code graph, vector memory, architecture
+  // decisions, and learned patterns.
+  // ============================================================================
+  kilQueryTool,
+  kilQuerySimilarTool,
+  kilGetRecommendationsTool,
+  kilRecordDecisionTool,
+  kilBuildContextTool,
 ];
 // ============================================================================
 // Agent Tool Name Type (derived from TOOL_DEFINITIONS)

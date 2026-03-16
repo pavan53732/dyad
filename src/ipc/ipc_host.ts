@@ -40,6 +40,18 @@ import { registerFreeAgentQuotaHandlers } from "./handlers/free_agent_quota_hand
 import { registerPlanHandlers } from "./handlers/plan_handlers";
 import { registerAiSuggestionsHandlers } from "./handlers/ai_suggestions_handler";
 
+// ============================================================================
+// AUTONOMOUS SYSTEMS INTEGRATION (Phase 1-5 + Evolution Cycles 1-3)
+// These handlers connect the Knowledge Integration Layer, Planning Engine,
+// Agent Scheduler, Distributed Runtime, and Knowledge Graph to the IPC bus.
+// ============================================================================
+
+import { initKnowledgeIntegrationIpcHandlers } from "../pro/main/knowledge_integration";
+import { initPlannerIpcHandlers } from "../pro/main/planner";
+import { initSchedulerIpcHandlers } from "../pro/main/scheduler";
+import { initDistributedIpcHandlers } from "../pro/main/distributed";
+import { registerKnowledgeGraphHandlers } from "../pro/main/knowledge_graph/ipc_handlers";
+
 export function registerIpcHandlers() {
   // Register all IPC handlers by category
   registerAppHandlers();
@@ -83,4 +95,25 @@ export function registerIpcHandlers() {
   registerFreeAgentQuotaHandlers();
   registerPlanHandlers();
   registerAiSuggestionsHandlers();
+
+  // ============================================================================
+  // AUTONOMOUS SYSTEMS REGISTRATION (Runtime Integration Phase)
+  // These calls connect the isolated autonomous subsystems to the IPC bus,
+  // making them reachable from the renderer process and agent runtime.
+  // ============================================================================
+
+  // Knowledge Integration Layer (KIL) - Unified knowledge queries
+  initKnowledgeIntegrationIpcHandlers();
+
+  // Planning Engine - Task decomposition and execution planning
+  initPlannerIpcHandlers();
+
+  // Agent Scheduler - Priority-based task execution
+  initSchedulerIpcHandlers();
+
+  // Distributed Runtime - Multi-agent coordination
+  initDistributedIpcHandlers();
+
+  // Knowledge Graph - Code entity relationships
+  registerKnowledgeGraphHandlers();
 }
