@@ -221,7 +221,7 @@ Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-ag
 
 ---
 
-## Knowledge Integration Layer (Evolution Cycle 1)
+## Knowledge Integration Layer (Evolution Complete)
 
 Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowledge access across all modules:
 
@@ -231,7 +231,18 @@ Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowl
 | Query Orchestrator | `query_orchestrator.ts` | Unified query interface across all knowledge sources |
 | Knowledge Aggregator | `knowledge_aggregator.ts` | Cross-module data fusion and context enrichment |
 | Learning Repository | `learning_repository.ts` | Architecture decision recording and pattern learning |
+| Source Connectors | `source_connectors.ts` | Real connectors to actual modules |
+| Entity Mappers | `entity_mappers.ts` | Type mapping utilities |
+| Decision Persistence | `decision_persistence.ts` | Database operations for decisions |
 | IPC | `ipc_handlers.ts` | Renderer communication |
+
+**Evolution History:**
+| Cycle | Improvement | Lines | Status |
+|-------|-------------|-------|--------|
+| 1 | Knowledge Integration Layer | 2,703 | ✅ Complete |
+| 2 | Source Connector Wiring | 1,019 | ✅ Complete |
+| 3 | Database Persistence | 664 | ✅ Complete |
+| **TOTAL** | | **4,386** | **✅** |
 
 **Key Features:**
 - Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
