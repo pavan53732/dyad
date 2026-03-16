@@ -243,19 +243,28 @@ async function executeAppLocalNode({
   // when they check `typeof localStorage !== 'undefined'` (which passes) and then call
   // localStorage.getItem() (which fails).
   //
-  // We fix this by creating a cleanup script in node_modules and using NODE_OPTIONS
-  // to preload it. This ensures the cleanup runs in ALL Node processes, including those
-  // spawned by pnpm/npm. The script deletes global.localStorage so that
-  // `typeof localStorage === 'undefined'` returns true, which is the expected behavior
-  // for SSR environments.
+  // Node.js v24+ blocks the -r/--require flag in NODE_OPTIONS for security reasons.
+  // Instead, we create a wrapper script that deletes global.localStorage before spawning.
+  const wrapperScriptPath = path.join(appPath, ".dyad-wrapper.cjs");
+  const wrapperScriptContent = `// Dyad wrapper script - deletes broken localStorage then spawns the app
+// Delete broken localStorage before running the app
+delete global.localStorage;
 
-  // Create a cleanup script that deletes global.localStorage
-  const cleanupScriptPath = path.join(
-    appPath,
-    "node_modules",
-    ".dyad-localstorage-cleanup.cjs",
-  );
-  const cleanupScriptContent = `// Dyad auto-generated cleanup script\ndelete global.localStorage;\n`;
+// Get the original command from arguments
+const args = process.argv.slice(2);
+const { spawn } = require('child_process');
+
+// Extract command and its arguments
+const command = args[0];
+const commandArgs = args.slice(1);
+
+const child = spawn(command, commandArgs, { 
+  stdio: 'inherit',
+  env: { ...process.env },
+  shell: true,
+});
+child.on('exit', process.exit);
+`;
 
   try {
     // Ensure node_modules exists
@@ -264,32 +273,28 @@ async function executeAppLocalNode({
       await fsPromises.mkdir(nodeModulesPath, { recursive: true });
     }
 
-    // Write the cleanup script
+    // Write the wrapper script that deletes localStorage then spawns the child process
     await fsPromises.writeFile(
-      cleanupScriptPath,
-      cleanupScriptContent,
+      wrapperScriptPath,
+      wrapperScriptContent,
       "utf-8",
     );
-    logger.debug(`Created localStorage cleanup script at ${cleanupScriptPath}`);
+    logger.debug(`Created wrapper script at ${wrapperScriptPath}`);
   } catch (error) {
     // If we can't create the cleanup script, log a warning but continue
     logger.warn(`Failed to create localStorage cleanup script: ${error}`);
   }
 
-  // Use NODE_OPTIONS to preload the cleanup script in all Node processes.
-  // The -r flag tells Node to require the cleanup script before anything else.
-  // This works for pnpm, npm, and any other tools that spawn Node processes.
-  const nodeOptions = `-r "${cleanupScriptPath}"`;
-
-  const spawnedProcess = spawn(command, [], {
+  // Spawn using node with the wrapper script
+  // The wrapper will delete global.localStorage then run the actual command
+  const spawnedProcess = spawn("node", [wrapperScriptPath, command], {
     cwd: appPath,
     shell: true,
     stdio: "pipe", // Ensure stdio is piped so we can capture output/errors and detect close
     detached: false, // Ensure child process is attached to the main process lifecycle unless explicitly backgrounded
     env: {
       ...process.env,
-      // Preload cleanup script in all Node processes
-      NODE_OPTIONS: nodeOptions,
+      // Don't pass NODE_OPTIONS - it may contain -r which is blocked in Node 24+
     },
   });
 
