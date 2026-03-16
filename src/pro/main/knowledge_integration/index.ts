@@ -99,6 +99,15 @@ export {
   sortByRelevance,
 } from "./entity_mappers";
 
+// Decision Persistence (Evolution Cycle 3)
+export {
+  decisionPersistence,
+  DecisionPersistence,
+  type LoadDecisionsOptions,
+  type PersistedPattern,
+  type DecisionStats,
+} from "./decision_persistence";
+
 // IPC Handlers
 export {
   KnowledgeIntegrationIpcHandlers,

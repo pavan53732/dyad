@@ -1,8 +1,10 @@
 /**
  * Learning Repository - Architecture Decision Storage and Learning
- * 
+ *
  * Stores architecture decisions with outcomes, enables learning from past
  * decisions through similarity search and outcome analysis.
+ *
+ * Evolution Cycle 3: Wired to database persistence layer
  */
 
 import { db as _db } from "@/db";
@@ -13,6 +15,7 @@ import type {
   DecisionOutcome,
 } from "./types";
 import { randomUUID } from "crypto";
+import { decisionPersistence } from "./decision_persistence";
 
 /**
  * Learning Repository
@@ -290,16 +293,14 @@ export class LearningRepository {
   // PRIVATE METHODS
   // ============================================================================
 
-  private async persistDecision(_decision: ArchitectureDecisionRecord): Promise<void> {
-    // This would persist to the database
-    // For now, we'll use the cache only
-    // TODO: Implement database persistence when schema is ready
+  private async persistDecision(decision: ArchitectureDecisionRecord): Promise<void> {
+    // Evolution Cycle 3: Wire to actual database persistence
+    await decisionPersistence.persistDecision(decision);
   }
 
-  private async loadDecision(_id: string): Promise<ArchitectureDecisionRecord | null> {
-    // This would load from the database
-    // For now, return null
-    return null;
+  private async loadDecision(id: string): Promise<ArchitectureDecisionRecord | null> {
+    // Evolution Cycle 3: Load from actual database
+    return await decisionPersistence.loadDecision(id);
   }
 
   private async updateSimilarityIndex(decision: ArchitectureDecisionRecord): Promise<void> {
