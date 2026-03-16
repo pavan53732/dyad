@@ -1,6 +1,6 @@
 /**
  * Distributed Agent Runtime - Type Definitions
- * 
+ *
  * Defines types for distributed agent execution, communication,
  * coordination, and fault tolerance.
  */
@@ -13,36 +13,36 @@
  * Agent status in the distributed system
  */
 export type AgentStatus =
-  | "initializing"    // Agent is being created
-  | "ready"          // Agent is ready to accept work
-  | "busy"           // Agent is executing a task
-  | "paused"         // Agent is paused
-  | "error"          // Agent is in error state
-  | "terminated"     // Agent has been terminated
-  | "migrating"      // Agent is being migrated to another node
-  | "recovering";    // Agent is recovering from failure
+  | "initializing" // Agent is being created
+  | "ready" // Agent is ready to accept work
+  | "busy" // Agent is executing a task
+  | "paused" // Agent is paused
+  | "error" // Agent is in error state
+  | "terminated" // Agent has been terminated
+  | "migrating" // Agent is being migrated to another node
+  | "recovering"; // Agent is recovering from failure
 
 /**
  * Agent capability type
  */
 export type AgentCapability =
-  | "code_generation"    // Can generate code
-  | "code_analysis"      // Can analyze code
-  | "testing"           // Can run tests
-  | "planning"          // Can plan tasks
-  | "coordination"      // Can coordinate other agents
-  | "monitoring"        // Can monitor execution
-  | "specialized";      // Specialized capability
+  | "code_generation" // Can generate code
+  | "code_analysis" // Can analyze code
+  | "testing" // Can run tests
+  | "planning" // Can plan tasks
+  | "coordination" // Can coordinate other agents
+  | "monitoring" // Can monitor execution
+  | "specialized"; // Specialized capability
 
 /**
  * Agent role in the distributed system
  */
 export type AgentRole =
-  | "worker"         // Executes tasks
-  | "coordinator"    // Coordinates workers
-  | "specialist"     // Specialized tasks
-  | "supervisor"     // Supervises other agents
-  | "monitor";       // Monitors system health
+  | "worker" // Executes tasks
+  | "coordinator" // Coordinates workers
+  | "specialist" // Specialized tasks
+  | "supervisor" // Supervises other agents
+  | "monitor"; // Monitors system health
 
 /**
  * Distributed agent instance
@@ -186,12 +186,12 @@ export interface HealthIssue {
  * Node status in the distributed cluster
  */
 export type NodeStatus =
-  | "joining"       // Node is joining the cluster
-  | "active"        // Node is active and accepting work
-  | "draining"      // Node is draining tasks
-  | "leaving"       // Node is leaving the cluster
-  | "offline"       // Node is offline
-  | "error";        // Node is in error state
+  | "joining" // Node is joining the cluster
+  | "active" // Node is active and accepting work
+  | "draining" // Node is draining tasks
+  | "leaving" // Node is leaving the cluster
+  | "offline" // Node is offline
+  | "error"; // Node is in error state
 
 /**
  * Distributed node instance
@@ -301,19 +301,19 @@ export interface NodeMetadata {
  * Message types for inter-agent communication
  */
 export type MessageType =
-  | "task_assignment"   // Assign task to agent
-  | "task_result"       // Task result from agent
-  | "task_cancel"       // Cancel task
-  | "heartbeat"         // Heartbeat ping
-  | "heartbeat_ack"     // Heartbeat acknowledgment
-  | "status_update"     // Status update
-  | "error_report"      // Error report
-  | "coordination"      // Coordination message
-  | "knowledge_share"   // Knowledge sharing
-  | "checkpoint"        // Checkpoint data
-  | "recovery"          // Recovery message
-  | "migration"         // Migration message
-  | "broadcast";        // Broadcast message
+  | "task_assignment" // Assign task to agent
+  | "task_result" // Task result from agent
+  | "task_cancel" // Cancel task
+  | "heartbeat" // Heartbeat ping
+  | "heartbeat_ack" // Heartbeat acknowledgment
+  | "status_update" // Status update
+  | "error_report" // Error report
+  | "coordination" // Coordination message
+  | "knowledge_share" // Knowledge sharing
+  | "checkpoint" // Checkpoint data
+  | "recovery" // Recovery message
+  | "migration" // Migration message
+  | "broadcast"; // Broadcast message
 
 /**
  * Distributed message
@@ -373,11 +373,11 @@ export interface CommunicationChannel {
  * Coordination type
  */
 export type CoordinationType =
-  | "leader_election"    // Elect a leader
-  | "consensus"          // Reach consensus
-  | "barrier"            // Synchronization barrier
-  | "lock"               // Distributed lock
-  | "semaphore"          // Distributed semaphore
+  | "leader_election" // Elect a leader
+  | "consensus" // Reach consensus
+  | "barrier" // Synchronization barrier
+  | "lock" // Distributed lock
+  | "semaphore" // Distributed semaphore
   | "task_distribution"; // Distribute tasks
 
 /**
@@ -446,12 +446,12 @@ export interface DistributedLock {
  * Failure type
  */
 export type FailureType =
-  | "agent_crash"       // Agent crashed
-  | "node_failure"      // Node failure
+  | "agent_crash" // Agent crashed
+  | "node_failure" // Node failure
   | "network_partition" // Network partition
-  | "timeout"           // Timeout
+  | "timeout" // Timeout
   | "resource_exhausted" // Resources exhausted
-  | "error_threshold";  // Error threshold exceeded
+  | "error_threshold"; // Error threshold exceeded
 
 /**
  * Failure event
@@ -521,12 +521,12 @@ export interface Checkpoint {
  * Task distribution strategy
  */
 export type DistributionStrategy =
-  | "round_robin"       // Round-robin distribution
-  | "least_loaded"      // Distribute to least loaded agent
-  | "capability_match"  // Match by capability
-  | "affinity"          // Use affinity rules
-  | "random"            // Random distribution
-  | "custom";           // Custom distribution
+  | "round_robin" // Round-robin distribution
+  | "least_loaded" // Distribute to least loaded agent
+  | "capability_match" // Match by capability
+  | "affinity" // Use affinity rules
+  | "random" // Random distribution
+  | "custom"; // Custom distribution
 
 /**
  * Task distribution result
@@ -639,7 +639,7 @@ export type {
   ResourceUsage,
   AgentHealth,
   HealthIssue,
-  
+
   // Node types
   NodeStatus,
   DistributedNode,
@@ -647,32 +647,32 @@ export type {
   NodeCapacity,
   NodeUsage,
   NodeMetadata,
-  
+
   // Communication types
   MessageType,
   DistributedMessage,
   CommunicationChannel,
-  
+
   // Coordination types
   CoordinationType,
   CoordinationRequest,
   CoordinationResponse,
   DistributedLock,
-  
+
   // Fault tolerance types
   FailureType,
   FailureEvent,
   RecoveryAction,
   Checkpoint,
-  
+
   // Distribution types
   DistributionStrategy,
   DistributionResult,
   AffinityRule,
-  
+
   // Statistics types
   RuntimeStats,
-  
+
   // Callback types
   DistributedCallbacks,
 };

@@ -1,6 +1,6 @@
 /**
  * Autonomous Planning Engine - IPC Handlers
- * 
+ *
  * Provides IPC interface for renderer process to interact with the planning engine.
  */
 
@@ -93,7 +93,8 @@ export interface TaskOutputRequest {
  */
 export class PlannerIpcHandlers {
   private engines: Map<number, PlanningEngine> = new Map();
-  private eventListeners: Map<string, Set<(event: PlanningEvent) => void>> = new Map();
+  private eventListeners: Map<string, Set<(event: PlanningEvent) => void>> =
+    new Map();
 
   constructor() {
     this.registerHandlers();
@@ -105,15 +106,30 @@ export class PlannerIpcHandlers {
   private getEngine(appId: number): PlanningEngine {
     if (!this.engines.has(appId)) {
       const engine = new PlanningEngine(DEFAULT_PLANNING_CONFIG, {
-        onPlanCreated: (plan) => this.handlePlanEvent(plan.id, "plan_created", plan),
+        onPlanCreated: (plan) =>
+          this.handlePlanEvent(plan.id, "plan_created", plan),
         onPlanStatusChanged: (plan, status) =>
-          this.handlePlanEvent(plan.id, `plan_${status}` as PlanningEvent["type"], plan),
-        onGoalCreated: (goal) => this.handleGoalEvent(goal.id, "goal_created", goal),
+          this.handlePlanEvent(
+            plan.id,
+            `plan_${status}` as PlanningEvent["type"],
+            plan,
+          ),
+        onGoalCreated: (goal) =>
+          this.handleGoalEvent(goal.id, "goal_created", goal),
         onGoalStatusChanged: (goal, status) =>
-          this.handleGoalEvent(goal.id, `goal_${status}` as PlanningEvent["type"], goal),
-        onTaskCreated: (task) => this.handleTaskEvent(task.id, "task_created", task),
+          this.handleGoalEvent(
+            goal.id,
+            `goal_${status}` as PlanningEvent["type"],
+            goal,
+          ),
+        onTaskCreated: (task) =>
+          this.handleTaskEvent(task.id, "task_created", task),
         onTaskStatusChanged: (task, status) =>
-          this.handleTaskEvent(task.id, `task_${status}` as PlanningEvent["type"], task),
+          this.handleTaskEvent(
+            task.id,
+            `task_${status}` as PlanningEvent["type"],
+            task,
+          ),
       });
       this.engines.set(appId, engine);
     }
@@ -125,22 +141,33 @@ export class PlannerIpcHandlers {
    */
   private registerHandlers(): void {
     // Plan operations
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GENERATE_PLAN, async (_, req: GeneratePlanRequest) => {
-      try {
-        const engine = this.getEngine(req.context.appId);
-        const result = await engine.generatePlan(req.request, req.context, req.options);
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GENERATE_PLAN,
+      async (_, req: GeneratePlanRequest) => {
+        try {
+          const engine = this.getEngine(req.context.appId);
+          const result = await engine.generatePlan(
+            req.request,
+            req.context,
+            req.options,
+          );
 
-        // Persist the plan
-        await planPersistence.saveCompletePlan(result.plan, result.goals, result.tasks);
+          // Persist the plan
+          await planPersistence.saveCompletePlan(
+            result.plan,
+            result.goals,
+            result.tasks,
+          );
 
-        return { success: true, result } as GeneratePlanResponse;
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        } as GeneratePlanResponse;
-      }
-    });
+          return { success: true, result } as GeneratePlanResponse;
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          } as GeneratePlanResponse;
+        }
+      },
+    );
 
     ipcMain.handle(PLANNER_IPC_CHANNELS.GET_PLAN, async (_, planId: string) => {
       try {
@@ -154,54 +181,66 @@ export class PlannerIpcHandlers {
       }
     });
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_PLANS_FOR_APP, async (_, appId: number) => {
-      try {
-        const plans = await planPersistence.getPlansForApp(appId);
-        return { success: true, plans };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_PLANS_FOR_APP,
+      async (_, appId: number) => {
+        try {
+          const plans = await planPersistence.getPlansForApp(appId);
+          return { success: true, plans };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_ACTIVE_PLANS, async (_, appId: number) => {
-      try {
-        const plans = await planPersistence.getActivePlansForApp(appId);
-        return { success: true, plans };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_ACTIVE_PLANS,
+      async (_, appId: number) => {
+        try {
+          const plans = await planPersistence.getActivePlansForApp(appId);
+          return { success: true, plans };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.UPDATE_PLAN_STATUS, async (_, req: UpdateStatusRequest) => {
-      try {
-        await planPersistence.updatePlanStatus(req.id, req.status);
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.UPDATE_PLAN_STATUS,
+      async (_, req: UpdateStatusRequest) => {
+        try {
+          await planPersistence.updatePlanStatus(req.id, req.status);
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.DELETE_PLAN, async (_, planId: string) => {
-      try {
-        await planPersistence.deletePlan(planId);
-        this.engines.delete(parseInt(planId, 10)); // Clean up engine if needed
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.DELETE_PLAN,
+      async (_, planId: string) => {
+        try {
+          await planPersistence.deletePlan(planId);
+          this.engines.delete(parseInt(planId, 10)); // Clean up engine if needed
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
     // Goal operations
     ipcMain.handle(PLANNER_IPC_CHANNELS.GET_GOAL, async (_, goalId: string) => {
@@ -216,29 +255,35 @@ export class PlannerIpcHandlers {
       }
     });
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_GOALS_FOR_PLAN, async (_, planId: string) => {
-      try {
-        const goals = await planPersistence.getGoalsForPlan(planId);
-        return { success: true, goals };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_GOALS_FOR_PLAN,
+      async (_, planId: string) => {
+        try {
+          const goals = await planPersistence.getGoalsForPlan(planId);
+          return { success: true, goals };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.UPDATE_GOAL_STATUS, async (_, req: UpdateStatusRequest) => {
-      try {
-        await planPersistence.updateGoalStatus(req.id, req.status);
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.UPDATE_GOAL_STATUS,
+      async (_, req: UpdateStatusRequest) => {
+        try {
+          await planPersistence.updateGoalStatus(req.id, req.status);
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
 
     // Task operations
     ipcMain.handle(PLANNER_IPC_CHANNELS.GET_TASK, async (_, taskId: string) => {
@@ -253,81 +298,100 @@ export class PlannerIpcHandlers {
       }
     });
 
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_TASKS_FOR_GOAL, async (_, goalId: string) => {
-      try {
-        const tasks = await planPersistence.getTasksForGoal(goalId);
-        return { success: true, tasks };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
-
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_TASKS_FOR_PLAN, async (_, planId: string) => {
-      try {
-        const tasks = await planPersistence.getTasksForPlan(planId);
-        return { success: true, tasks };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
-
-    ipcMain.handle(PLANNER_IPC_CHANNELS.GET_READY_TASKS, async (_, planId: string) => {
-      try {
-        const loaded = await planPersistence.loadCompletePlan(planId);
-        if (!loaded) {
-          return { success: false, error: "Plan not found" };
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_TASKS_FOR_GOAL,
+      async (_, goalId: string) => {
+        try {
+          const tasks = await planPersistence.getTasksForGoal(goalId);
+          return { success: true, tasks };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
         }
+      },
+    );
 
-        const engine = this.getEngine(loaded.plan.appId);
-        engine.loadPlan(loaded.plan, loaded.goals, loaded.tasks);
-        const readyTasks = engine.getReadyTasks(planId);
-
-        return { success: true, tasks: readyTasks };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
-
-    ipcMain.handle(PLANNER_IPC_CHANNELS.UPDATE_TASK_STATUS, async (_, req: UpdateStatusRequest) => {
-      try {
-        await planPersistence.updateTaskStatus(req.id, req.status);
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
-
-    ipcMain.handle(PLANNER_IPC_CHANNELS.UPDATE_TASK_OUTPUT, async (_, req: TaskOutputRequest) => {
-      try {
-        if (req.output) {
-          await planPersistence.updateTaskOutput(req.taskId, req.output);
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_TASKS_FOR_PLAN,
+      async (_, planId: string) => {
+        try {
+          const tasks = await planPersistence.getTasksForPlan(planId);
+          return { success: true, tasks };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
         }
-        return { success: true };
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    });
+      },
+    );
+
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.GET_READY_TASKS,
+      async (_, planId: string) => {
+        try {
+          const loaded = await planPersistence.loadCompletePlan(planId);
+          if (!loaded) {
+            return { success: false, error: "Plan not found" };
+          }
+
+          const engine = this.getEngine(loaded.plan.appId);
+          engine.loadPlan(loaded.plan, loaded.goals, loaded.tasks);
+          const readyTasks = engine.getReadyTasks(planId);
+
+          return { success: true, tasks: readyTasks };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
+
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.UPDATE_TASK_STATUS,
+      async (_, req: UpdateStatusRequest) => {
+        try {
+          await planPersistence.updateTaskStatus(req.id, req.status);
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
+
+    ipcMain.handle(
+      PLANNER_IPC_CHANNELS.UPDATE_TASK_OUTPUT,
+      async (_, req: TaskOutputRequest) => {
+        try {
+          if (req.output) {
+            await planPersistence.updateTaskOutput(req.taskId, req.output);
+          }
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+        }
+      },
+    );
   }
 
   /**
    * Handle plan event
    */
-  private handlePlanEvent(planId: string, type: PlanningEvent["type"], data: unknown): void {
+  private handlePlanEvent(
+    planId: string,
+    type: PlanningEvent["type"],
+    data: unknown,
+  ): void {
     const event: PlanningEvent = {
       type,
       planId,
@@ -341,7 +405,11 @@ export class PlannerIpcHandlers {
   /**
    * Handle goal event
    */
-  private handleGoalEvent(goalId: string, type: PlanningEvent["type"], data: unknown): void {
+  private handleGoalEvent(
+    goalId: string,
+    type: PlanningEvent["type"],
+    data: unknown,
+  ): void {
     const event: PlanningEvent = {
       type,
       goalId,
@@ -355,7 +423,11 @@ export class PlannerIpcHandlers {
   /**
    * Handle task event
    */
-  private handleTaskEvent(taskId: string, type: PlanningEvent["type"], data: unknown): void {
+  private handleTaskEvent(
+    taskId: string,
+    type: PlanningEvent["type"],
+    data: unknown,
+  ): void {
     const event: PlanningEvent = {
       type,
       taskId,
@@ -382,7 +454,10 @@ export class PlannerIpcHandlers {
   /**
    * Subscribe to plan events
    */
-  subscribe(planId: string, callback: (event: PlanningEvent) => void): () => void {
+  subscribe(
+    planId: string,
+    callback: (event: PlanningEvent) => void,
+  ): () => void {
     if (!this.eventListeners.has(planId)) {
       this.eventListeners.set(planId, new Set());
     }

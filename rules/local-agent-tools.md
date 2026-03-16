@@ -17,14 +17,14 @@ The `unlimited_context_memory` tool provides persistent memory that survives acr
 
 ### Actions
 
-| Action | Description | modifiesState |
-|--------|-------------|---------------|
-| `remember` | Store content in long-term memory | Yes |
-| `recall` | Retrieve relevant memories using semantic search | No |
-| `build_context` | Build optimized context for a query | No |
-| `get_stats` | Get memory statistics | No |
-| `cleanup` | Remove old memories | Yes |
-| `forget` | Remove specific memories by query | Yes |
+| Action          | Description                                      | modifiesState |
+| --------------- | ------------------------------------------------ | ------------- |
+| `remember`      | Store content in long-term memory                | Yes           |
+| `recall`        | Retrieve relevant memories using semantic search | No            |
+| `build_context` | Build optimized context for a query              | No            |
+| `get_stats`     | Get memory statistics                            | No            |
+| `cleanup`       | Remove old memories                              | Yes           |
+| `forget`        | Remove specific memories by query                | Yes           |
 
 ### Memory Types
 

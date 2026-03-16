@@ -59,7 +59,7 @@ export interface SourceConnector {
    */
   findSimilar?(
     entity: UnifiedKnowledgeEntity,
-    options?: { minSimilarity?: number; limit?: number }
+    options?: { minSimilarity?: number; limit?: number },
   ): Promise<UnifiedKnowledgeEntity[]>;
 
   /**
@@ -85,14 +85,20 @@ export class CodeGraphSourceConnector implements SourceConnector {
     const { appId, query: queryString, entityTypes, limit = 50 } = query;
 
     // Map entity types to node types
-    const nodeTypes = mapEntityTypesToNodeTypes(entityTypes) as KnowledgeNodeType[];
+    const nodeTypes = mapEntityTypesToNodeTypes(
+      entityTypes,
+    ) as KnowledgeNodeType[];
 
     try {
       // Use the query engine for name-based search
-      const result = await graphQueryEngine.findNodesByName(appId, queryString, {
-        limit,
-        types: nodeTypes,
-      });
+      const result = await graphQueryEngine.findNodesByName(
+        appId,
+        queryString,
+        {
+          limit,
+          types: nodeTypes,
+        },
+      );
 
       // Convert to unified entities
       const entities = mapNodesToEntities(result.items);
@@ -117,7 +123,10 @@ export class CodeGraphSourceConnector implements SourceConnector {
     }
   }
 
-  async getByPath(appId: number, path: string): Promise<UnifiedKnowledgeEntity[]> {
+  async getByPath(
+    appId: number,
+    path: string,
+  ): Promise<UnifiedKnowledgeEntity[]> {
     try {
       const nodes = await graphQueryEngine.findNodesInFile(appId, path);
       return mapNodesToEntities(nodes);
@@ -129,7 +138,7 @@ export class CodeGraphSourceConnector implements SourceConnector {
 
   async findSimilar(
     entity: UnifiedKnowledgeEntity,
-    options?: { minSimilarity?: number; limit?: number }
+    options?: { minSimilarity?: number; limit?: number },
   ): Promise<UnifiedKnowledgeEntity[]> {
     const limit = options?.limit || 10;
 
@@ -149,8 +158,8 @@ export class CodeGraphSourceConnector implements SourceConnector {
       const relatedNodes = [...callers, ...callees];
       const uniqueNodes = relatedNodes.filter(
         (node, index, self) =>
-          index === self.findIndex(n => n.id === node.id) &&
-          node.id !== nodeId
+          index === self.findIndex((n) => n.id === node.id) &&
+          node.id !== nodeId,
       );
 
       return mapNodesToEntities(uniqueNodes.slice(0, limit));
@@ -172,7 +181,10 @@ export class CodeGraphSourceConnector implements SourceConnector {
   /**
    * Get callers of a function/class
    */
-  async getCallers(entityId: string, options?: { recursive?: boolean }): Promise<UnifiedKnowledgeEntity[]> {
+  async getCallers(
+    entityId: string,
+    options?: { recursive?: boolean },
+  ): Promise<UnifiedKnowledgeEntity[]> {
     const nodeId = entityId.replace(/^kg:/, "");
     const callers = await graphQueryEngine.findCallers(nodeId, options);
     return mapNodesToEntities(callers);
@@ -181,7 +193,10 @@ export class CodeGraphSourceConnector implements SourceConnector {
   /**
    * Get callees of a function/class
    */
-  async getCallees(entityId: string, options?: { recursive?: boolean }): Promise<UnifiedKnowledgeEntity[]> {
+  async getCallees(
+    entityId: string,
+    options?: { recursive?: boolean },
+  ): Promise<UnifiedKnowledgeEntity[]> {
     const nodeId = entityId.replace(/^kg:/, "");
     const callees = await graphQueryEngine.findCallees(nodeId, options);
     return mapNodesToEntities(callees);
@@ -192,8 +207,11 @@ export class CodeGraphSourceConnector implements SourceConnector {
    */
   async getSubgraph(
     entityId: string,
-    radius: number = 2
-  ): Promise<{ nodes: UnifiedKnowledgeEntity[]; edges: Array<{ source: string; target: string; type: string }> }> {
+    radius: number = 2,
+  ): Promise<{
+    nodes: UnifiedKnowledgeEntity[];
+    edges: Array<{ source: string; target: string; type: string }>;
+  }> {
     const nodeId = entityId.replace(/^kg:/, "");
 
     const subgraph = await graphQueryEngine.extractSubgraph({
@@ -203,7 +221,7 @@ export class CodeGraphSourceConnector implements SourceConnector {
     });
 
     const nodes = mapNodesToEntities(subgraph.nodes);
-    const edges = subgraph.edges.map(e => ({
+    const edges = subgraph.edges.map((e) => ({
       source: `kg:${e.sourceId}`,
       target: `kg:${e.targetId}`,
       type: e.type,
@@ -230,7 +248,9 @@ export class VectorMemorySourceConnector implements SourceConnector {
 
     try {
       // Map entity types to content types
-      const contentTypes = mapEntityTypesToContentTypes(entityTypes) as MemoryContentType[];
+      const contentTypes = mapEntityTypesToContentTypes(
+        entityTypes,
+      ) as MemoryContentType[];
 
       // Perform semantic search
       const result = await vectorStorage.search({
@@ -242,7 +262,7 @@ export class VectorMemorySourceConnector implements SourceConnector {
       });
 
       // Convert to unified entities
-      return result.results.map(r => {
+      return result.results.map((r) => {
         const entity = mapMemoryEntryToEntity(r.entry);
         // Add similarity score to metadata
         entity.metadata.confidence = r.similarity;
@@ -266,14 +286,17 @@ export class VectorMemorySourceConnector implements SourceConnector {
     }
   }
 
-  async getByPath(appId: number, path: string): Promise<UnifiedKnowledgeEntity[]> {
+  async getByPath(
+    appId: number,
+    path: string,
+  ): Promise<UnifiedKnowledgeEntity[]> {
     try {
       const entries = await vectorStorage.getByApp(appId, {
         limit: 100,
       });
 
       // Filter by file path
-      const filtered = entries.filter(e => e.filePath === path);
+      const filtered = entries.filter((e) => e.filePath === path);
       return mapMemoryEntriesToEntities(filtered);
     } catch (error) {
       console.error("[VectorMemoryConnector] getByPath failed:", error);
@@ -283,7 +306,7 @@ export class VectorMemorySourceConnector implements SourceConnector {
 
   async findSimilar(
     entity: UnifiedKnowledgeEntity,
-    options?: { minSimilarity?: number; limit?: number }
+    options?: { minSimilarity?: number; limit?: number },
   ): Promise<UnifiedKnowledgeEntity[]> {
     const limit = options?.limit || 10;
     const minSimilarity = options?.minSimilarity || 0.7;
@@ -299,7 +322,7 @@ export class VectorMemorySourceConnector implements SourceConnector {
         minSimilarity,
       });
 
-      return results.map(r => {
+      return results.map((r) => {
         const ent = mapMemoryEntryToEntity(r.entry);
         ent.metadata.confidence = r.similarity;
         return ent;
@@ -328,7 +351,7 @@ export class VectorMemorySourceConnector implements SourceConnector {
       contentType?: MemoryContentType;
       filePath?: string;
       importance?: number;
-    }
+    },
   ): Promise<UnifiedKnowledgeEntity | null> {
     try {
       // Generate embedding
@@ -371,19 +394,24 @@ export class DependencyGraphSourceConnector implements SourceConnector {
 
     try {
       // Query knowledge graph for dependency-related nodes
-      const result = await graphStorage.queryNodes(appId, {
-        type: ["config"] as KnowledgeNodeType[],
-        name: `%${queryString}%`,
-      }, { limit });
-
-      // Filter for package.json and dependency files
-      const depNodes = result.items.filter(n =>
-        n.filePath?.includes("package.json") ||
-        n.name.includes("package") ||
-        n.name.includes("import")
+      const result = await graphStorage.queryNodes(
+        appId,
+        {
+          type: ["config"] as KnowledgeNodeType[],
+          name: `%${queryString}%`,
+        },
+        { limit },
       );
 
-      return mapNodesToEntities(depNodes).map(e => ({
+      // Filter for package.json and dependency files
+      const depNodes = result.items.filter(
+        (n) =>
+          n.filePath?.includes("package.json") ||
+          n.name.includes("package") ||
+          n.name.includes("import"),
+      );
+
+      return mapNodesToEntities(depNodes).map((e) => ({
         ...e,
         source: "dependency_graph" as KnowledgeSource,
         type: "package" as KnowledgeEntityType,
@@ -476,9 +504,10 @@ export class ArchitectureSourceConnector implements SourceConnector {
       }
 
       // Filter by query string
-      const filtered = entities.filter(e =>
-        e.name.toLowerCase().includes(queryString.toLowerCase()) ||
-        e.description?.toLowerCase().includes(queryString.toLowerCase())
+      const filtered = entities.filter(
+        (e) =>
+          e.name.toLowerCase().includes(queryString.toLowerCase()) ||
+          e.description?.toLowerCase().includes(queryString.toLowerCase()),
       );
 
       return filtered.slice(0, limit);
@@ -518,7 +547,7 @@ export class ReasoningSourceConnector implements SourceConnector {
         minSimilarity: 0.3,
       });
 
-      return result.results.map(r => {
+      return result.results.map((r) => {
         const entity = mapMemoryEntryToEntity(r.entry);
         entity.source = "reasoning";
         entity.metadata.confidence = r.similarity;
@@ -580,25 +609,27 @@ export class SourceConnectorRegistry {
    */
   getForSources(sources: KnowledgeSource[]): SourceConnector[] {
     return sources
-      .map(s => this.connectors.get(s))
+      .map((s) => this.connectors.get(s))
       .filter((c): c is SourceConnector => c !== undefined);
   }
 
   /**
    * Check if all specified sources are available
    */
-  async checkAvailability(sources: KnowledgeSource[]): Promise<Map<KnowledgeSource, boolean>> {
+  async checkAvailability(
+    sources: KnowledgeSource[],
+  ): Promise<Map<KnowledgeSource, boolean>> {
     const results = new Map<KnowledgeSource, boolean>();
 
     await Promise.all(
-      sources.map(async source => {
+      sources.map(async (source) => {
         const connector = this.connectors.get(source);
         if (connector?.isAvailable) {
           results.set(source, await connector.isAvailable());
         } else {
           results.set(source, connector !== undefined);
         }
-      })
+      }),
     );
 
     return results;

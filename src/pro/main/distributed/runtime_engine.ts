@@ -1,6 +1,6 @@
 /**
  * Distributed Agent Runtime - Core Engine
- * 
+ *
  * Manages distributed agent execution, communication, coordination,
  * and fault tolerance across multiple nodes.
  */
@@ -80,32 +80,34 @@ export const DEFAULT_RUNTIME_CONFIG: DistributedRuntimeConfig = {
 
 /**
  * Distributed Agent Runtime
- * 
+ *
  * Core engine for managing distributed agent execution.
  */
 export class DistributedRuntime {
   private config: DistributedRuntimeConfig;
   private callbacks: DistributedCallbacks;
-  
+
   // Agent and node registries
   private agents: Map<string, DistributedAgent> = new Map();
   private nodes: Map<string, DistributedNode> = new Map();
-  
+
   // Communication
   private messageQueue: DistributedMessage[] = [];
   private channels: Map<string, Set<string>> = new Map(); // channel -> agentIds
-  
+
   // Coordination
-  private locks: Map<string, { holderId?: string; expiresAt: Date }> = new Map();
-  private barriers: Map<string, { count: number; agents: Set<string> }> = new Map();
-  
+  private locks: Map<string, { holderId?: string; expiresAt: Date }> =
+    new Map();
+  private barriers: Map<string, { count: number; agents: Set<string> }> =
+    new Map();
+
   // Checkpoints
   private checkpoints: Map<string, Checkpoint[]> = new Map();
-  
+
   // Timers
   private heartbeatTimer?: ReturnType<typeof setInterval>;
   private recoveryTimer?: ReturnType<typeof setInterval>;
-  
+
   // Local node
   private localNode: DistributedNode;
 
@@ -115,7 +117,7 @@ export class DistributedRuntime {
   ) {
     this.config = { ...DEFAULT_RUNTIME_CONFIG, ...config };
     this.callbacks = callbacks;
-    
+
     // Initialize local node
     this.localNode = {
       id: this.config.nodeId,
@@ -155,7 +157,7 @@ export class DistributedRuntime {
       createdAt: new Date(),
       lastHeartbeat: new Date(),
     };
-    
+
     this.nodes.set(this.localNode.id, this.localNode);
   }
 
@@ -171,7 +173,7 @@ export class DistributedRuntime {
     this.heartbeatTimer = setInterval(() => {
       this.sendHeartbeats();
     }, this.config.heartbeatInterval);
-    
+
     // Start recovery timer
     if (this.config.enableAutoRecovery) {
       this.recoveryTimer = setInterval(() => {
@@ -193,12 +195,12 @@ export class DistributedRuntime {
       clearInterval(this.recoveryTimer);
       this.recoveryTimer = undefined;
     }
-    
+
     // Terminate all agents
     for (const agent of this.agents.values()) {
       await this.terminateAgent(agent.id);
     }
-    
+
     // Update node status
     this.localNode.status = "offline";
   }
@@ -219,7 +221,7 @@ export class DistributedRuntime {
     parentId?: string;
   }): DistributedAgent {
     const agentId = uuidv4();
-    
+
     const defaultConfig: AgentConfig = {
       maxConcurrentTasks: 1,
       taskTimeout: 300,
@@ -231,7 +233,7 @@ export class DistributedRuntime {
       priority: 5,
       tags: [],
     };
-    
+
     const defaultLimits: ResourceLimits = {
       maxMemory: 1024, // 1GB
       maxCpuCores: 1,
@@ -239,7 +241,7 @@ export class DistributedRuntime {
       maxFileDescriptors: 100,
       maxNetworkConnections: 10,
     };
-    
+
     const agent: DistributedAgent = {
       id: agentId,
       name: request.name,
@@ -271,10 +273,10 @@ export class DistributedRuntime {
       createdAt: new Date(),
       lastHeartbeat: new Date(),
     };
-    
+
     // Register agent
     this.agents.set(agentId, agent);
-    
+
     // Update parent if specified
     if (request.parentId) {
       const parent = this.agents.get(request.parentId);
@@ -282,20 +284,20 @@ export class DistributedRuntime {
         parent.childIds.push(agentId);
       }
     }
-    
+
     // Update node
     this.localNode.agentIds.push(agentId);
     this.localNode.usage.activeAgents++;
-    
+
     // Set status to ready after initialization
     setTimeout(() => {
       agent.status = "ready";
       agent.lastHeartbeat = new Date();
     }, 100);
-    
+
     // Emit event
     this.callbacks.onAgentCreated?.(agent);
-    
+
     return agent;
   }
 
@@ -328,12 +330,12 @@ export class DistributedRuntime {
   updateAgentStatus(agentId: string, status: AgentStatus): boolean {
     const agent = this.agents.get(agentId);
     if (!agent) return false;
-    
+
     agent.status = status;
     agent.lastHeartbeat = new Date();
-    
+
     this.callbacks.onAgentStatusChanged?.(agent, status);
-    
+
     return true;
   }
 
@@ -343,15 +345,15 @@ export class DistributedRuntime {
   async terminateAgent(agentId: string): Promise<boolean> {
     const agent = this.agents.get(agentId);
     if (!agent) return false;
-    
+
     // Update status
     agent.status = "terminated";
-    
+
     // Terminate children first
     for (const childId of agent.childIds) {
       await this.terminateAgent(childId);
     }
-    
+
     // Update parent
     if (agent.parentId) {
       const parent = this.agents.get(agent.parentId);
@@ -359,17 +361,19 @@ export class DistributedRuntime {
         parent.childIds = parent.childIds.filter((id) => id !== agentId);
       }
     }
-    
+
     // Update node
-    this.localNode.agentIds = this.localNode.agentIds.filter((id) => id !== agentId);
+    this.localNode.agentIds = this.localNode.agentIds.filter(
+      (id) => id !== agentId,
+    );
     this.localNode.usage.activeAgents--;
-    
+
     // Emit event
     this.callbacks.onAgentTerminated?.(agent);
-    
+
     // Remove from registry
     this.agents.delete(agentId);
-    
+
     return true;
   }
 
@@ -390,49 +394,53 @@ export class DistributedRuntime {
       preferredAgentId?: string;
     } = {},
   ): DistributionResult | null {
-    const strategy = options.strategy || this.config.defaultDistributionStrategy;
-    
+    const strategy =
+      options.strategy || this.config.defaultDistributionStrategy;
+
     // Get eligible agents
     let candidates = this.getAgentsForApp(appId).filter(
       (a) =>
         a.status === "ready" &&
         requiredCapabilities.every((c) => a.capabilities.includes(c)),
     );
-    
+
     if (candidates.length === 0) {
       return null;
     }
-    
+
     // Apply affinity rules
     if (options.affinityRules) {
       candidates = this.applyAffinityRules(candidates, options.affinityRules);
     }
-    
+
     // Apply preferred agent
     if (options.preferredAgentId) {
-      const preferred = candidates.find((a) => a.id === options.preferredAgentId);
+      const preferred = candidates.find(
+        (a) => a.id === options.preferredAgentId,
+      );
       if (preferred) {
         candidates = [preferred];
       }
     }
-    
+
     // Apply distribution strategy
     let selectedAgent: DistributedAgent;
     let score = 0;
-    
+
     switch (strategy) {
       case "round_robin":
-        selectedAgent = candidates[Math.floor(Math.random() * candidates.length)];
+        selectedAgent =
+          candidates[Math.floor(Math.random() * candidates.length)];
         score = 1;
         break;
-        
+
       case "least_loaded":
         selectedAgent = candidates.reduce((min, a) =>
           a.completedTasks < min.completedTasks ? a : min,
         );
-        score = 1 - (selectedAgent.completedTasks / 100);
+        score = 1 - selectedAgent.completedTasks / 100;
         break;
-        
+
       case "capability_match":
         selectedAgent = candidates.reduce((best, a) => {
           const matchScore = a.capabilities.filter((c) =>
@@ -440,25 +448,27 @@ export class DistributedRuntime {
           ).length;
           return matchScore > score ? a : best;
         }, candidates[0]);
-        score = selectedAgent.capabilities.filter((c) =>
-          requiredCapabilities.includes(c),
-        ).length / requiredCapabilities.length;
+        score =
+          selectedAgent.capabilities.filter((c) =>
+            requiredCapabilities.includes(c),
+          ).length / requiredCapabilities.length;
         break;
-        
+
       case "random":
-        selectedAgent = candidates[Math.floor(Math.random() * candidates.length)];
+        selectedAgent =
+          candidates[Math.floor(Math.random() * candidates.length)];
         score = 0.5;
         break;
-        
+
       default:
         selectedAgent = candidates[0];
         score = 1;
     }
-    
+
     // Update agent status
     selectedAgent.status = "busy";
     selectedAgent.currentTaskId = taskId;
-    
+
     return {
       taskId,
       agentId: selectedAgent.id,
@@ -478,10 +488,10 @@ export class DistributedRuntime {
   ): DistributedAgent[] {
     const scored = agents.map((agent) => {
       let score = 0;
-      
+
       for (const rule of rules) {
         const matches = this.matchesAffinityRule(agent, rule);
-        
+
         switch (rule.type) {
           case "require":
             if (!matches) return { agent, score: -Infinity };
@@ -495,10 +505,10 @@ export class DistributedRuntime {
             break;
         }
       }
-      
+
       return { agent, score };
     });
-    
+
     // Filter out invalid and sort by score
     return scored
       .filter((s) => s.score > -Infinity)
@@ -509,7 +519,10 @@ export class DistributedRuntime {
   /**
    * Check if agent matches affinity rule
    */
-  private matchesAffinityRule(agent: DistributedAgent, rule: AffinityRule): boolean {
+  private matchesAffinityRule(
+    agent: DistributedAgent,
+    rule: AffinityRule,
+  ): boolean {
     switch (rule.targetType) {
       case "agent":
         return agent.id === rule.targetValue || agent.name === rule.targetValue;
@@ -537,19 +550,19 @@ export class DistributedRuntime {
       timestamp: new Date(),
       ...message,
     };
-    
+
     this.messageQueue.push(fullMessage);
-    
+
     // Trim queue if needed
     if (this.messageQueue.length > this.config.messageBufferSize) {
       this.messageQueue.shift();
     }
-    
+
     // Handle broadcast
     if (message.targetId === "*") {
       this.handleBroadcast(fullMessage);
     }
-    
+
     return fullMessage.id;
   }
 
@@ -595,7 +608,7 @@ export class DistributedRuntime {
   ): void {
     const subscribers = this.channels.get(channelName);
     if (!subscribers) return;
-    
+
     for (const agentId of subscribers) {
       this.sendMessage({
         ...message,
@@ -613,16 +626,16 @@ export class DistributedRuntime {
    */
   acquireLock(lockName: string, agentId: string, timeout: number): boolean {
     const existing = this.locks.get(lockName);
-    
+
     if (existing && existing.holderId && existing.expiresAt > new Date()) {
       return false; // Lock is held by another agent
     }
-    
+
     this.locks.set(lockName, {
       holderId: agentId,
       expiresAt: new Date(Date.now() + timeout),
     });
-    
+
     return true;
   }
 
@@ -631,11 +644,11 @@ export class DistributedRuntime {
    */
   releaseLock(lockName: string, agentId: string): boolean {
     const lock = this.locks.get(lockName);
-    
+
     if (!lock || lock.holderId !== agentId) {
       return false;
     }
-    
+
     this.locks.delete(lockName);
     return true;
   }
@@ -643,15 +656,19 @@ export class DistributedRuntime {
   /**
    * Wait at barrier
    */
-  waitForBarrier(barrierName: string, agentId: string, count: number): Promise<void> {
+  waitForBarrier(
+    barrierName: string,
+    agentId: string,
+    count: number,
+  ): Promise<void> {
     return new Promise((resolve) => {
       if (!this.barriers.has(barrierName)) {
         this.barriers.set(barrierName, { count, agents: new Set() });
       }
-      
+
       const barrier = this.barriers.get(barrierName)!;
       barrier.agents.add(agentId);
-      
+
       if (barrier.agents.size >= barrier.count) {
         this.barriers.delete(barrierName);
         resolve();
@@ -686,13 +703,13 @@ export class DistributedRuntime {
       createdAt: new Date(),
       size: JSON.stringify(data).length,
     };
-    
+
     if (!this.checkpoints.has(agentId)) {
       this.checkpoints.set(agentId, []);
     }
-    
+
     this.checkpoints.get(agentId)!.push(checkpoint);
-    
+
     return checkpoint;
   }
 
@@ -722,15 +739,16 @@ export class DistributedRuntime {
    */
   private sendHeartbeats(): void {
     const now = new Date();
-    
+
     for (const agent of this.agents.values()) {
       if (agent.status === "terminated") continue;
-      
+
       // Update local node heartbeat
       this.localNode.lastHeartbeat = now;
-      
+
       // Check agent timeout
-      const timeSinceLastHeartbeat = now.getTime() - agent.lastHeartbeat.getTime();
+      const timeSinceLastHeartbeat =
+        now.getTime() - agent.lastHeartbeat.getTime();
       if (timeSinceLastHeartbeat > this.config.agentTimeout) {
         this.handleAgentTimeout(agent);
       }
@@ -749,9 +767,9 @@ export class DistributedRuntime {
       error: `Agent ${agent.name} timed out after ${this.config.agentTimeout}ms`,
       timestamp: new Date(),
     };
-    
+
     this.callbacks.onFailure?.(failureEvent);
-    
+
     if (this.config.enableAutoRecovery) {
       this.recoverAgent(agent);
     }
@@ -762,15 +780,19 @@ export class DistributedRuntime {
    */
   private checkForFailures(): void {
     const now = new Date();
-    
+
     // Check for node failures
     for (const node of this.nodes.values()) {
       if (node.id === this.localNode.id) continue;
-      
-      const timeSinceLastHeartbeat = now.getTime() - node.lastHeartbeat.getTime();
-      if (timeSinceLastHeartbeat > this.config.nodeTimeout && node.status === "active") {
+
+      const timeSinceLastHeartbeat =
+        now.getTime() - node.lastHeartbeat.getTime();
+      if (
+        timeSinceLastHeartbeat > this.config.nodeTimeout &&
+        node.status === "active"
+      ) {
         node.status = "error";
-        
+
         const failureEvent: FailureEvent = {
           id: uuidv4(),
           type: "node_failure",
@@ -779,7 +801,7 @@ export class DistributedRuntime {
           error: `Node ${node.name} failed`,
           timestamp: new Date(),
         };
-        
+
         this.callbacks.onFailure?.(failureEvent);
       }
     }
@@ -795,17 +817,17 @@ export class DistributedRuntime {
       status: "in_progress",
       startedAt: new Date(),
     };
-    
+
     // Try to restore from checkpoint
     const checkpoint = this.getLatestCheckpoint(agent.id);
     if (checkpoint) {
       recoveryAction.type = "checkpoint_restore";
     }
-    
+
     // Reset agent state
     agent.status = "recovering";
     agent.lastHeartbeat = new Date();
-    
+
     // If has parent, notify parent
     if (agent.parentId) {
       this.sendMessage({
@@ -817,7 +839,7 @@ export class DistributedRuntime {
         requiresAck: true,
       });
     }
-    
+
     // Complete recovery
     setTimeout(() => {
       agent.status = "ready";
@@ -837,13 +859,15 @@ export class DistributedRuntime {
   getStats(): RuntimeStats {
     const agents = [...this.agents.values()];
     const nodes = [...this.nodes.values()];
-    
+
     const completedTasks = agents.reduce((sum, a) => sum + a.completedTasks, 0);
     const failedTasks = agents.reduce((sum, a) => sum + a.failedTasks, 0);
-    
+
     return {
       totalAgents: agents.length,
-      activeAgents: agents.filter((a) => a.status === "ready" || a.status === "busy").length,
+      activeAgents: agents.filter(
+        (a) => a.status === "ready" || a.status === "busy",
+      ).length,
       totalNodes: nodes.length,
       activeNodes: nodes.filter((n) => n.status === "active").length,
       tasksInProgress: agents.filter((a) => a.status === "busy").length,

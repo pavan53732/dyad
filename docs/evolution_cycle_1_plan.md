@@ -11,12 +11,14 @@
 ## Problem Statement
 
 Current state:
+
 - Knowledge Graph stores code entities but is isolated
 - Vector Memory stores embeddings but doesn't feed into reasoning
 - Architecture Tools use hardcoded heuristics without data-driven learning
 - No unified query interface for cross-cutting concerns
 
 Impact:
+
 - Tools cannot leverage each other's knowledge
 - Recommendations are not informed by actual code patterns
 - No learning from past decisions
@@ -143,13 +145,13 @@ knowledge_queries {
 
 ## Affected Modules
 
-| Module | Change Type | Description |
-|--------|-------------|-------------|
-| `knowledge_integration/` | NEW | Core KIL implementation |
-| `db/schema.ts` | MODIFY | Add decision tables |
-| `knowledge_graph/` | REFERENCE | Import query engine |
-| `vector_memory/` | REFERENCE | Import embedding service |
-| `architecture_knowledge_graph.ts` | INTEGRATE | Use KIL for context |
+| Module                            | Change Type | Description              |
+| --------------------------------- | ----------- | ------------------------ |
+| `knowledge_integration/`          | NEW         | Core KIL implementation  |
+| `db/schema.ts`                    | MODIFY      | Add decision tables      |
+| `knowledge_graph/`                | REFERENCE   | Import query engine      |
+| `vector_memory/`                  | REFERENCE   | Import embedding service |
+| `architecture_knowledge_graph.ts` | INTEGRATE   | Use KIL for context      |
 
 ---
 
@@ -192,12 +194,12 @@ knowledge_queries {
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                    | Mitigation                                   |
+| ----------------------- | -------------------------------------------- |
 | Breaking existing tools | KIL is additive, no changes to existing APIs |
-| Performance degradation | Query caching and result optimization |
-| Data inconsistency | Single source of truth per entity type |
+| Performance degradation | Query caching and result optimization        |
+| Data inconsistency      | Single source of truth per entity type       |
 
 ---
 
-*Plan created for Evolution Cycle 1*
+_Plan created for Evolution Cycle 1_

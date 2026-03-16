@@ -1,9 +1,9 @@
 /**
  * Code Graph Builder
- * 
+ *
  * Extracts code entities and relationships from source files
  * and builds the knowledge graph.
- * 
+ *
  * Supports multiple languages: TypeScript, JavaScript, Python, etc.
  */
 
@@ -11,7 +11,12 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createHash } from "node:crypto";
 import { graphStorage } from "./storage";
-import type { KnowledgeNodeType, KnowledgeEdgeType, CodeGraphBuildOptions, GraphUpdateResult } from "./types";
+import type {
+  KnowledgeNodeType,
+  KnowledgeEdgeType,
+  CodeGraphBuildOptions,
+  GraphUpdateResult,
+} from "./types";
 
 // ============================================================================
 // Types
@@ -65,7 +70,13 @@ interface FileExtractionResult {
  */
 interface LanguageParser {
   extensions: string[];
-  parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }>;
+  parse(
+    content: string,
+    filePath: string,
+  ): Promise<{
+    entities: ExtractedEntity[];
+    relationships: ExtractedRelationship[];
+  }>;
 }
 
 /**
@@ -75,17 +86,27 @@ interface LanguageParser {
 class TypeScriptParser implements LanguageParser {
   extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 
-  async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
+  async parse(
+    content: string,
+    filePath: string,
+  ): Promise<{
+    entities: ExtractedEntity[];
+    relationships: ExtractedRelationship[];
+  }> {
     const entities: ExtractedEntity[] = [];
     const relationships: ExtractedRelationship[] = [];
 
     // Extract imports
-    const importRegex = /import\s+(?:\{([^}]+)\}|(\w+)(?:\s*,\s*\{([^}]+)\})?)\s+from\s+['"]([^'"]+)['"]/g;
+    const importRegex =
+      /import\s+(?:\{([^}]+)\}|(\w+)(?:\s*,\s*\{([^}]+)\})?)\s+from\s+['"]([^'"]+)['"]/g;
     let match;
     while ((match = importRegex.exec(content)) !== null) {
       const moduleName = match[4];
-      const importedNames = (match[1] || match[2] || "").split(",").map(s => s.trim()).filter(Boolean);
-      
+      const importedNames = (match[1] || match[2] || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       entities.push({
         type: "module",
         name: moduleName,
@@ -95,25 +116,33 @@ class TypeScriptParser implements LanguageParser {
         language: "typescript",
         properties: {
           modulePath: moduleName,
-          isExternal: !moduleName.startsWith(".") && !moduleName.startsWith("/"),
+          isExternal:
+            !moduleName.startsWith(".") && !moduleName.startsWith("/"),
           imports: importedNames,
         },
       });
     }
 
     // Extract exported functions
-    const functionRegex = /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*(\w+))?/g;
+    const functionRegex =
+      /(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*(\w+))?/g;
     while ((match = functionRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
-      const params = match[2].split(",").map(p => {
-        const [paramName, paramType] = p.trim().split(":").map(s => s.trim());
-        return {
-          name: paramName?.replace("?", "") || "",
-          type: paramType,
-          optional: p.includes("?"),
-        };
-      }).filter(p => p.name);
+      const params = match[2]
+        .split(",")
+        .map((p) => {
+          const [paramName, paramType] = p
+            .trim()
+            .split(":")
+            .map((s) => s.trim());
+          return {
+            name: paramName?.replace("?", "") || "",
+            type: paramType,
+            optional: p.includes("?"),
+          };
+        })
+        .filter((p) => p.name);
 
       entities.push({
         type: "function",
@@ -134,7 +163,8 @@ class TypeScriptParser implements LanguageParser {
     }
 
     // Extract arrow functions
-    const arrowFunctionRegex = /(?:export\s+)?(?:const|let)\s+(\w+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s+)?(?:\([^)]*\)|[^=])\s*=>/g;
+    const arrowFunctionRegex =
+      /(?:export\s+)?(?:const|let)\s+(\w+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s+)?(?:\([^)]*\)|[^=])\s*=>/g;
     while ((match = arrowFunctionRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
@@ -157,12 +187,17 @@ class TypeScriptParser implements LanguageParser {
     }
 
     // Extract classes
-    const classRegex = /(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([^{]+))?/g;
+    const classRegex =
+      /(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+([^{]+))?/g;
     while ((match = classRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
       const extendsClass = match[2];
-      const implementsInterfaces = match[3]?.split(",").map(s => s.trim()).filter(Boolean) || [];
+      const implementsInterfaces =
+        match[3]
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [];
 
       entities.push({
         type: "class",
@@ -204,11 +239,16 @@ class TypeScriptParser implements LanguageParser {
     }
 
     // Extract interfaces
-    const interfaceRegex = /(?:export\s+)?interface\s+(\w+)(?:\s+extends\s+([^{]+))?/g;
+    const interfaceRegex =
+      /(?:export\s+)?interface\s+(\w+)(?:\s+extends\s+([^{]+))?/g;
     while ((match = interfaceRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
-      const extendsInterfaces = match[2]?.split(",").map(s => s.trim()).filter(Boolean) || [];
+      const extendsInterfaces =
+        match[2]
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [];
 
       entities.push({
         type: "interface",
@@ -237,12 +277,15 @@ class TypeScriptParser implements LanguageParser {
     }
 
     // Extract React components
-    const componentRegex = /(?:export\s+)?(?:default\s+)?function\s+([A-Z]\w+)\s*(?:\([^)]*\))?\s*(?::\s*\w+)?\s*\{/g;
+    const componentRegex =
+      /(?:export\s+)?(?:default\s+)?function\s+([A-Z]\w+)\s*(?:\([^)]*\))?\s*(?::\s*\w+)?\s*\{/g;
     while ((match = componentRegex.exec(content)) !== null) {
       const name = match[1];
       // Check if it's likely a React component (starts with capital letter, takes props)
       if (name[0] === name[0].toUpperCase() && name[0] !== "_") {
-        const existingFunction = entities.find(e => e.name === name && e.type === "function");
+        const existingFunction = entities.find(
+          (e) => e.name === name && e.type === "function",
+        );
         if (existingFunction) {
           existingFunction.type = "component";
           existingFunction.properties = {
@@ -255,17 +298,25 @@ class TypeScriptParser implements LanguageParser {
 
     // Extract function calls for relationships
     const callRegex = /(\w+)\s*\(/g;
-    const definedFunctions = new Set(entities.filter(e => e.type === "function" || e.type === "component").map(e => e.name));
+    const definedFunctions = new Set(
+      entities
+        .filter((e) => e.type === "function" || e.type === "component")
+        .map((e) => e.name),
+    );
     while ((match = callRegex.exec(content)) !== null) {
       const calledFunction = match[1];
-      if (definedFunctions.has(calledFunction) || calledFunction.startsWith("use")) {
+      if (
+        definedFunctions.has(calledFunction) ||
+        calledFunction.startsWith("use")
+      ) {
         // Find which function this call is inside
         const callLine = content.substring(0, match.index).split("\n").length;
-        const containingFunction = entities.find(e => 
-          (e.type === "function" || e.type === "component") &&
-          e.lineStart <= callLine &&
-          e.lineEnd >= callLine &&
-          e.name !== calledFunction
+        const containingFunction = entities.find(
+          (e) =>
+            (e.type === "function" || e.type === "component") &&
+            e.lineStart <= callLine &&
+            e.lineEnd >= callLine &&
+            e.name !== calledFunction,
         );
 
         if (containingFunction && calledFunction !== containingFunction.name) {
@@ -290,7 +341,13 @@ class TypeScriptParser implements LanguageParser {
 class PythonParser implements LanguageParser {
   extensions = [".py"];
 
-  async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
+  async parse(
+    content: string,
+    filePath: string,
+  ): Promise<{
+    entities: ExtractedEntity[];
+    relationships: ExtractedRelationship[];
+  }> {
     const entities: ExtractedEntity[] = [];
     const relationships: ExtractedRelationship[] = [];
 
@@ -298,7 +355,12 @@ class PythonParser implements LanguageParser {
     const importRegex = /(?:from\s+(\w+(?:\.\w+)*)\s+)?import\s+([^\n]+)/g;
     let match;
     while ((match = importRegex.exec(content)) !== null) {
-      const moduleName = match[1] || match[2].trim().split(",").map(s => s.trim().split(" as ")[0])[0];
+      const moduleName =
+        match[1] ||
+        match[2]
+          .trim()
+          .split(",")
+          .map((s) => s.trim().split(" as ")[0])[0];
       const lineStart = content.substring(0, match.index).split("\n").length;
 
       entities.push({
@@ -320,13 +382,19 @@ class PythonParser implements LanguageParser {
     while ((match = functionRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
-      const params = match[2].split(",").map(p => {
-        const [paramName, paramType] = p.trim().split(":").map(s => s.trim());
-        return {
-          name: paramName?.replace("?", "") || "",
-          type: paramType,
-        };
-      }).filter(p => p.name);
+      const params = match[2]
+        .split(",")
+        .map((p) => {
+          const [paramName, paramType] = p
+            .trim()
+            .split(":")
+            .map((s) => s.trim());
+          return {
+            name: paramName?.replace("?", "") || "",
+            type: paramType,
+          };
+        })
+        .filter((p) => p.name);
 
       entities.push({
         type: "function",
@@ -350,7 +418,11 @@ class PythonParser implements LanguageParser {
     while ((match = classRegex.exec(content)) !== null) {
       const lineStart = content.substring(0, match.index).split("\n").length;
       const name = match[1];
-      const baseClasses = match[2]?.split(",").map(s => s.trim()).filter(Boolean) || [];
+      const baseClasses =
+        match[2]
+          ?.split(",")
+          .map((s) => s.trim())
+          .filter(Boolean) || [];
 
       entities.push({
         type: "class",
@@ -388,7 +460,13 @@ class PythonParser implements LanguageParser {
 class CSSParser implements LanguageParser {
   extensions = [".css", ".scss", ".less"];
 
-  async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
+  async parse(
+    content: string,
+    filePath: string,
+  ): Promise<{
+    entities: ExtractedEntity[];
+    relationships: ExtractedRelationship[];
+  }> {
     const entities: ExtractedEntity[] = [];
 
     // Extract CSS classes
@@ -419,7 +497,13 @@ class CSSParser implements LanguageParser {
 class JSONParser implements LanguageParser {
   extensions = [".json"];
 
-  async parse(content: string, filePath: string): Promise<{ entities: ExtractedEntity[]; relationships: ExtractedRelationship[] }> {
+  async parse(
+    content: string,
+    filePath: string,
+  ): Promise<{
+    entities: ExtractedEntity[];
+    relationships: ExtractedRelationship[];
+  }> {
     const entities: ExtractedEntity[] = [];
     const fileName = path.basename(filePath);
 
@@ -462,7 +546,9 @@ class JSONParser implements LanguageParser {
           });
         }
 
-        for (const [dep, version] of Object.entries(pkg.devDependencies || {})) {
+        for (const [dep, version] of Object.entries(
+          pkg.devDependencies || {},
+        )) {
           entities.push({
             type: "dependency",
             name: dep,
@@ -559,7 +645,10 @@ export class CodeGraphBuilder {
       for (const file of files) {
         const relativePath = path.relative(options.rootPath, file);
         const content = await fs.promises.readFile(file, "utf-8");
-        const contentHash = createHash("md5").update(content).update(content).digest("hex");
+        const contentHash = createHash("md5")
+          .update(content)
+          .update(content)
+          .digest("hex");
 
         allEntities.push({
           type: "file",
@@ -582,10 +671,10 @@ export class CodeGraphBuilder {
       for (const entity of allEntities) {
         try {
           const nodeId = this.generateNodeId(entity);
-          
+
           // Check if node exists
           const existing = await graphStorage.getNode(nodeId);
-          
+
           if (existing) {
             await graphStorage.updateNode(nodeId, {
               name: entity.name,
@@ -593,7 +682,9 @@ export class CodeGraphBuilder {
               lineStart: entity.lineStart,
               lineEnd: entity.lineEnd,
               properties: entity.properties,
-              contentHash: createHash("md5").update(JSON.stringify(entity.properties)).digest("hex"),
+              contentHash: createHash("md5")
+                .update(JSON.stringify(entity.properties))
+                .digest("hex"),
             });
             result.nodesUpdated++;
           } else {
@@ -607,7 +698,9 @@ export class CodeGraphBuilder {
               lineEnd: entity.lineEnd,
               language: entity.language,
               properties: entity.properties,
-              contentHash: createHash("md5").update(JSON.stringify(entity.properties)).digest("hex"),
+              contentHash: createHash("md5")
+                .update(JSON.stringify(entity.properties))
+                .digest("hex"),
             });
             result.nodesAdded++;
           }
@@ -622,8 +715,26 @@ export class CodeGraphBuilder {
       // Create relationships as edges
       for (const rel of allRelationships) {
         try {
-          const sourceId = this.generateNodeId({ name: rel.sourceName, type: rel.sourceType, filePath: "", lineStart: 0, lineEnd: 0, language: "", properties: {}, appId: options.appId });
-          const targetId = this.generateNodeId({ name: rel.targetName, type: rel.targetType, filePath: "", lineStart: 0, lineEnd: 0, language: "", properties: {}, appId: options.appId });
+          const sourceId = this.generateNodeId({
+            name: rel.sourceName,
+            type: rel.sourceType,
+            filePath: "",
+            lineStart: 0,
+            lineEnd: 0,
+            language: "",
+            properties: {},
+            appId: options.appId,
+          });
+          const targetId = this.generateNodeId({
+            name: rel.targetName,
+            type: rel.targetType,
+            filePath: "",
+            lineStart: 0,
+            lineEnd: 0,
+            language: "",
+            properties: {},
+            appId: options.appId,
+          });
 
           // Verify both nodes exist
           const [source, target] = await Promise.all([
@@ -643,18 +754,19 @@ export class CodeGraphBuilder {
             });
             result.edgesAdded++;
           }
-        } catch (_error) {
+        } catch  {
           // Edge might already exist, that's OK
         }
       }
 
       // Create "contains" edges (file -> entities in file)
-      for (const entity of allEntities.filter(e => e.type !== "file")) {
+      for (const entity of allEntities.filter((e) => e.type !== "file")) {
         try {
-          const fileNode = allEntities.find(e => 
-            e.type === "file" && 
-            e.filePath === entity.filePath &&
-            e.appId === entity.appId
+          const fileNode = allEntities.find(
+            (e) =>
+              e.type === "file" &&
+              e.filePath === entity.filePath &&
+              e.appId === entity.appId,
           );
 
           if (fileNode) {
@@ -671,11 +783,10 @@ export class CodeGraphBuilder {
             });
             result.edgesAdded++;
           }
-        } catch (_error) {
+        } catch  {
           // Edge might already exist
         }
       }
-
     } catch (error) {
       result.errors.push({
         message: `Failed to build graph: ${error}`,
@@ -690,7 +801,7 @@ export class CodeGraphBuilder {
    */
   private async findFiles(options: CodeGraphBuildOptions): Promise<string[]> {
     const files: string[] = [];
-    const extensions = this.parsers.flatMap(p => p.extensions);
+    const extensions = this.parsers.flatMap((p) => p.extensions);
 
     const walk = async (dir: string) => {
       try {
@@ -701,7 +812,7 @@ export class CodeGraphBuilder {
 
           if (entry.isDirectory()) {
             // Check exclude patterns
-            if (!this.excludePatterns.some(p => p.test(fullPath))) {
+            if (!this.excludePatterns.some((p) => p.test(fullPath))) {
               await walk(fullPath);
             }
           } else if (entry.isFile()) {
@@ -728,7 +839,7 @@ export class CodeGraphBuilder {
     rootPath: string,
   ): Promise<FileExtractionResult | null> {
     const ext = path.extname(filePath);
-    const parser = this.parsers.find(p => p.extensions.includes(ext));
+    const parser = this.parsers.find((p) => p.extensions.includes(ext));
 
     if (!parser) return null;
 
@@ -736,7 +847,10 @@ export class CodeGraphBuilder {
     const relativePath = path.relative(rootPath, filePath);
     const contentHash = createHash("md5").update(content).digest("hex");
 
-    const { entities, relationships } = await parser.parse(content, relativePath);
+    const { entities, relationships } = await parser.parse(
+      content,
+      relativePath,
+    );
 
     return {
       filePath: relativePath,
@@ -750,9 +864,15 @@ export class CodeGraphBuilder {
   /**
    * Generate a unique node ID
    */
-  private generateNodeId(entity: { name: string; type: string; appId: number }): string {
+  private generateNodeId(entity: {
+    name: string;
+    type: string;
+    appId: number;
+  }): string {
     return createHash("md5")
-      .update(`${entity.appId}:${entity.type}:${entity.name}:${entity.filePath || "global"}`)
+      .update(
+        `${entity.appId}:${entity.type}:${entity.name}:${entity.filePath || "global"}`,
+      )
       .digest("hex")
       .substring(0, 16);
   }

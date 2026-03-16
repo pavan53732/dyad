@@ -68,16 +68,16 @@ The `unlimited_context_memory` tool provides these actions:
 
 ### Memory Types and Priorities
 
-| Type | Importance | Description |
-|------|------------|-------------|
-| decision | 1.0 | Important decisions and their rationale |
-| error | 0.9 | Errors encountered and their resolutions |
-| current_task | 0.95 | Active task context |
-| active_plan | 0.9 | Current execution plan |
-| message | 0.7 | Conversation messages |
-| code | 0.6 | Code snippets and patterns |
-| learning | 0.5 | Patterns and learnings discovered |
-| summary | 0.4 | Summarized content |
+| Type         | Importance | Description                              |
+| ------------ | ---------- | ---------------------------------------- |
+| decision     | 1.0        | Important decisions and their rationale  |
+| error        | 0.9        | Errors encountered and their resolutions |
+| current_task | 0.95       | Active task context                      |
+| active_plan  | 0.9        | Current execution plan                   |
+| message      | 0.7        | Conversation messages                    |
+| code         | 0.6        | Code snippets and patterns               |
+| learning     | 0.5        | Patterns and learnings discovered        |
+| summary      | 0.4        | Summarized content                       |
 
 ### Integration with Context Building
 
@@ -114,14 +114,15 @@ As of Version 0.39.0, Dyad implements three core autonomous systems that transfo
 
 Located in `src/pro/main/planner/`, the Planning Engine provides autonomous task planning capabilities:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Types | `types.ts` | Goal, Task, Plan type definitions |
-| Engine | `planning_engine.ts` | Plan generation, goal decomposition |
-| Persistence | `plan_persistence.ts` | SQLite storage for plans |
-| IPC | `ipc_handlers.ts` | Renderer communication |
+| Component   | File                  | Purpose                             |
+| ----------- | --------------------- | ----------------------------------- |
+| Types       | `types.ts`            | Goal, Task, Plan type definitions   |
+| Engine      | `planning_engine.ts`  | Plan generation, goal decomposition |
+| Persistence | `plan_persistence.ts` | SQLite storage for plans            |
+| IPC         | `ipc_handlers.ts`     | Renderer communication              |
 
 **Key Features:**
+
 - Goal decomposition based on intent analysis
 - Task dependency resolution with topological ordering
 - Execution strategy selection (sequential, parallel, adaptive)
@@ -134,13 +135,14 @@ Located in `src/pro/main/planner/`, the Planning Engine provides autonomous task
 
 Located in `src/pro/main/scheduler/`, the Scheduler provides priority-based task execution:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Types | `types.ts` | Schedule entry, queue, resource types |
-| Engine | `scheduler_engine.ts` | Priority queuing, resource scheduling |
-| IPC | `ipc_handlers.ts` | Renderer communication |
+| Component | File                  | Purpose                               |
+| --------- | --------------------- | ------------------------------------- |
+| Types     | `types.ts`            | Schedule entry, queue, resource types |
+| Engine    | `scheduler_engine.ts` | Priority queuing, resource scheduling |
+| IPC       | `ipc_handlers.ts`     | Renderer communication                |
 
 **Key Features:**
+
 - Priority levels: critical, high, normal, low, background
 - Resource-aware scheduling (CPU, memory, agents)
 - Exponential backoff retry with configurable strategies
@@ -153,13 +155,14 @@ Located in `src/pro/main/scheduler/`, the Scheduler provides priority-based task
 
 Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-agent coordination:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Types | `types.ts` | Agent, node, communication types |
-| Engine | `runtime_engine.ts` | Agent lifecycle, messaging, fault tolerance |
-| IPC | `ipc_handlers.ts` | Renderer communication |
+| Component | File                | Purpose                                     |
+| --------- | ------------------- | ------------------------------------------- |
+| Types     | `types.ts`          | Agent, node, communication types            |
+| Engine    | `runtime_engine.ts` | Agent lifecycle, messaging, fault tolerance |
+| IPC       | `ipc_handlers.ts`   | Renderer communication                      |
 
 **Key Features:**
+
 - Agent lifecycle management (create, terminate, monitor)
 - Node registry with heartbeat monitoring
 - Inter-agent messaging with pub/sub channels
@@ -202,18 +205,21 @@ Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-ag
 ### IPC Channels
 
 **Planner IPC (`PLANNER_IPC_CHANNELS`):**
+
 - `planner:generate-plan` - Generate a plan from user request
 - `planner:get-plan` - Get plan by ID
 - `planner:get-ready-tasks` - Get tasks ready for execution
 - `planner:update-task-status` - Update task execution status
 
 **Scheduler IPC (`SCHEDULER_IPC_CHANNELS`):**
+
 - `scheduler:schedule-task` - Schedule a task for execution
 - `scheduler:cancel-task` - Cancel a scheduled task
 - `scheduler:get-resource-pool` - Get resource pool state
 - `scheduler:start` / `scheduler:stop` - Lifecycle control
 
 **Distributed IPC (`DISTRIBUTED_IPC_CHANNELS`):**
+
 - `distributed:create-agent` - Create a new agent instance
 - `distributed:distribute-task` - Distribute task to agents
 - `distributed:send-message` - Send inter-agent message
@@ -225,16 +231,16 @@ Located in `src/pro/main/distributed/`, the Distributed Runtime enables multi-ag
 
 Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowledge access across all modules:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Types | `types.ts` | Unified type definitions for knowledge entities, queries, and decisions |
-| Query Orchestrator | `query_orchestrator.ts` | Unified query interface across all knowledge sources |
-| Knowledge Aggregator | `knowledge_aggregator.ts` | Cross-module data fusion and context enrichment |
-| Learning Repository | `learning_repository.ts` | Architecture decision recording and pattern learning |
-| Source Connectors | `source_connectors.ts` | Real connectors to actual modules |
-| Entity Mappers | `entity_mappers.ts` | Type mapping utilities |
-| Decision Persistence | `decision_persistence.ts` | Database operations for decisions |
-| IPC | `ipc_handlers.ts` | Renderer communication |
+| Component            | File                      | Purpose                                                                 |
+| -------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| Types                | `types.ts`                | Unified type definitions for knowledge entities, queries, and decisions |
+| Query Orchestrator   | `query_orchestrator.ts`   | Unified query interface across all knowledge sources                    |
+| Knowledge Aggregator | `knowledge_aggregator.ts` | Cross-module data fusion and context enrichment                         |
+| Learning Repository  | `learning_repository.ts`  | Architecture decision recording and pattern learning                    |
+| Source Connectors    | `source_connectors.ts`    | Real connectors to actual modules                                       |
+| Entity Mappers       | `entity_mappers.ts`       | Type mapping utilities                                                  |
+| Decision Persistence | `decision_persistence.ts` | Database operations for decisions                                       |
+| IPC                  | `ipc_handlers.ts`         | Renderer communication                                                  |
 
 **Evolution History:**
 | Cycle | Improvement | Lines | Status |
@@ -247,6 +253,7 @@ Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowl
 | **TOTAL** | | **6,861** | **✅** |
 
 **Key Features:**
+
 - Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
 - Parallel source queries with configurable sources
 - Multiple ranking strategies (relevance, confidence, recency, hybrid)
@@ -260,6 +267,7 @@ Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowl
 ### KIL IPC Channels
 
 **Knowledge Integration IPC (`KIL_IPC_CHANNELS`):**
+
 - `kil:query` - Execute unified knowledge query
 - `kil:query-similar` - Find similar entities across sources
 - `kil:record-decision` - Record architecture decision with context
@@ -297,13 +305,13 @@ Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowl
 
 The KIL connects to the following knowledge sources:
 
-| Source | Module | Data Types |
-|--------|--------|------------|
-| Code Graph | `knowledge_graph/` | Entities, relationships, code structure |
-| Vector Memory | `vector_memory/` | Embeddings, semantic search results |
-| Dependency Graph | `dependency_analyzer.ts` | Package dependencies, version info |
-| Architecture | `architecture_knowledge_graph.ts` | Patterns, decisions, constraints |
-| Reasoning | `reasoning_infrastructure.ts` | Traces, insights, learned patterns |
+| Source           | Module                            | Data Types                              |
+| ---------------- | --------------------------------- | --------------------------------------- |
+| Code Graph       | `knowledge_graph/`                | Entities, relationships, code structure |
+| Vector Memory    | `vector_memory/`                  | Embeddings, semantic search results     |
+| Dependency Graph | `dependency_analyzer.ts`          | Package dependencies, version info      |
+| Architecture     | `architecture_knowledge_graph.ts` | Patterns, decisions, constraints        |
+| Reasoning        | `reasoning_infrastructure.ts`     | Traces, insights, learned patterns      |
 
 ---
 
@@ -335,17 +343,18 @@ handleLocalAgentStream()
 3. **Lines 1500-1589**: Learning feedback recorded after execution
 
 **Configuration:**
+
 - Pro-only feature
 - Active for build mode (non-read-only, non-plan-only)
 - Configurable via `KnowledgeContextInjector` options
 
 ### Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Pipeline Orchestrator | `pipeline_orchestrator.ts` | Coordinates all autonomous subsystems |
+| Component                  | File                            | Purpose                                        |
+| -------------------------- | ------------------------------- | ---------------------------------------------- |
+| Pipeline Orchestrator      | `pipeline_orchestrator.ts`      | Coordinates all autonomous subsystems          |
 | Knowledge Context Injector | `knowledge_context_injector.ts` | Proactive knowledge gathering before execution |
-| Module Index | `index.ts` | Clean exports for the pipeline |
+| Module Index               | `index.ts`                      | Clean exports for the pipeline                 |
 
 ### Pipeline Phases
 
@@ -380,28 +389,28 @@ handleLocalAgentStream()
 
 The pipeline automatically classifies user requests:
 
-| Intent Type | Keywords | Complexity Mod |
-|-------------|----------|----------------|
-| feature | implement, add, create, build, develop | +0 |
-| bugfix | fix, bug, error, issue, broken | -1 |
-| refactor | refactor, restructure, clean up | +1 |
-| test | test, spec, coverage | -1 |
-| deployment | deploy, release, ship | +1 |
-| exploration | explore, understand, analyze | -1 |
-| documentation | document, docs, readme | -2 |
-| maintenance | update, upgrade, migrate | +0 |
+| Intent Type   | Keywords                               | Complexity Mod |
+| ------------- | -------------------------------------- | -------------- |
+| feature       | implement, add, create, build, develop | +0             |
+| bugfix        | fix, bug, error, issue, broken         | -1             |
+| refactor      | refactor, restructure, clean up        | +1             |
+| test          | test, spec, coverage                   | -1             |
+| deployment    | deploy, release, ship                  | +1             |
+| exploration   | explore, understand, analyze           | -1             |
+| documentation | document, docs, readme                 | -2             |
+| maintenance   | update, upgrade, migrate               | +0             |
 
 ### Configuration
 
 ```typescript
 interface PipelineConfig {
-  enableProactiveKnowledge: boolean;      // default: true
-  enableAutoPlanning: boolean;            // default: true
-  enableScheduledExecution: boolean;      // default: true
-  enableLearningFeedback: boolean;        // default: true
-  planningComplexityThreshold: number;    // default: 5
-  maxKnowledgeContextEntities: number;    // default: 20
-  maxParallelTasks: number;               // default: 4
+  enableProactiveKnowledge: boolean; // default: true
+  enableAutoPlanning: boolean; // default: true
+  enableScheduledExecution: boolean; // default: true
+  enableLearningFeedback: boolean; // default: true
+  planningComplexityThreshold: number; // default: 5
+  maxKnowledgeContextEntities: number; // default: 20
+  maxParallelTasks: number; // default: 4
 }
 ```
 
@@ -434,15 +443,15 @@ Before agent execution, the pipeline injects a structured knowledge context:
 
 The pipeline emits events for monitoring:
 
-| Event | Description |
-|-------|-------------|
-| `pipeline_started` | Pipeline execution begins |
+| Event                     | Description                  |
+| ------------------------- | ---------------------------- |
+| `pipeline_started`        | Pipeline execution begins    |
 | `knowledge_context_built` | Knowledge gathering complete |
-| `plan_generated` | Task decomposition created |
-| `task_scheduled` | Task added to scheduler |
-| `task_started` | Task execution begins |
-| `task_completed` | Task finished successfully |
-| `task_failed` | Task execution failed |
-| `learning_recorded` | Outcome recorded |
-| `pipeline_completed` | All phases complete |
-| `pipeline_failed` | Pipeline error occurred |
+| `plan_generated`          | Task decomposition created   |
+| `task_scheduled`          | Task added to scheduler      |
+| `task_started`            | Task execution begins        |
+| `task_completed`          | Task finished successfully   |
+| `task_failed`             | Task execution failed        |
+| `learning_recorded`       | Outcome recorded             |
+| `pipeline_completed`      | All phases complete          |
+| `pipeline_failed`         | Pipeline error occurred      |

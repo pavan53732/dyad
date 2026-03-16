@@ -1,6 +1,6 @@
 /**
  * Vector Storage Service
- * 
+ *
  * Provides persistent storage for embeddings with efficient
  * similarity search capabilities.
  */
@@ -21,7 +21,6 @@ import type {
   SemanticSearchQuery,
   SemanticSearchResult,
   SemanticSearchResponse,
-  SimilarityMetric,
 } from "./types";
 
 // ============================================================================
@@ -48,29 +47,32 @@ export class VectorStorage {
     const now = new Date();
     const contentHash = entry.contentHash || this.hashContent(entry.content);
 
-    const [inserted] = await db.insert(semanticMemory).values({
-      id,
-      appId: entry.appId,
-      contentType: entry.contentType,
-      content: entry.content,
-      contentHash,
-      embedding: JSON.stringify(entry.embedding),
-      embeddingModel: entry.embeddingModel,
-      dimensions: entry.dimensions,
-      filePath: entry.filePath,
-      lineStart: entry.lineStart,
-      lineEnd: entry.lineEnd,
-      knowledgeGraphNodeId: entry.knowledgeGraphNodeId,
-      importance: entry.importance ?? 0.5,
-      accessCount: 0,
-      lastAccessedAt: now,
-      createdAt: now,
-      updatedAt: now,
-      metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
-    }).returning();
+    const [inserted] = await db
+      .insert(semanticMemory)
+      .values({
+        id,
+        appId: entry.appId,
+        contentType: entry.contentType,
+        content: entry.content,
+        contentHash,
+        embedding: JSON.stringify(entry.embedding),
+        embeddingModel: entry.embeddingModel,
+        dimensions: entry.dimensions,
+        filePath: entry.filePath,
+        lineStart: entry.lineStart,
+        lineEnd: entry.lineEnd,
+        knowledgeGraphNodeId: entry.knowledgeGraphNodeId,
+        importance: entry.importance ?? 0.5,
+        accessCount: 0,
+        lastAccessedAt: now,
+        createdAt: now,
+        updatedAt: now,
+        metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
+      })
+      .returning();
 
     const memoryEntry = this.rowToEntry(inserted);
-    
+
     // Update cache
     if (this.cacheEnabled) {
       this.cache.set(id, memoryEntry);
@@ -85,7 +87,7 @@ export class VectorStorage {
    */
   async storeBatch(entries: MemoryEntryInsert[]): Promise<MemoryEntry[]> {
     const results: MemoryEntry[] = [];
-    
+
     for (const entry of entries) {
       const result = await this.store(entry);
       results.push(result);
@@ -103,7 +105,8 @@ export class VectorStorage {
       return this.cache.get(id)!;
     }
 
-    const [row] = await db.select()
+    const [row] = await db
+      .select()
       .from(semanticMemory)
       .where(eq(semanticMemory.id, id))
       .limit(1);
@@ -111,7 +114,7 @@ export class VectorStorage {
     if (!row) return null;
 
     const entry = this.rowToEntry(row);
-    
+
     // Update cache
     if (this.cacheEnabled) {
       this.cache.set(id, entry);
@@ -130,18 +133,21 @@ export class VectorStorage {
     const conditions = [eq(semanticMemory.appId, appId)];
 
     if (options?.contentTypes && options.contentTypes.length > 0) {
-      conditions.push(inArray(semanticMemory.contentType, options.contentTypes));
+      conditions.push(
+        inArray(semanticMemory.contentType, options.contentTypes),
+      );
     }
 
     const limit = options?.limit ?? 100;
 
-    const rows = await db.select()
+    const rows = await db
+      .select()
       .from(semanticMemory)
       .where(and(...conditions))
       .orderBy(desc(semanticMemory.createdAt))
       .limit(limit);
 
-    return rows.map(row => this.rowToEntry(row));
+    return rows.map((row) => this.rowToEntry(row));
   }
 
   /**
@@ -149,9 +155,12 @@ export class VectorStorage {
    */
   async update(
     id: string,
-    updates: Partial<Pick<MemoryEntry, "importance" | "metadata" | "accessCount">>,
+    updates: Partial<
+      Pick<MemoryEntry, "importance" | "metadata" | "accessCount">
+    >,
   ): Promise<MemoryEntry | null> {
-    const [updated] = await db.update(semanticMemory)
+    const [updated] = await db
+      .update(semanticMemory)
       .set({
         ...updates,
         updatedAt: new Date(),
@@ -162,7 +171,7 @@ export class VectorStorage {
     if (!updated) return null;
 
     const entry = this.rowToEntry(updated);
-    
+
     // Update cache
     if (this.cacheEnabled) {
       this.cache.set(id, entry);
@@ -175,7 +184,8 @@ export class VectorStorage {
    * Increment access count
    */
   async recordAccess(id: string): Promise<void> {
-    await db.update(semanticMemory)
+    await db
+      .update(semanticMemory)
       .set({
         accessCount: sql`${semanticMemory.accessCount} + 1`,
         lastAccessedAt: new Date(),
@@ -188,7 +198,8 @@ export class VectorStorage {
    * Delete a memory entry
    */
   async delete(id: string): Promise<boolean> {
-    const result = await db.delete(semanticMemory)
+    const result = await db
+      .delete(semanticMemory)
       .where(eq(semanticMemory.id, id))
       .returning({ id: semanticMemory.id });
 
@@ -204,7 +215,8 @@ export class VectorStorage {
    * Delete all entries for an app
    */
   async deleteByApp(appId: number): Promise<number> {
-    const result = await db.delete(semanticMemory)
+    const result = await db
+      .delete(semanticMemory)
       .where(eq(semanticMemory.appId, appId))
       .returning({ id: semanticMemory.id });
 
@@ -248,7 +260,8 @@ export class VectorStorage {
     const limit = query.limit ?? 10;
     const candidateLimit = Math.min(limit * 10, 1000);
 
-    const rows = await db.select()
+    const rows = await db
+      .select()
       .from(semanticMemory)
       .where(and(...conditions))
       .orderBy(desc(semanticMemory.importance))
@@ -272,7 +285,10 @@ export class VectorStorage {
         }
       }
 
-      if (query.minImportance !== undefined && entry.importance < query.minImportance) {
+      if (
+        query.minImportance !== undefined &&
+        entry.importance < query.minImportance
+      ) {
         continue;
       }
 
@@ -333,7 +349,7 @@ export class VectorStorage {
     });
 
     // Filter out the original entry
-    return response.results.filter(r => r.entry.id !== entryId);
+    return response.results.filter((r) => r.entry.id !== entryId);
   }
 
   // -------------------------------------------------------------------------
@@ -344,11 +360,15 @@ export class VectorStorage {
    * Get memory statistics
    */
   async getStats(appId: number): Promise<MemoryStats> {
-    const rows = await db.select()
+    const rows = await db
+      .select()
       .from(semanticMemory)
       .where(eq(semanticMemory.appId, appId));
 
-    const entriesByType: Record<MemoryContentType, number> = {} as Record<MemoryContentType, number>;
+    const entriesByType: Record<MemoryContentType, number> = {} as Record<
+      MemoryContentType,
+      number
+    >;
     let totalDimensions = 0;
 
     for (const row of rows) {
@@ -417,7 +437,10 @@ export class VectorStorage {
   private pruneCache(): void {
     if (this.cache.size > this.maxCacheSize) {
       // Remove oldest entries (simple FIFO)
-      const keys = Array.from(this.cache.keys()).slice(0, this.cache.size - this.maxCacheSize);
+      const keys = Array.from(this.cache.keys()).slice(
+        0,
+        this.cache.size - this.maxCacheSize,
+      );
       for (const key of keys) {
         this.cache.delete(key);
       }

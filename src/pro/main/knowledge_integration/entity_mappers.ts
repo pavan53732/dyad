@@ -22,27 +22,31 @@ import type {
 /**
  * Map Knowledge Graph node types to unified entity types
  */
-const NODE_TYPE_TO_ENTITY_TYPE: Record<KnowledgeNodeType, KnowledgeEntityType> = {
-  function: "function",
-  class: "class",
-  interface: "interface",
-  type: "type",
-  variable: "variable",
-  constant: "constant",
-  component: "component",
-  hook: "function",
-  page: "component",
-  api: "function",
-  config: "config",
-  util: "function",
-  test: "function",
-  documentation: "documentation",
-};
+const NODE_TYPE_TO_ENTITY_TYPE: Record<KnowledgeNodeType, KnowledgeEntityType> =
+  {
+    function: "function",
+    class: "class",
+    interface: "interface",
+    type: "type",
+    variable: "variable",
+    constant: "constant",
+    component: "component",
+    hook: "function",
+    page: "component",
+    api: "function",
+    config: "config",
+    util: "function",
+    test: "function",
+    documentation: "documentation",
+  };
 
 /**
  * Map Vector Memory content types to unified entity types
  */
-const CONTENT_TYPE_TO_ENTITY_TYPE: Record<MemoryContentType, KnowledgeEntityType> = {
+const CONTENT_TYPE_TO_ENTITY_TYPE: Record<
+  MemoryContentType,
+  KnowledgeEntityType
+> = {
   code: "code",
   documentation: "documentation",
   decision: "decision",
@@ -55,7 +59,10 @@ const CONTENT_TYPE_TO_ENTITY_TYPE: Record<MemoryContentType, KnowledgeEntityType
 /**
  * Map unified entity types back to knowledge node types
  */
-const ENTITY_TYPE_TO_NODE_TYPES: Record<KnowledgeEntityType, KnowledgeNodeType[]> = {
+const ENTITY_TYPE_TO_NODE_TYPES: Record<
+  KnowledgeEntityType,
+  KnowledgeNodeType[]
+> = {
   function: ["function", "hook", "util"],
   class: ["class"],
   interface: ["interface", "type"],
@@ -85,7 +92,9 @@ const ENTITY_TYPE_TO_NODE_TYPES: Record<KnowledgeEntityType, KnowledgeNodeType[]
 /**
  * Map a Knowledge Graph node to a unified entity
  */
-export function mapNodeToEntity(node: KnowledgeNodeRow): UnifiedKnowledgeEntity {
+export function mapNodeToEntity(
+  node: KnowledgeNodeRow,
+): UnifiedKnowledgeEntity {
   return {
     id: `kg:${node.id}`,
     sourceId: node.id,
@@ -114,14 +123,18 @@ export function mapNodeToEntity(node: KnowledgeNodeRow): UnifiedKnowledgeEntity 
 /**
  * Map multiple Knowledge Graph nodes to unified entities
  */
-export function mapNodesToEntities(nodes: KnowledgeNodeRow[]): UnifiedKnowledgeEntity[] {
+export function mapNodesToEntities(
+  nodes: KnowledgeNodeRow[],
+): UnifiedKnowledgeEntity[] {
   return nodes.map(mapNodeToEntity);
 }
 
 /**
  * Map a Vector Memory entry to a unified entity
  */
-export function mapMemoryEntryToEntity(entry: MemoryEntry): UnifiedKnowledgeEntity {
+export function mapMemoryEntryToEntity(
+  entry: MemoryEntry,
+): UnifiedKnowledgeEntity {
   return {
     id: `vm:${entry.id}`,
     sourceId: entry.id,
@@ -150,14 +163,18 @@ export function mapMemoryEntryToEntity(entry: MemoryEntry): UnifiedKnowledgeEnti
 /**
  * Map multiple Vector Memory entries to unified entities
  */
-export function mapMemoryEntriesToEntities(entries: MemoryEntry[]): UnifiedKnowledgeEntity[] {
+export function mapMemoryEntriesToEntities(
+  entries: MemoryEntry[],
+): UnifiedKnowledgeEntity[] {
   return entries.map(mapMemoryEntryToEntity);
 }
 
 /**
  * Map unified entity types to Knowledge Graph node types for querying
  */
-export function mapEntityTypesToNodeTypes(entityTypes?: KnowledgeEntityType[]): KnowledgeNodeType[] | undefined {
+export function mapEntityTypesToNodeTypes(
+  entityTypes?: KnowledgeEntityType[],
+): KnowledgeNodeType[] | undefined {
   if (!entityTypes || entityTypes.length === 0) return undefined;
 
   const nodeTypes: KnowledgeNodeType[] = [];
@@ -175,19 +192,22 @@ export function mapEntityTypesToNodeTypes(entityTypes?: KnowledgeEntityType[]): 
 /**
  * Map unified entity types to Vector Memory content types for querying
  */
-export function mapEntityTypesToContentTypes(entityTypes?: KnowledgeEntityType[]): MemoryContentType[] | undefined {
+export function mapEntityTypesToContentTypes(
+  entityTypes?: KnowledgeEntityType[],
+): MemoryContentType[] | undefined {
   if (!entityTypes || entityTypes.length === 0) return undefined;
 
   const contentTypes: MemoryContentType[] = [];
-  const typeToContent: Partial<Record<KnowledgeEntityType, MemoryContentType>> = {
-    code: "code",
-    documentation: "documentation",
-    decision: "decision",
-    pattern: "pattern",
-    error: "error",
-    context: "context",
-    summary: "summary",
-  };
+  const typeToContent: Partial<Record<KnowledgeEntityType, MemoryContentType>> =
+    {
+      code: "code",
+      documentation: "documentation",
+      decision: "decision",
+      pattern: "pattern",
+      error: "error",
+      context: "context",
+      summary: "summary",
+    };
 
   for (const entityType of entityTypes) {
     const mapped = typeToContent[entityType];
@@ -208,7 +228,7 @@ export function mapEntityTypesToContentTypes(entityTypes?: KnowledgeEntityType[]
  */
 function extractNameFromContent(content: string): string {
   // Try to extract from first line or significant text
-  const lines = content.split("\n").filter(l => l.trim().length > 0);
+  const lines = content.split("\n").filter((l) => l.trim().length > 0);
   if (lines.length === 0) return "unnamed";
 
   const firstLine = lines[0].trim();
@@ -244,7 +264,7 @@ function truncateContent(content: string, maxLength: number): string {
  */
 export function mergeEntities(
   entities: UnifiedKnowledgeEntity[],
-  preferSource?: KnowledgeSource
+  preferSource?: KnowledgeSource,
 ): UnifiedKnowledgeEntity[] {
   const entityMap = new Map<string, UnifiedKnowledgeEntity>();
 
@@ -271,7 +291,7 @@ export function mergeEntities(
  */
 export function calculateRelevanceScore(
   entity: UnifiedKnowledgeEntity,
-  query: string
+  query: string,
 ): number {
   const queryLower = query.toLowerCase();
   let score = 0;
@@ -315,13 +335,13 @@ export function calculateRelevanceScore(
  */
 export function sortByRelevance(
   entities: UnifiedKnowledgeEntity[],
-  query: string
+  query: string,
 ): UnifiedKnowledgeEntity[] {
   return entities
-    .map(entity => ({
+    .map((entity) => ({
       entity,
       score: calculateRelevanceScore(entity, query),
     }))
     .sort((a, b) => b.score - a.score)
-    .map(item => item.entity);
+    .map((item) => item.entity);
 }

@@ -1,6 +1,6 @@
 /**
  * Autonomous Planning Engine - Core Planning Logic
- * 
+ *
  * Implements autonomous planning capabilities including goal decomposition,
  * task generation, dependency resolution, and adaptive planning.
  */
@@ -12,7 +12,6 @@ import type {
   Plan,
   PlanningContext,
   PlanGenerationResult,
-  PlanExecutionResult,
   ExecutionStatus,
   PlanningCallbacks,
   PlanningEvent,
@@ -77,7 +76,7 @@ export const DEFAULT_PLANNING_CONFIG: PlanningEngineConfig = {
 
 /**
  * Autonomous Planning Engine
- * 
+ *
  * Responsible for:
  * - Goal decomposition into tasks
  * - Dependency graph construction
@@ -254,7 +253,11 @@ export class PlanningEngine {
     const lowerRequest = request.toLowerCase();
 
     // Feature implementation intent
-    if (lowerRequest.includes("implement") || lowerRequest.includes("add") || lowerRequest.includes("create")) {
+    if (
+      lowerRequest.includes("implement") ||
+      lowerRequest.includes("add") ||
+      lowerRequest.includes("create")
+    ) {
       intents.push({
         title: "Implement Feature",
         description: request,
@@ -275,7 +278,11 @@ export class PlanningEngine {
     }
 
     // Bug fix intent
-    if (lowerRequest.includes("fix") || lowerRequest.includes("bug") || lowerRequest.includes("error")) {
+    if (
+      lowerRequest.includes("fix") ||
+      lowerRequest.includes("bug") ||
+      lowerRequest.includes("error")
+    ) {
       intents.push({
         title: "Fix Issue",
         description: request,
@@ -296,7 +303,11 @@ export class PlanningEngine {
     }
 
     // Refactoring intent
-    if (lowerRequest.includes("refactor") || lowerRequest.includes("restructure") || lowerRequest.includes("clean up")) {
+    if (
+      lowerRequest.includes("refactor") ||
+      lowerRequest.includes("restructure") ||
+      lowerRequest.includes("clean up")
+    ) {
       intents.push({
         title: "Refactor Code",
         description: request,
@@ -368,7 +379,13 @@ export class PlanningEngine {
     // Simple dependency resolution based on goal types
     // Feature goals depend on bugfix goals
     // Test goals depend on feature goals
-    const typeOrder: GoalType[] = ["bugfix", "feature", "refactor", "test", "documentation"];
+    const typeOrder: GoalType[] = [
+      "bugfix",
+      "feature",
+      "refactor",
+      "test",
+      "documentation",
+    ];
 
     for (let i = 0; i < goals.length; i++) {
       const currentTypeIndex = typeOrder.indexOf(goals[i].type);
@@ -384,7 +401,10 @@ export class PlanningEngine {
   /**
    * Decompose a goal into tasks
    */
-  private async decomposeGoal(goal: Goal, context: PlanningContext): Promise<Task[]> {
+  private async decomposeGoal(
+    goal: Goal,
+    context: PlanningContext,
+  ): Promise<Task[]> {
     const tasks: Task[] = [];
     let taskOrder = 0;
 
@@ -393,7 +413,9 @@ export class PlanningEngine {
 
     for (const template of taskTemplates) {
       // Skip tasks that require tools not available
-      if (template.requiredTools.some((t) => !context.availableTools.includes(t))) {
+      if (
+        template.requiredTools.some((t) => !context.availableTools.includes(t))
+      ) {
         continue;
       }
 
@@ -407,7 +429,9 @@ export class PlanningEngine {
         priority: goal.priority,
         status: "pending",
         order: taskOrder++,
-        dependsOn: template.dependsOnOrder?.map((i) => tasks[i]?.id).filter(Boolean) || [],
+        dependsOn:
+          template.dependsOnOrder?.map((i) => tasks[i]?.id).filter(Boolean) ||
+          [],
         requiredTools: template.requiredTools,
         input: template.input,
         expectedOutput: template.expectedOutput,
@@ -444,16 +468,19 @@ export class PlanningEngine {
     expectedOutput?: Record<string, unknown>;
     estimatedDuration: number;
   }> {
-    const templates: Record<GoalType, Array<{
-      title: string;
-      description: string;
-      type: TaskType;
-      requiredTools: string[];
-      dependsOnOrder?: number[];
-      input: Record<string, unknown>;
-      expectedOutput?: Record<string, unknown>;
-      estimatedDuration: number;
-    }>> = {
+    const templates: Record<
+      GoalType,
+      Array<{
+        title: string;
+        description: string;
+        type: TaskType;
+        requiredTools: string[];
+        dependsOnOrder?: number[];
+        input: Record<string, unknown>;
+        expectedOutput?: Record<string, unknown>;
+        estimatedDuration: number;
+      }>
+    > = {
       feature: [
         {
           title: "Analyze Requirements",
@@ -800,7 +827,9 @@ export class PlanningEngine {
     // Reduce confidence if tools are missing
     const requiredTools = new Set(tasks.flatMap((t) => t.requiredTools));
     const availableTools = new Set(context.availableTools);
-    const missingTools = [...requiredTools].filter((t) => !availableTools.has(t));
+    const missingTools = [...requiredTools].filter(
+      (t) => !availableTools.has(t),
+    );
     if (missingTools.length > 0) {
       confidence *= Math.pow(0.8, missingTools.length);
     }
@@ -847,7 +876,9 @@ export class PlanningEngine {
     const warnings: string[] = [];
 
     if (goals.length > this.config.maxGoalsPerPlan * 0.8) {
-      warnings.push("Plan has many goals, consider splitting into multiple plans");
+      warnings.push(
+        "Plan has many goals, consider splitting into multiple plans",
+      );
     }
 
     if (tasks.length > 30) {
@@ -861,7 +892,9 @@ export class PlanningEngine {
 
     const circularDeps = this.findCircularDependencies(tasks);
     if (circularDeps.length > 0) {
-      warnings.push(`Circular dependencies detected: ${circularDeps.join(", ")}`);
+      warnings.push(
+        `Circular dependencies detected: ${circularDeps.join(", ")}`,
+      );
     }
 
     return warnings;
@@ -873,7 +906,11 @@ export class PlanningEngine {
   private findCircularDependencies(tasks: Task[]): string[] {
     const circular: string[] = [];
 
-    const findCycle = (taskId: string, path: string[], visited: Set<string>): void => {
+    const findCycle = (
+      taskId: string,
+      path: string[],
+      visited: Set<string>,
+    ): void => {
       if (visited.has(taskId)) {
         const cycleStart = path.indexOf(taskId);
         if (cycleStart !== -1) {
@@ -953,7 +990,12 @@ export class PlanningEngine {
 
     this.callbacks.onTaskStatusChanged?.(task, status);
     this.emitEvent({
-      type: status === "completed" ? "task_completed" : status === "failed" ? "task_failed" : "task_started",
+      type:
+        status === "completed"
+          ? "task_completed"
+          : status === "failed"
+            ? "task_failed"
+            : "task_started",
       taskId: task.id,
       goalId: task.goalId,
       message: `Task ${task.title} status changed to ${status}`,
@@ -971,7 +1013,9 @@ export class PlanningEngine {
     if (!plan) return;
 
     const tasks = plan.goalIds.flatMap((goalId) => this.getGoalTasks(goalId));
-    const goals = plan.goalIds.map((id) => this.goalRegistry.get(id)!).filter(Boolean);
+    const goals = plan.goalIds
+      .map((id) => this.goalRegistry.get(id)!)
+      .filter(Boolean);
 
     plan.progress = {
       totalGoals: goals.length,
@@ -982,7 +1026,8 @@ export class PlanningEngine {
       failedTasks: tasks.filter((t) => t.status === "failed").length,
       runningTasks: tasks.filter((t) => t.status === "running").length,
       percentage: Math.round(
-        (tasks.filter((t) => t.status === "completed").length / tasks.length) * 100,
+        (tasks.filter((t) => t.status === "completed").length / tasks.length) *
+          100,
       ),
       lastUpdated: new Date(),
     };

@@ -25,7 +25,7 @@ import {
 
 /**
  * Query Orchestrator
- * 
+ *
  * Central hub for knowledge queries. Routes queries to appropriate sources,
  * aggregates results, and applies ranking strategies.
  */
@@ -63,23 +63,26 @@ export class QueryOrchestrator {
 
     // Determine sources to query
     const sources = query.sources || this.getDefaultSources();
-    
+
     // Execute parallel queries to all sources
     const sourceResults = await this.executeSourceQueries(query, sources);
-    
+
     // Aggregate results
     const entities = this.aggregateEntities(sourceResults);
-    
+
     // Apply ranking strategy
     const rankedEntities = this.rankEntities(entities, query);
-    
+
     // Generate cross-source insights
     const insights = this.generateInsights(rankedEntities, sourceResults);
-    
+
     // Build result
     const result: KnowledgeQueryResult = {
       queryId: query.id,
-      entities: rankedEntities.slice(0, query.limit || this.config.maxQueryResults),
+      entities: rankedEntities.slice(
+        0,
+        query.limit || this.config.maxQueryResults,
+      ),
       insights,
       metadata: {
         totalResults: entities.length,
@@ -110,10 +113,10 @@ export class QueryOrchestrator {
       sources?: KnowledgeSource[];
       limit?: number;
       minSimilarity?: number;
-    }
+    },
   ): Promise<UnifiedKnowledgeEntity[]> {
     const sources = options?.sources || ["vector_memory", "code_graph"];
-    
+
     // Get the source entity first
     const sourceEntity = await this.getEntityById(entityId);
     if (!sourceEntity) {
@@ -122,7 +125,7 @@ export class QueryOrchestrator {
 
     // Query each source for similar entities
     const similarEntities: UnifiedKnowledgeEntity[] = [];
-    
+
     for (const source of sources) {
       const connector = this.sourceConnectors.get(source);
       if (connector?.findSimilar) {
@@ -134,16 +137,18 @@ export class QueryOrchestrator {
     // Deduplicate and rank by similarity
     const deduped = this.deduplicateEntities(similarEntities);
     return deduped
-      .filter(e => e.id !== entityId)
+      .filter((e) => e.id !== entityId)
       .slice(0, options?.limit || 10);
   }
 
   /**
    * Get entity by ID across all sources
    */
-  async getEntityById(entityId: string): Promise<UnifiedKnowledgeEntity | null> {
+  async getEntityById(
+    entityId: string,
+  ): Promise<UnifiedKnowledgeEntity | null> {
     // Try each source
-    for (const [source, connector] of this.sourceConnectors) {
+    for (const [_source, connector] of this.sourceConnectors) {
       if (connector.getById) {
         const entity = await connector.getById(entityId);
         if (entity) {
@@ -160,7 +165,7 @@ export class QueryOrchestrator {
   async getEntitiesByPath(
     appId: number,
     filePath: string,
-    sources?: KnowledgeSource[]
+    sources?: KnowledgeSource[],
   ): Promise<UnifiedKnowledgeEntity[]> {
     const querySources = sources || ["code_graph", "vector_memory"];
     const entities: UnifiedKnowledgeEntity[] = [];
@@ -203,17 +208,12 @@ export class QueryOrchestrator {
   }
 
   private getDefaultSources(): KnowledgeSource[] {
-    return [
-      "code_graph",
-      "vector_memory",
-      "dependency_graph",
-      "architecture",
-    ];
+    return ["code_graph", "vector_memory", "dependency_graph", "architecture"];
   }
 
   private async executeSourceQueries(
     query: KnowledgeQuery,
-    sources: KnowledgeSource[]
+    sources: KnowledgeSource[],
   ): Promise<Map<KnowledgeSource, SourceQueryResult>> {
     const results = new Map<KnowledgeSource, SourceQueryResult>();
 
@@ -221,12 +221,10 @@ export class QueryOrchestrator {
     const queryPromises = sources.map(async (source) => {
       const startTime = Date.now();
       const connector = this.sourceConnectors.get(source);
-      
+
       try {
-        const entities = connector
-          ? await connector.query(query)
-          : [];
-        
+        const entities = connector ? await connector.query(query) : [];
+
         return {
           source,
           result: {
@@ -257,10 +255,10 @@ export class QueryOrchestrator {
   }
 
   private aggregateEntities(
-    sourceResults: Map<KnowledgeSource, SourceQueryResult>
+    sourceResults: Map<KnowledgeSource, SourceQueryResult>,
   ): UnifiedKnowledgeEntity[] {
     const allEntities: UnifiedKnowledgeEntity[] = [];
-    
+
     for (const [, result] of sourceResults) {
       allEntities.push(...result.entities);
     }
@@ -270,7 +268,7 @@ export class QueryOrchestrator {
 
   private rankEntities(
     entities: UnifiedKnowledgeEntity[],
-    query: KnowledgeQuery
+    query: KnowledgeQuery,
   ): UnifiedKnowledgeEntity[] {
     const strategy = query.rankingStrategy || "hybrid";
 
@@ -291,7 +289,7 @@ export class QueryOrchestrator {
 
   private rankByRelevance(
     entities: UnifiedKnowledgeEntity[],
-    query: KnowledgeQuery
+    query: KnowledgeQuery,
   ): UnifiedKnowledgeEntity[] {
     // Score based on query relevance
     return entities.sort((a, b) => {
@@ -301,13 +299,17 @@ export class QueryOrchestrator {
     });
   }
 
-  private rankByConfidence(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity[] {
+  private rankByConfidence(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity[] {
     return entities.sort((a, b) => {
       return b.metadata.confidence - a.metadata.confidence;
     });
   }
 
-  private rankByRecency(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity[] {
+  private rankByRecency(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity[] {
     return entities.sort((a, b) => {
       const timeA = a.metadata.lastUpdated.getTime();
       const timeB = b.metadata.lastUpdated.getTime();
@@ -315,7 +317,9 @@ export class QueryOrchestrator {
     });
   }
 
-  private rankByAccess(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity[] {
+  private rankByAccess(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity[] {
     return entities.sort((a, b) => {
       return b.metadata.accessCount - a.metadata.accessCount;
     });
@@ -323,58 +327,58 @@ export class QueryOrchestrator {
 
   private rankByHybrid(
     entities: UnifiedKnowledgeEntity[],
-    query: KnowledgeQuery
+    query: KnowledgeQuery,
   ): UnifiedKnowledgeEntity[] {
     return entities.sort((a, b) => {
       // Combine multiple factors
-      const scoreA = 
+      const scoreA =
         this.calculateRelevanceScore(a, query) * 0.4 +
         a.metadata.confidence * 0.3 +
         this.calculateRecencyScore(a) * 0.2 +
         this.calculateAccessScore(a) * 0.1;
-      
-      const scoreB = 
+
+      const scoreB =
         this.calculateRelevanceScore(b, query) * 0.4 +
         b.metadata.confidence * 0.3 +
         this.calculateRecencyScore(b) * 0.2 +
         this.calculateAccessScore(b) * 0.1;
-      
+
       return scoreB - scoreA;
     });
   }
 
   private calculateRelevanceScore(
     entity: UnifiedKnowledgeEntity,
-    query: KnowledgeQuery
+    query: KnowledgeQuery,
   ): number {
     let score = 0;
     const queryLower = query.query.toLowerCase();
-    
+
     // Name match
     if (entity.name.toLowerCase().includes(queryLower)) {
       score += 0.5;
     }
-    
+
     // Path match
     if (entity.filePath?.toLowerCase().includes(queryLower)) {
       score += 0.3;
     }
-    
+
     // Type match
     if (query.entityTypes?.includes(entity.type)) {
       score += 0.2;
     }
-    
+
     // Source weight
     score *= this.config.sourceWeights[entity.source] || 1.0;
-    
+
     return score;
   }
 
   private calculateRecencyScore(entity: UnifiedKnowledgeEntity): number {
     const age = Date.now() - entity.metadata.lastUpdated.getTime();
     const dayInMs = 24 * 60 * 60 * 1000;
-    return Math.max(0, 1 - (age / (7 * dayInMs))); // Decay over 7 days
+    return Math.max(0, 1 - age / (7 * dayInMs)); // Decay over 7 days
   }
 
   private calculateAccessScore(entity: UnifiedKnowledgeEntity): number {
@@ -384,7 +388,7 @@ export class QueryOrchestrator {
 
   private generateInsights(
     entities: UnifiedKnowledgeEntity[],
-    sourceResults: Map<KnowledgeSource, SourceQueryResult>
+    sourceResults: Map<KnowledgeSource, SourceQueryResult>,
   ): KnowledgeInsight[] {
     const insights: KnowledgeInsight[] = [];
 
@@ -403,14 +407,19 @@ export class QueryOrchestrator {
     return insights;
   }
 
-  private analyzeRelationships(entities: UnifiedKnowledgeEntity[]): KnowledgeInsight[] {
+  private analyzeRelationships(
+    entities: UnifiedKnowledgeEntity[],
+  ): KnowledgeInsight[] {
     const insights: KnowledgeInsight[] = [];
 
     // Find highly connected entities
     const connectionCounts = new Map<string, number>();
     for (const entity of entities) {
       for (const rel of entity.relationships || []) {
-        connectionCounts.set(rel.targetId, (connectionCounts.get(rel.targetId) || 0) + 1);
+        connectionCounts.set(
+          rel.targetId,
+          (connectionCounts.get(rel.targetId) || 0) + 1,
+        );
       }
     }
 
@@ -424,10 +433,12 @@ export class QueryOrchestrator {
         type: "pattern",
         title: "Highly Connected Entities",
         description: `Found ${hubs.length} entities with 3+ connections, indicating potential architectural significance`,
-        entityIds: hubs.map(h => h.id),
+        entityIds: hubs.map((h) => h.id),
         confidence: 0.8,
         derivedFrom: ["code_graph"],
-        suggestions: ["Consider if these hub entities represent core domain concepts"],
+        suggestions: [
+          "Consider if these hub entities represent core domain concepts",
+        ],
       });
     }
 
@@ -436,13 +447,13 @@ export class QueryOrchestrator {
 
   private analyzeSourceOverlap(
     entities: UnifiedKnowledgeEntity[],
-    sourceResults: Map<KnowledgeSource, SourceQueryResult>
+    sourceResults: Map<KnowledgeSource, SourceQueryResult>,
   ): KnowledgeInsight[] {
     const insights: KnowledgeInsight[] = [];
 
     // Count entities found in multiple sources
     const entitySourceCount = new Map<string, Set<KnowledgeSource>>();
-    
+
     for (const [source, result] of sourceResults) {
       for (const entity of result.entities) {
         if (!entitySourceCount.has(entity.id)) {
@@ -452,8 +463,9 @@ export class QueryOrchestrator {
       }
     }
 
-    const multiSourceEntities = Array.from(entitySourceCount.entries())
-      .filter(([, sources]) => sources.size > 1);
+    const multiSourceEntities = Array.from(entitySourceCount.entries()).filter(
+      ([, sources]) => sources.size > 1,
+    );
 
     if (multiSourceEntities.length > 0) {
       insights.push({
@@ -469,7 +481,9 @@ export class QueryOrchestrator {
     return insights;
   }
 
-  private deduplicateEntities(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity[] {
+  private deduplicateEntities(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity[] {
     const seen = new Set<string>();
     const deduped: UnifiedKnowledgeEntity[] = [];
 
@@ -483,7 +497,9 @@ export class QueryOrchestrator {
     return deduped;
   }
 
-  private calculateOverallConfidence(entities: UnifiedKnowledgeEntity[]): number {
+  private calculateOverallConfidence(
+    entities: UnifiedKnowledgeEntity[],
+  ): number {
     if (entities.length === 0) return 0;
     const total = entities.reduce((sum, e) => sum + e.metadata.confidence, 0);
     return total / entities.length;
@@ -492,15 +508,18 @@ export class QueryOrchestrator {
   private getCachedResult(query: KnowledgeQuery): KnowledgeQueryResult | null {
     const cacheKey = this.getCacheKey(query);
     const cached = this.cache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.config.cacheTtl * 1000) {
       return cached.result;
     }
-    
+
     return null;
   }
 
-  private cacheResult(query: KnowledgeQuery, result: KnowledgeQueryResult): void {
+  private cacheResult(
+    query: KnowledgeQuery,
+    result: KnowledgeQueryResult,
+  ): void {
     const cacheKey = this.getCacheKey(query);
     this.cache.set(cacheKey, {
       result,
@@ -519,19 +538,27 @@ export class QueryOrchestrator {
   }
 
   private toSourceResultMap(
-    results: Map<KnowledgeSource, SourceQueryResult>
+    results: Map<KnowledgeSource, SourceQueryResult>,
   ): Map<KnowledgeSource, SourceQueryResult> {
     return new Map(results);
   }
 
-  private updateQueryStats(sources: KnowledgeSource[], queryTime: number): void {
+  private updateQueryStats(
+    sources: KnowledgeSource[],
+    queryTime: number,
+  ): void {
     // Update average query time
-    const prevTotal = this.queryStats.averageQueryTime * (this.queryStats.totalQueries - 1);
-    this.queryStats.averageQueryTime = (prevTotal + queryTime) / this.queryStats.totalQueries;
+    const prevTotal =
+      this.queryStats.averageQueryTime * (this.queryStats.totalQueries - 1);
+    this.queryStats.averageQueryTime =
+      (prevTotal + queryTime) / this.queryStats.totalQueries;
 
     // Update source stats
     for (const source of sources) {
-      const stats = this.queryStats.sourceStats.get(source) || { queries: 0, totalTime: 0 };
+      const stats = this.queryStats.sourceStats.get(source) || {
+        queries: 0,
+        totalTime: 0,
+      };
       stats.queries++;
       stats.totalTime += queryTime;
       this.queryStats.sourceStats.set(source, stats);

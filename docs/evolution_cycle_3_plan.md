@@ -11,6 +11,7 @@
 ## Problem Statement
 
 Current state:
+
 - `LearningRepository.persistDecision()` is a stub that only updates cache
 - `LearningRepository.loadDecision()` returns null
 - Decisions are lost when the application restarts
@@ -18,6 +19,7 @@ Current state:
 - Learning cannot accumulate over time
 
 Impact:
+
 - No persistent knowledge from past decisions
 - Each session starts with no learning history
 - Recommendations cannot improve over time
@@ -72,6 +74,7 @@ Impact:
 ### Database Operations
 
 #### persistDecision
+
 ```typescript
 async persistDecision(decision: ArchitectureDecisionRecord): Promise<void> {
   await db.insert(architectureDecisions).values({
@@ -101,6 +104,7 @@ async persistDecision(decision: ArchitectureDecisionRecord): Promise<void> {
 ```
 
 #### loadDecision
+
 ```typescript
 async loadDecision(id: string): Promise<ArchitectureDecisionRecord | null> {
   const [row] = await db.select()
@@ -115,6 +119,7 @@ async loadDecision(id: string): Promise<ArchitectureDecisionRecord | null> {
 ```
 
 #### loadDecisionsForApp
+
 ```typescript
 async loadDecisionsForApp(appId: number, options?: { limit?: number }): Promise<ArchitectureDecisionRecord[]> {
   const rows = await db.select()
@@ -155,7 +160,9 @@ async persistPattern(pattern: LearnedPattern): Promise<void> {
 ### Type Mappings
 
 ```typescript
-function mapRowToDecision(row: ArchitectureDecisionRow): ArchitectureDecisionRecord {
+function mapRowToDecision(
+  row: ArchitectureDecisionRow,
+): ArchitectureDecisionRecord {
   return {
     id: row.id,
     appId: row.appId,
@@ -181,6 +188,7 @@ function mapRowToDecision(row: ArchitectureDecisionRow): ArchitectureDecisionRec
 ## Database Schema Used
 
 ### architecture_decisions
+
 ```sql
 CREATE TABLE architecture_decisions (
   id TEXT PRIMARY KEY,
@@ -207,6 +215,7 @@ CREATE TABLE architecture_decisions (
 ```
 
 ### learned_patterns
+
 ```sql
 CREATE TABLE learned_patterns (
   id TEXT PRIMARY KEY,
@@ -248,12 +257,12 @@ CREATE TABLE learned_patterns (
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Data migration | Schema already exists, no migration needed |
-| Type mismatches | Comprehensive type mapping layer |
-| Performance | Cache layer already implemented |
+| Risk            | Mitigation                                 |
+| --------------- | ------------------------------------------ |
+| Data migration  | Schema already exists, no migration needed |
+| Type mismatches | Comprehensive type mapping layer           |
+| Performance     | Cache layer already implemented            |
 
 ---
 
-*Plan created for Evolution Cycle 3*
+_Plan created for Evolution Cycle 3_

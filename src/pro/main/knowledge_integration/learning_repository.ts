@@ -19,7 +19,7 @@ import { decisionPersistence } from "./decision_persistence";
 
 /**
  * Learning Repository
- * 
+ *
  * Manages architecture decision records and enables learning from outcomes.
  */
 export class LearningRepository {
@@ -29,7 +29,12 @@ export class LearningRepository {
   /**
    * Record a new architecture decision
    */
-  async recordDecision(decision: Omit<ArchitectureDecisionRecord, "id" | "createdAt" | "updatedAt">): Promise<ArchitectureDecisionRecord> {
+  async recordDecision(
+    decision: Omit<
+      ArchitectureDecisionRecord,
+      "id" | "createdAt" | "updatedAt"
+    >,
+  ): Promise<ArchitectureDecisionRecord> {
     const id = `adr_${randomUUID()}`;
     const now = new Date();
 
@@ -57,7 +62,7 @@ export class LearningRepository {
    */
   async updateOutcome(
     decisionId: string,
-    outcome: Partial<DecisionOutcome>
+    outcome: Partial<DecisionOutcome>,
   ): Promise<ArchitectureDecisionRecord | null> {
     const decision = this.decisionCache.get(decisionId);
     if (!decision) {
@@ -96,13 +101,21 @@ export class LearningRepository {
       limit?: number;
       minSimilarity?: number;
       includeOutcomes?: boolean;
-    }
-  ): Promise<Array<{ decision: ArchitectureDecisionRecord; similarity: number }>> {
+    },
+  ): Promise<
+    Array<{ decision: ArchitectureDecisionRecord; similarity: number }>
+  > {
     const allDecisions = Array.from(this.decisionCache.values());
-    const results: Array<{ decision: ArchitectureDecisionRecord; similarity: number }> = [];
+    const results: Array<{
+      decision: ArchitectureDecisionRecord;
+      similarity: number;
+    }> = [];
 
     for (const decision of allDecisions) {
-      const similarity = this.calculateContextSimilarity(context, decision.context);
+      const similarity = this.calculateContextSimilarity(
+        context,
+        decision.context,
+      );
       if (similarity >= (options?.minSimilarity || 0.3)) {
         results.push({ decision, similarity });
       }
@@ -139,19 +152,20 @@ export class LearningRepository {
       type?: ArchitectureDecisionType;
       status?: DecisionOutcome["status"];
       limit?: number;
-    }
+    },
   ): Promise<ArchitectureDecisionRecord[]> {
-    let decisions = Array.from(this.decisionCache.values())
-      .filter(d => d.appId === appId);
+    let decisions = Array.from(this.decisionCache.values()).filter(
+      (d) => d.appId === appId,
+    );
 
     // Filter by type
     if (options?.type) {
-      decisions = decisions.filter(d => d.type === options.type);
+      decisions = decisions.filter((d) => d.type === options.type);
     }
 
     // Filter by status
     if (options?.status) {
-      decisions = decisions.filter(d => d.outcome.status === options.status);
+      decisions = decisions.filter((d) => d.outcome.status === options.status);
     }
 
     // Sort by date and limit
@@ -165,10 +179,11 @@ export class LearningRepository {
    */
   async getLearnedPatterns(
     appId: number,
-    context?: DecisionContext
+    context?: DecisionContext,
   ): Promise<LearnedPattern[]> {
-    const successfulDecisions = (await this.getDecisionsForApp(appId))
-      .filter(d => d.outcome.status === "success");
+    const successfulDecisions = (await this.getDecisionsForApp(appId)).filter(
+      (d) => d.outcome.status === "success",
+    );
 
     const patterns: LearnedPattern[] = [];
 
@@ -185,9 +200,7 @@ export class LearningRepository {
 
     // Filter by context relevance if provided
     if (context) {
-      return scoredPatterns.filter(p => 
-        this.isPatternApplicable(p, context)
-      );
+      return scoredPatterns.filter((p) => this.isPatternApplicable(p, context));
     }
 
     return scoredPatterns;
@@ -198,12 +211,14 @@ export class LearningRepository {
    */
   async getRecommendations(
     appId: number,
-    context: DecisionContext
+    context: DecisionContext,
   ): Promise<DecisionRecommendation[]> {
     const recommendations: DecisionRecommendation[] = [];
 
     // Find similar past decisions
-    const similarDecisions = await this.findSimilarDecisions(context, { limit: 5 });
+    const similarDecisions = await this.findSimilarDecisions(context, {
+      limit: 5,
+    });
 
     for (const { decision, similarity } of similarDecisions) {
       if (decision.outcome.status === "success") {
@@ -238,38 +253,53 @@ export class LearningRepository {
     }
 
     // Sort by confidence
-    return recommendations.sort((a, b) => b.confidence - a.confidence).slice(0, 5);
+    return recommendations
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 5);
   }
 
   /**
    * Analyze decision quality over time
    */
-  async analyzeDecisionQuality(appId: number): Promise<DecisionQualityAnalysis> {
+  async analyzeDecisionQuality(
+    appId: number,
+  ): Promise<DecisionQualityAnalysis> {
     const decisions = await this.getDecisionsForApp(appId);
-    
-    const withOutcomes = decisions.filter(d => d.outcome.status !== "pending");
-    const successful = withOutcomes.filter(d => d.outcome.status === "success");
-    const failed = withOutcomes.filter(d => d.outcome.status === "failure");
-    const partial = withOutcomes.filter(d => d.outcome.status === "partial");
 
-    const avgConfidence = decisions.length > 0
-      ? decisions.reduce((sum, d) => sum + d.confidence, 0) / decisions.length
-      : 0;
+    const withOutcomes = decisions.filter(
+      (d) => d.outcome.status !== "pending",
+    );
+    const successful = withOutcomes.filter(
+      (d) => d.outcome.status === "success",
+    );
+    const failed = withOutcomes.filter((d) => d.outcome.status === "failure");
+    const partial = withOutcomes.filter((d) => d.outcome.status === "partial");
 
-    const successfulConfidence = successful.length > 0
-      ? successful.reduce((sum, d) => sum + d.confidence, 0) / successful.length
-      : 0;
+    const avgConfidence =
+      decisions.length > 0
+        ? decisions.reduce((sum, d) => sum + d.confidence, 0) / decisions.length
+        : 0;
 
-    const failedConfidence = failed.length > 0
-      ? failed.reduce((sum, d) => sum + d.confidence, 0) / failed.length
-      : 0;
+    const successfulConfidence =
+      successful.length > 0
+        ? successful.reduce((sum, d) => sum + d.confidence, 0) /
+          successful.length
+        : 0;
+
+    const failedConfidence =
+      failed.length > 0
+        ? failed.reduce((sum, d) => sum + d.confidence, 0) / failed.length
+        : 0;
 
     return {
       totalDecisions: decisions.length,
       decisionsWithOutcomes: withOutcomes.length,
-      successRate: withOutcomes.length > 0 ? successful.length / withOutcomes.length : 0,
-      partialRate: withOutcomes.length > 0 ? partial.length / withOutcomes.length : 0,
-      failureRate: withOutcomes.length > 0 ? failed.length / withOutcomes.length : 0,
+      successRate:
+        withOutcomes.length > 0 ? successful.length / withOutcomes.length : 0,
+      partialRate:
+        withOutcomes.length > 0 ? partial.length / withOutcomes.length : 0,
+      failureRate:
+        withOutcomes.length > 0 ? failed.length / withOutcomes.length : 0,
       averageConfidence: avgConfidence,
       confidenceCalibration: {
         highConfidenceSuccess: successfulConfidence,
@@ -293,17 +323,23 @@ export class LearningRepository {
   // PRIVATE METHODS
   // ============================================================================
 
-  private async persistDecision(decision: ArchitectureDecisionRecord): Promise<void> {
+  private async persistDecision(
+    decision: ArchitectureDecisionRecord,
+  ): Promise<void> {
     // Evolution Cycle 3: Wire to actual database persistence
     await decisionPersistence.persistDecision(decision);
   }
 
-  private async loadDecision(id: string): Promise<ArchitectureDecisionRecord | null> {
+  private async loadDecision(
+    id: string,
+  ): Promise<ArchitectureDecisionRecord | null> {
     // Evolution Cycle 3: Load from actual database
     return await decisionPersistence.loadDecision(id);
   }
 
-  private async updateSimilarityIndex(decision: ArchitectureDecisionRecord): Promise<void> {
+  private async updateSimilarityIndex(
+    decision: ArchitectureDecisionRecord,
+  ): Promise<void> {
     // Build similarity index from context keywords
     const keywords = this.extractContextKeywords(decision.context);
     for (const keyword of keywords) {
@@ -315,20 +351,23 @@ export class LearningRepository {
 
   private calculateContextSimilarity(
     context1: DecisionContext,
-    context2: DecisionContext
+    context2: DecisionContext,
   ): number {
     let score = 0;
     let totalWeight = 0;
 
     // Problem similarity (weight: 0.4)
-    const problemSimilarity = this.textSimilarity(context1.problem, context2.problem);
+    const problemSimilarity = this.textSimilarity(
+      context1.problem,
+      context2.problem,
+    );
     score += problemSimilarity * 0.4;
     totalWeight += 0.4;
 
     // Constraint overlap (weight: 0.3)
     const constraintOverlap = this.setOverlap(
       new Set(context1.constraints),
-      new Set(context2.constraints)
+      new Set(context2.constraints),
     );
     score += constraintOverlap * 0.3;
     totalWeight += 0.3;
@@ -336,16 +375,19 @@ export class LearningRepository {
     // Goal overlap (weight: 0.2)
     const goalOverlap = this.setOverlap(
       new Set(context1.goals),
-      new Set(context2.goals)
+      new Set(context2.goals),
     );
     score += goalOverlap * 0.2;
     totalWeight += 0.2;
 
     // Path overlap (weight: 0.1)
-    if (context1.relevantPaths.length > 0 || context2.relevantPaths.length > 0) {
+    if (
+      context1.relevantPaths.length > 0 ||
+      context2.relevantPaths.length > 0
+    ) {
       const pathOverlap = this.setOverlap(
         new Set(context1.relevantPaths),
-        new Set(context2.relevantPaths)
+        new Set(context2.relevantPaths),
       );
       score += pathOverlap * 0.1;
       totalWeight += 0.1;
@@ -375,10 +417,12 @@ export class LearningRepository {
     return union > 0 ? intersection / union : 0;
   }
 
-  private async learnFromOutcome(decision: ArchitectureDecisionRecord): Promise<void> {
+  private async learnFromOutcome(
+    decision: ArchitectureDecisionRecord,
+  ): Promise<void> {
     // Extract lessons learned
     this.extractLessons(decision);
-    
+
     // Update related entities if needed
     if (decision.relatedEntities.length > 0) {
       // Could trigger re-indexing or confidence updates
@@ -401,13 +445,17 @@ export class LearningRepository {
 
     // Generate lessons based on outcome
     if (decision.outcome.status === "success") {
-      lessons.push(`${decision.selectedOption} worked well for ${decision.context.problem}`);
+      lessons.push(
+        `${decision.selectedOption} worked well for ${decision.context.problem}`,
+      );
     } else if (decision.outcome.status === "failure") {
-      lessons.push(`${decision.selectedOption} did not work for ${decision.context.problem}`);
+      lessons.push(
+        `${decision.selectedOption} did not work for ${decision.context.problem}`,
+      );
       if (decision.alternatives.length > 0) {
         const alternatives = decision.alternatives
-          .filter(a => !a.selectionReason?.includes("selected"))
-          .map(a => a.name);
+          .filter((a) => !a.selectionReason?.includes("selected"))
+          .map((a) => a.name);
         if (alternatives.length > 0) {
           lessons.push(`Consider alternatives: ${alternatives.join(", ")}`);
         }
@@ -417,7 +465,9 @@ export class LearningRepository {
     return lessons;
   }
 
-  private extractPattern(decision: ArchitectureDecisionRecord): LearnedPattern | null {
+  private extractPattern(
+    decision: ArchitectureDecisionRecord,
+  ): LearnedPattern | null {
     if (decision.outcome.status === "pending") {
       return null;
     }
@@ -428,7 +478,9 @@ export class LearningRepository {
       description: `For ${decision.context.problem}, ${decision.selectedOption} is effective`,
       condition: decision.context.constraints.join(", "),
       solution: decision.selectedOption,
-      confidence: decision.confidence * (decision.outcome.status === "success" ? 1.0 : 0.5),
+      confidence:
+        decision.confidence *
+        (decision.outcome.status === "success" ? 1.0 : 0.5),
       applicability: decision.relatedEntities.length > 0 ? 0.8 : 0.5,
       basedOnDecision: decision.id,
     };
@@ -442,58 +494,90 @@ export class LearningRepository {
     }
 
     // Update confidence based on frequency
-    return patterns.map(pattern => {
-      const frequency = typeCounts.get(pattern.type) || 1;
-      const frequencyBonus = Math.min(0.2, frequency * 0.05);
-      return {
-        ...pattern,
-        confidence: Math.min(1, pattern.confidence + frequencyBonus),
-      };
-    }).sort((a, b) => b.confidence - a.confidence);
+    return patterns
+      .map((pattern) => {
+        const frequency = typeCounts.get(pattern.type) || 1;
+        const frequencyBonus = Math.min(0.2, frequency * 0.05);
+        return {
+          ...pattern,
+          confidence: Math.min(1, pattern.confidence + frequencyBonus),
+        };
+      })
+      .sort((a, b) => b.confidence - a.confidence);
   }
 
-  private isPatternApplicable(pattern: LearnedPattern, context: DecisionContext): boolean {
+  private isPatternApplicable(
+    pattern: LearnedPattern,
+    context: DecisionContext,
+  ): boolean {
     // Check if pattern constraints match context
-    const patternConstraints = pattern.condition.split(", ").map(c => c.trim());
+    const patternConstraints = pattern.condition
+      .split(", ")
+      .map((c) => c.trim());
     const contextConstraints = new Set(context.constraints);
-    
+
     // Pattern is applicable if at least half of its constraints match
-    const matchingConstraints = patternConstraints.filter(c => contextConstraints.has(c));
+    const matchingConstraints = patternConstraints.filter((c) =>
+      contextConstraints.has(c),
+    );
     return matchingConstraints.length >= patternConstraints.length / 2;
   }
 
   private extractContextKeywords(context: DecisionContext): string[] {
     const keywords: string[] = [];
-    
+
     // Extract from problem
-    keywords.push(...context.problem.toLowerCase().split(/\s+/).filter(w => w.length > 3));
-    
+    keywords.push(
+      ...context.problem
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3),
+    );
+
     // Extract from constraints
     for (const constraint of context.constraints) {
-      keywords.push(...constraint.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+      keywords.push(
+        ...constraint
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 3),
+      );
     }
-    
+
     // Extract from goals
     for (const goal of context.goals) {
-      keywords.push(...goal.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+      keywords.push(
+        ...goal
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 3),
+      );
     }
-    
+
     return [...new Set(keywords)];
   }
 
-  private calculateTrend(decisions: ArchitectureDecisionRecord[]): "improving" | "stable" | "declining" {
+  private calculateTrend(
+    decisions: ArchitectureDecisionRecord[],
+  ): "improving" | "stable" | "declining" {
     if (decisions.length < 3) return "stable";
 
     // Sort by date
-    const sorted = [...decisions].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    
+    const sorted = [...decisions].sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
+
     // Split into first and second half
     const midpoint = Math.floor(sorted.length / 2);
     const firstHalf = sorted.slice(0, midpoint);
     const secondHalf = sorted.slice(midpoint);
 
-    const firstSuccessRate = firstHalf.filter(d => d.outcome.status === "success").length / firstHalf.length;
-    const secondSuccessRate = secondHalf.filter(d => d.outcome.status === "success").length / secondHalf.length;
+    const firstSuccessRate =
+      firstHalf.filter((d) => d.outcome.status === "success").length /
+      firstHalf.length;
+    const secondSuccessRate =
+      secondHalf.filter((d) => d.outcome.status === "success").length /
+      secondHalf.length;
 
     const diff = secondSuccessRate - firstSuccessRate;
     if (diff > 0.1) return "improving";
@@ -501,7 +585,9 @@ export class LearningRepository {
     return "stable";
   }
 
-  private getTypeDistribution(decisions: ArchitectureDecisionRecord[]): Record<ArchitectureDecisionType, number> {
+  private getTypeDistribution(
+    decisions: ArchitectureDecisionRecord[],
+  ): Record<ArchitectureDecisionType, number> {
     const distribution: Record<string, number> = {};
     for (const decision of decisions) {
       distribution[decision.type] = (distribution[decision.type] || 0) + 1;

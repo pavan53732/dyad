@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import type { ToolDefinition, AgentContext } from "./types";
+import type { ToolDefinition } from "./types";
 import { escapeXmlAttr, escapeXmlContent } from "./types";
 import {
   QueryOrchestrator,
@@ -29,21 +29,55 @@ import {
 const KilQueryInputSchema = z.object({
   query: z.string().describe("The search query to find relevant knowledge"),
   sources: z
-    .array(z.enum(["code_graph", "vector_memory", "dependency_graph", "architecture", "reasoning"]))
+    .array(
+      z.enum([
+        "code_graph",
+        "vector_memory",
+        "dependency_graph",
+        "architecture",
+        "reasoning",
+      ]),
+    )
     .optional()
     .default(["code_graph", "vector_memory"])
     .describe("Knowledge sources to query"),
   entity_types: z
-    .array(z.enum(["function", "class", "module", "file", "variable", "pattern", "decision"]))
+    .array(
+      z.enum([
+        "function",
+        "class",
+        "module",
+        "file",
+        "variable",
+        "pattern",
+        "decision",
+      ]),
+    )
     .optional()
     .describe("Types of entities to filter"),
-  limit: z.number().min(1).max(50).optional().default(10).describe("Maximum results to return"),
+  limit: z
+    .number()
+    .min(1)
+    .max(50)
+    .optional()
+    .default(10)
+    .describe("Maximum results to return"),
 });
 
 const KilQuerySimilarInputSchema = z.object({
-  entity_id: z.string().describe("The ID of the entity to find similar items for"),
+  entity_id: z
+    .string()
+    .describe("The ID of the entity to find similar items for"),
   sources: z
-    .array(z.enum(["code_graph", "vector_memory", "dependency_graph", "architecture", "reasoning"]))
+    .array(
+      z.enum([
+        "code_graph",
+        "vector_memory",
+        "dependency_graph",
+        "architecture",
+        "reasoning",
+      ]),
+    )
     .optional()
     .default(["code_graph", "vector_memory"]),
   limit: z.number().min(1).max(20).optional().default(5),
@@ -51,30 +85,50 @@ const KilQuerySimilarInputSchema = z.object({
 });
 
 const KilGetRecommendationsInputSchema = z.object({
-  context: z.object({
-    problem: z.string().describe("The problem being solved"),
-    constraints: z.array(z.string()).optional().describe("Any constraints to consider"),
-    goals: z.array(z.string()).optional().describe("Goals to achieve"),
-  }).describe("Context for recommendation generation"),
+  context: z
+    .object({
+      problem: z.string().describe("The problem being solved"),
+      constraints: z
+        .array(z.string())
+        .optional()
+        .describe("Any constraints to consider"),
+      goals: z.array(z.string()).optional().describe("Goals to achieve"),
+    })
+    .describe("Context for recommendation generation"),
   limit: z.number().min(1).max(10).optional().default(5),
 });
 
 const KilRecordDecisionInputSchema = z.object({
   title: z.string().describe("Title of the architecture decision"),
   type: z
-    .enum(["technology_choice", "pattern_selection", "structure_change", "api_design", "data_model", "security_decision", "performance_optimization", "custom"])
+    .enum([
+      "technology_choice",
+      "pattern_selection",
+      "structure_change",
+      "api_design",
+      "data_model",
+      "security_decision",
+      "performance_optimization",
+      "custom",
+    ])
     .describe("Type of decision"),
-  context: z.object({
-    problem: z.string(),
-    constraints: z.array(z.string()).optional(),
-    goals: z.array(z.string()).optional(),
-    relevant_paths: z.array(z.string()).optional(),
-  }).describe("Context in which the decision was made"),
-  alternatives: z.array(z.object({
-    name: z.string(),
-    pros: z.array(z.string()).optional(),
-    cons: z.array(z.string()).optional(),
-  })).describe("Alternatives considered"),
+  context: z
+    .object({
+      problem: z.string(),
+      constraints: z.array(z.string()).optional(),
+      goals: z.array(z.string()).optional(),
+      relevant_paths: z.array(z.string()).optional(),
+    })
+    .describe("Context in which the decision was made"),
+  alternatives: z
+    .array(
+      z.object({
+        name: z.string(),
+        pros: z.array(z.string()).optional(),
+        cons: z.array(z.string()).optional(),
+      }),
+    )
+    .describe("Alternatives considered"),
   selected_option: z.string().describe("The option that was selected"),
   rationale: z.string().describe("Why this option was chosen"),
   confidence: z.number().min(0).max(1).optional().default(0.8),
@@ -92,9 +146,10 @@ const KilBuildContextInputSchema = z.object({
 // KIL Query Tool
 // ============================================================================
 
-export const kilQueryTool: ToolDefinition<z.infer<typeof KilQueryInputSchema>> = {
-  name: "kil_query",
-  description: `Query the Knowledge Integration Layer for unified knowledge across code graph, vector memory, architecture decisions, and learned patterns.
+export const kilQueryTool: ToolDefinition<z.infer<typeof KilQueryInputSchema>> =
+  {
+    name: "kil_query",
+    description: `Query the Knowledge Integration Layer for unified knowledge across code graph, vector memory, architecture decisions, and learned patterns.
 
 This tool searches multiple knowledge sources simultaneously and returns aggregated, relevant results.
 
@@ -103,78 +158,81 @@ Use this tool when you need to:
 - Search for architecture decisions related to a topic
 - Find learned patterns from past successful implementations
 - Query across multiple knowledge sources in one call`,
-  inputSchema: KilQueryInputSchema,
-  defaultConsent: "always",
-  modifiesState: false,
+    inputSchema: KilQueryInputSchema,
+    defaultConsent: "always",
+    modifiesState: false,
 
-  execute: async (args, ctx) => {
-    try {
-      const orchestrator = new QueryOrchestrator();
+    execute: async (args, ctx) => {
+      try {
+        const orchestrator = new QueryOrchestrator();
 
-      const query: KnowledgeQuery = {
-        id: `query_${ctx.chatId}_${Date.now()}`,
-        appId: ctx.appId,
-        query: args.query,
-        sources: args.sources as KnowledgeSource[],
-        entityTypes: args.entity_types,
-        limit: args.limit,
-      };
+        const query: KnowledgeQuery = {
+          id: `query_${ctx.chatId}_${Date.now()}`,
+          appId: ctx.appId,
+          query: args.query,
+          sources: args.sources as KnowledgeSource[],
+          entityTypes: args.entity_types,
+          limit: args.limit,
+        };
 
-      const result = await orchestrator.query(query);
+        const result = await orchestrator.query(query);
 
-      if (!result.success) {
-        return `<kil-query-error error="${escapeXmlAttr(result.error || "Unknown error")}" />`;
-      }
-
-      if (result.entities.length === 0) {
-        return `<kil-query-empty query="${escapeXmlAttr(args.query)}" sources="${args.sources.join(", ")}" />`;
-      }
-
-      // Format results as XML
-      let xml = `<kil-query-results query="${escapeXmlAttr(args.query)}" count="${result.entities.length}">\n`;
-
-      for (const entity of result.entities) {
-        xml += `  <entity id="${escapeXmlAttr(entity.id)}" type="${entity.type}" source="${entity.source}" relevance="${entity.metadata.confidence.toFixed(2)}">\n`;
-        xml += `    <name>${escapeXmlContent(entity.name)}</name>\n`;
-        if (entity.filePath) {
-          xml += `    <file>${escapeXmlContent(entity.filePath)}</file>\n`;
+        if (!result.success) {
+          return `<kil-query-error error="${escapeXmlAttr(result.error || "Unknown error")}" />`;
         }
-        if (entity.description) {
-          xml += `    <description>${escapeXmlContent(entity.description)}</description>\n`;
-        }
-        xml += `  </entity>\n`;
-      }
 
-      xml += `</kil-query-results>`;
+        if (result.entities.length === 0) {
+          return `<kil-query-empty query="${escapeXmlAttr(args.query)}" sources="${args.sources.join(", ")}" />`;
+        }
+
+        // Format results as XML
+        let xml = `<kil-query-results query="${escapeXmlAttr(args.query)}" count="${result.entities.length}">\n`;
+
+        for (const entity of result.entities) {
+          xml += `  <entity id="${escapeXmlAttr(entity.id)}" type="${entity.type}" source="${entity.source}" relevance="${entity.metadata.confidence.toFixed(2)}">\n`;
+          xml += `    <name>${escapeXmlContent(entity.name)}</name>\n`;
+          if (entity.filePath) {
+            xml += `    <file>${escapeXmlContent(entity.filePath)}</file>\n`;
+          }
+          if (entity.description) {
+            xml += `    <description>${escapeXmlContent(entity.description)}</description>\n`;
+          }
+          xml += `  </entity>\n`;
+        }
+
+        xml += `</kil-query-results>`;
+        return xml;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return `<kil-query-error error="${escapeXmlAttr(errorMessage)}" />`;
+      }
+    },
+
+    buildXml: (args, isComplete) => {
+      if (!args.query) return undefined;
+
+      let xml = `<kil-query query="${escapeXmlAttr(args.query)}"`;
+      if (args.sources?.length) {
+        xml += ` sources="${args.sources.join(",")}"`;
+      }
+      if (args.limit) {
+        xml += ` limit="${args.limit}"`;
+      }
+      if (isComplete) {
+        xml += ` />`;
+      }
       return xml;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return `<kil-query-error error="${escapeXmlAttr(errorMessage)}" />`;
-    }
-  },
-
-  buildXml: (args, isComplete) => {
-    if (!args.query) return undefined;
-
-    let xml = `<kil-query query="${escapeXmlAttr(args.query)}"`;
-    if (args.sources?.length) {
-      xml += ` sources="${args.sources.join(",")}"`;
-    }
-    if (args.limit) {
-      xml += ` limit="${args.limit}"`;
-    }
-    if (isComplete) {
-      xml += ` />`;
-    }
-    return xml;
-  },
-};
+    },
+  };
 
 // ============================================================================
 // KIL Query Similar Tool
 // ============================================================================
 
-export const kilQuerySimilarTool: ToolDefinition<z.infer<typeof KilQuerySimilarInputSchema>> = {
+export const kilQuerySimilarTool: ToolDefinition<
+  z.infer<typeof KilQuerySimilarInputSchema>
+> = {
   name: "kil_query_similar",
   description: `Find entities similar to a given entity across knowledge sources.
 
@@ -209,7 +267,8 @@ Use this tool when you need to:
       xml += `</kil-similar-results>`;
       return xml;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `<kil-similar-error error="${escapeXmlAttr(errorMessage)}" />`;
     }
   },
@@ -219,7 +278,9 @@ Use this tool when you need to:
 // KIL Get Recommendations Tool
 // ============================================================================
 
-export const kilGetRecommendationsTool: ToolDefinition<z.infer<typeof KilGetRecommendationsInputSchema>> = {
+export const kilGetRecommendationsTool: ToolDefinition<
+  z.infer<typeof KilGetRecommendationsInputSchema>
+> = {
   name: "kil_get_recommendations",
   description: `Get learning-based recommendations for the current context.
 
@@ -261,7 +322,8 @@ Use this tool when you need to:
       xml += `</kil-recommendations>`;
       return xml;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `<kil-recommendations-error error="${escapeXmlAttr(errorMessage)}" />`;
     }
   },
@@ -271,7 +333,9 @@ Use this tool when you need to:
 // KIL Record Decision Tool
 // ============================================================================
 
-export const kilRecordDecisionTool: ToolDefinition<z.infer<typeof KilRecordDecisionInputSchema>> = {
+export const kilRecordDecisionTool: ToolDefinition<
+  z.infer<typeof KilRecordDecisionInputSchema>
+> = {
   name: "kil_record_decision",
   description: `Record an architecture decision for future learning.
 
@@ -301,7 +365,7 @@ Use this tool when:
           goals: args.context.goals || [],
           relevantPaths: args.context.relevant_paths || [],
         },
-        alternatives: args.alternatives.map(a => ({
+        alternatives: args.alternatives.map((a) => ({
           name: a.name,
           pros: a.pros || [],
           cons: a.cons || [],
@@ -315,7 +379,8 @@ Use this tool when:
 
       return `<kil-decision-recorded id="${decision.id}" title="${escapeXmlAttr(args.title)}" type="${args.type}" />`;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `<kil-decision-error error="${escapeXmlAttr(errorMessage)}" />`;
     }
   },
@@ -329,7 +394,9 @@ Use this tool when:
 // KIL Build Context Tool
 // ============================================================================
 
-export const kilBuildContextTool: ToolDefinition<z.infer<typeof KilBuildContextInputSchema>> = {
+export const kilBuildContextTool: ToolDefinition<
+  z.infer<typeof KilBuildContextInputSchema>
+> = {
   name: "kil_build_context",
   description: `Build an aggregated knowledge context for a task.
 
@@ -394,7 +461,8 @@ Use this tool when:
       xml += `</kil-context>`;
       return xml;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       return `<kil-context-error error="${escapeXmlAttr(errorMessage)}" />`;
     }
   },

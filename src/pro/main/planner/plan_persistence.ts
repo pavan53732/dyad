@@ -1,11 +1,9 @@
 /**
  * Autonomous Planning Engine - Plan Persistence
- * 
+ *
  * Handles persistent storage and retrieval of plans, goals, and tasks.
  */
 
-import { db } from "@/db";
-import { desc, eq, and, inArray } from "drizzle-orm";
 import type {
   Goal,
   Task,
@@ -142,8 +140,12 @@ export class PlanPersistence {
       progress: JSON.stringify(plan.progress),
       createdAt: Math.floor(plan.createdAt.getTime() / 1000),
       updatedAt: Math.floor(plan.updatedAt.getTime() / 1000),
-      startedAt: plan.startedAt ? Math.floor(plan.startedAt.getTime() / 1000) : null,
-      completedAt: plan.completedAt ? Math.floor(plan.completedAt.getTime() / 1000) : null,
+      startedAt: plan.startedAt
+        ? Math.floor(plan.startedAt.getTime() / 1000)
+        : null,
+      completedAt: plan.completedAt
+        ? Math.floor(plan.completedAt.getTime() / 1000)
+        : null,
       createdBy: plan.createdBy || null,
       tags: JSON.stringify(plan.tags),
       metadata: plan.metadata ? JSON.stringify(plan.metadata) : null,
@@ -166,7 +168,9 @@ export class PlanPersistence {
    * Get all plans for an app
    */
   async getPlansForApp(appId: number): Promise<Plan[]> {
-    const rows = [...this.planStorage.values()].filter((r) => r.appId === appId);
+    const rows = [...this.planStorage.values()].filter(
+      (r) => r.appId === appId,
+    );
     return rows.map((r) => this.rowToPlan(r));
   }
 
@@ -174,9 +178,16 @@ export class PlanPersistence {
    * Get active plans for an app
    */
   async getActivePlansForApp(appId: number): Promise<Plan[]> {
-    const activeStatuses: ExecutionStatus[] = ["pending", "queued", "running", "paused"];
+    const activeStatuses: ExecutionStatus[] = [
+      "pending",
+      "queued",
+      "running",
+      "paused",
+    ];
     const rows = [...this.planStorage.values()].filter(
-      (r) => r.appId === appId && activeStatuses.includes(r.status as ExecutionStatus),
+      (r) =>
+        r.appId === appId &&
+        activeStatuses.includes(r.status as ExecutionStatus),
     );
     return rows.map((r) => this.rowToPlan(r));
   }
@@ -184,7 +195,10 @@ export class PlanPersistence {
   /**
    * Update plan status
    */
-  async updatePlanStatus(planId: string, status: ExecutionStatus): Promise<void> {
+  async updatePlanStatus(
+    planId: string,
+    status: ExecutionStatus,
+  ): Promise<void> {
     const row = this.planStorage.get(planId);
     if (!row) return;
 
@@ -193,7 +207,11 @@ export class PlanPersistence {
 
     if (status === "running") {
       row.startedAt = Math.floor(Date.now() / 1000);
-    } else if (status === "completed" || status === "failed" || status === "cancelled") {
+    } else if (
+      status === "completed" ||
+      status === "failed" ||
+      status === "cancelled"
+    ) {
       row.completedAt = Math.floor(Date.now() / 1000);
     }
   }
@@ -201,7 +219,10 @@ export class PlanPersistence {
   /**
    * Update plan progress
    */
-  async updatePlanProgress(planId: string, progress: PlanProgress): Promise<void> {
+  async updatePlanProgress(
+    planId: string,
+    progress: PlanProgress,
+  ): Promise<void> {
     const row = this.planStorage.get(planId);
     if (!row) return;
 
@@ -254,8 +275,12 @@ export class PlanPersistence {
       actualDuration: goal.actualDuration || null,
       createdAt: Math.floor(goal.createdAt.getTime() / 1000),
       updatedAt: Math.floor(goal.updatedAt.getTime() / 1000),
-      startedAt: goal.startedAt ? Math.floor(goal.startedAt.getTime() / 1000) : null,
-      completedAt: goal.completedAt ? Math.floor(goal.completedAt.getTime() / 1000) : null,
+      startedAt: goal.startedAt
+        ? Math.floor(goal.startedAt.getTime() / 1000)
+        : null,
+      completedAt: goal.completedAt
+        ? Math.floor(goal.completedAt.getTime() / 1000)
+        : null,
       error: goal.error || null,
       retryCount: goal.retryCount,
       maxRetries: goal.maxRetries,
@@ -294,7 +319,10 @@ export class PlanPersistence {
   /**
    * Update goal status
    */
-  async updateGoalStatus(goalId: string, status: ExecutionStatus): Promise<void> {
+  async updateGoalStatus(
+    goalId: string,
+    status: ExecutionStatus,
+  ): Promise<void> {
     const row = this.goalStorage.get(goalId);
     if (!row) return;
 
@@ -329,15 +357,23 @@ export class PlanPersistence {
       dependsOn: JSON.stringify(task.dependsOn),
       requiredTools: JSON.stringify(task.requiredTools),
       input: JSON.stringify(task.input),
-      expectedOutput: task.expectedOutput ? JSON.stringify(task.expectedOutput) : null,
+      expectedOutput: task.expectedOutput
+        ? JSON.stringify(task.expectedOutput)
+        : null,
       output: task.output ? JSON.stringify(task.output) : null,
-      rollbackAction: task.rollbackAction ? JSON.stringify(task.rollbackAction) : null,
+      rollbackAction: task.rollbackAction
+        ? JSON.stringify(task.rollbackAction)
+        : null,
       estimatedDuration: task.estimatedDuration || null,
       actualDuration: task.actualDuration || null,
       createdAt: Math.floor(task.createdAt.getTime() / 1000),
       updatedAt: Math.floor(task.updatedAt.getTime() / 1000),
-      startedAt: task.startedAt ? Math.floor(task.startedAt.getTime() / 1000) : null,
-      completedAt: task.completedAt ? Math.floor(task.completedAt.getTime() / 1000) : null,
+      startedAt: task.startedAt
+        ? Math.floor(task.startedAt.getTime() / 1000)
+        : null,
+      completedAt: task.completedAt
+        ? Math.floor(task.completedAt.getTime() / 1000)
+        : null,
       error: task.error || null,
       retryCount: task.retryCount,
       maxRetries: task.maxRetries,
@@ -363,7 +399,9 @@ export class PlanPersistence {
    * Get tasks for a goal
    */
   async getTasksForGoal(goalId: string): Promise<Task[]> {
-    const rows = [...this.taskStorage.values()].filter((r) => r.goalId === goalId);
+    const rows = [...this.taskStorage.values()].filter(
+      (r) => r.goalId === goalId,
+    );
     return rows.map((r) => this.rowToTask(r)).sort((a, b) => a.order - b.order);
   }
 
@@ -383,7 +421,10 @@ export class PlanPersistence {
   /**
    * Update task status
    */
-  async updateTaskStatus(taskId: string, status: ExecutionStatus): Promise<void> {
+  async updateTaskStatus(
+    taskId: string,
+    status: ExecutionStatus,
+  ): Promise<void> {
     const row = this.taskStorage.get(taskId);
     if (!row) return;
 
@@ -411,7 +452,10 @@ export class PlanPersistence {
   /**
    * Add execution attempt
    */
-  async addExecutionAttempt(taskId: string, attempt: ExecutionAttempt): Promise<void> {
+  async addExecutionAttempt(
+    taskId: string,
+    attempt: ExecutionAttempt,
+  ): Promise<void> {
     const row = this.taskStorage.get(taskId);
     if (!row) return;
 
@@ -429,7 +473,11 @@ export class PlanPersistence {
   /**
    * Save a complete plan with goals and tasks
    */
-  async saveCompletePlan(plan: Plan, goals: Goal[], tasks: Task[]): Promise<void> {
+  async saveCompletePlan(
+    plan: Plan,
+    goals: Goal[],
+    tasks: Task[],
+  ): Promise<void> {
     await this.savePlan(plan);
     for (const goal of goals) {
       await this.saveGoal(goal);
@@ -475,7 +523,9 @@ export class PlanPersistence {
       createdAt: new Date(row.createdAt * 1000),
       updatedAt: new Date(row.updatedAt * 1000),
       startedAt: row.startedAt ? new Date(row.startedAt * 1000) : undefined,
-      completedAt: row.completedAt ? new Date(row.completedAt * 1000) : undefined,
+      completedAt: row.completedAt
+        ? new Date(row.completedAt * 1000)
+        : undefined,
       createdBy: row.createdBy || undefined,
       tags: JSON.parse(row.tags),
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
@@ -502,7 +552,9 @@ export class PlanPersistence {
       createdAt: new Date(row.createdAt * 1000),
       updatedAt: new Date(row.updatedAt * 1000),
       startedAt: row.startedAt ? new Date(row.startedAt * 1000) : undefined,
-      completedAt: row.completedAt ? new Date(row.completedAt * 1000) : undefined,
+      completedAt: row.completedAt
+        ? new Date(row.completedAt * 1000)
+        : undefined,
       error: row.error || undefined,
       retryCount: row.retryCount,
       maxRetries: row.maxRetries,
@@ -525,15 +577,21 @@ export class PlanPersistence {
       dependsOn: JSON.parse(row.dependsOn),
       requiredTools: JSON.parse(row.requiredTools),
       input: JSON.parse(row.input) as TaskInput,
-      expectedOutput: row.expectedOutput ? JSON.parse(row.expectedOutput) as OutputSchema : undefined,
-      output: row.output ? JSON.parse(row.output) as TaskOutput : undefined,
-      rollbackAction: row.rollbackAction ? JSON.parse(row.rollbackAction) as RollbackAction : undefined,
+      expectedOutput: row.expectedOutput
+        ? (JSON.parse(row.expectedOutput) as OutputSchema)
+        : undefined,
+      output: row.output ? (JSON.parse(row.output) as TaskOutput) : undefined,
+      rollbackAction: row.rollbackAction
+        ? (JSON.parse(row.rollbackAction) as RollbackAction)
+        : undefined,
       estimatedDuration: row.estimatedDuration || undefined,
       actualDuration: row.actualDuration || undefined,
       createdAt: new Date(row.createdAt * 1000),
       updatedAt: new Date(row.updatedAt * 1000),
       startedAt: row.startedAt ? new Date(row.startedAt * 1000) : undefined,
-      completedAt: row.completedAt ? new Date(row.completedAt * 1000) : undefined,
+      completedAt: row.completedAt
+        ? new Date(row.completedAt * 1000)
+        : undefined,
       error: row.error || undefined,
       retryCount: row.retryCount,
       maxRetries: row.maxRetries,

@@ -1,6 +1,6 @@
 /**
  * Knowledge Graph Query Engine
- * 
+ *
  * Provides advanced query and analysis capabilities for the knowledge graph.
  * Supports graph traversal, pattern matching, and semantic queries.
  */
@@ -8,7 +8,11 @@
 import { and, or, eq, inArray, like, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { knowledgeNodes, knowledgeEdges } from "@/db/schema";
-import { graphStorage, type KnowledgeNodeRow, type KnowledgeEdgeRow } from "./storage";
+import {
+  graphStorage,
+  type KnowledgeNodeRow,
+  type KnowledgeEdgeRow,
+} from "./storage";
 import type {
   KnowledgeNodeType,
   KnowledgeEdgeType,
@@ -147,12 +151,14 @@ export class GraphQueryEngine {
       conditions.push(inArray(knowledgeNodes.type, options.types));
     }
 
-    const nodes = await db.select()
+    const nodes = await db
+      .select()
       .from(knowledgeNodes)
       .where(and(...conditions))
       .limit(limit + 1);
 
-    const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
       .from(knowledgeNodes)
       .where(and(...conditions));
 
@@ -181,7 +187,8 @@ export class GraphQueryEngine {
       conditions.push(inArray(knowledgeNodes.type, options.types));
     }
 
-    return db.select()
+    return db
+      .select()
       .from(knowledgeNodes)
       .where(and(...conditions))
       .orderBy(knowledgeNodes.lineStart);
@@ -202,12 +209,15 @@ export class GraphQueryEngine {
       if (depth > maxDepth || visited.has(currentId)) return;
       visited.add(currentId);
 
-      const edges = await db.select()
+      const edges = await db
+        .select()
         .from(knowledgeEdges)
-        .where(and(
-          eq(knowledgeEdges.targetId, currentId),
-          inArray(knowledgeEdges.type, ["calls", "references"]),
-        ));
+        .where(
+          and(
+            eq(knowledgeEdges.targetId, currentId),
+            inArray(knowledgeEdges.type, ["calls", "references"]),
+          ),
+        );
 
       for (const edge of edges) {
         const caller = await graphStorage.getNode(edge.sourceId);
@@ -239,12 +249,15 @@ export class GraphQueryEngine {
       if (depth > maxDepth || visited.has(currentId)) return;
       visited.add(currentId);
 
-      const edges = await db.select()
+      const edges = await db
+        .select()
         .from(knowledgeEdges)
-        .where(and(
-          eq(knowledgeEdges.sourceId, currentId),
-          inArray(knowledgeEdges.type, ["calls", "references"]),
-        ));
+        .where(
+          and(
+            eq(knowledgeEdges.sourceId, currentId),
+            inArray(knowledgeEdges.type, ["calls", "references"]),
+          ),
+        );
 
       for (const edge of edges) {
         const callee = await graphStorage.getNode(edge.targetId);
@@ -290,18 +303,16 @@ export class GraphQueryEngine {
 
         // Get edges based on direction
         const edgeConditions: unknown[] = [];
-        
+
         if (edgeTypes && edgeTypes.length > 0) {
           edgeConditions.push(inArray(knowledgeEdges.type, edgeTypes));
         }
 
         if (direction === "outgoing" || direction === "both") {
-          const outgoing = await db.select()
+          const outgoing = await db
+            .select()
             .from(knowledgeEdges)
-            .where(and(
-              eq(knowledgeEdges.sourceId, nodeId),
-              ...edgeConditions,
-            ));
+            .where(and(eq(knowledgeEdges.sourceId, nodeId), ...edgeConditions));
           edges.push(...outgoing);
 
           for (const edge of outgoing) {
@@ -313,12 +324,10 @@ export class GraphQueryEngine {
         }
 
         if (direction === "incoming" || direction === "both") {
-          const incoming = await db.select()
+          const incoming = await db
+            .select()
             .from(knowledgeEdges)
-            .where(and(
-              eq(knowledgeEdges.targetId, nodeId),
-              ...edgeConditions,
-            ));
+            .where(and(eq(knowledgeEdges.targetId, nodeId), ...edgeConditions));
           edges.push(...incoming);
 
           for (const edge of incoming) {
@@ -365,7 +374,7 @@ export class GraphQueryEngine {
 
     // Find candidate starting nodes
     const conditions = [eq(knowledgeNodes.appId, appId)];
-    
+
     if (startPattern.type) {
       if (Array.isArray(startPattern.type)) {
         conditions.push(inArray(knowledgeNodes.type, startPattern.type));
@@ -374,7 +383,8 @@ export class GraphQueryEngine {
       }
     }
 
-    const startNodes = await db.select()
+    const startNodes = await db
+      .select()
       .from(knowledgeNodes)
       .where(and(...conditions))
       .limit(limit * 10); // Get more candidates for pattern matching
@@ -426,7 +436,8 @@ export class GraphQueryEngine {
         }
       }
 
-      const edges = await db.select()
+      const edges = await db
+        .select()
         .from(knowledgeEdges)
         .where(and(...edgeConditions))
         .limit(1);
@@ -438,17 +449,19 @@ export class GraphQueryEngine {
 
       const edge = edges[0];
       const targetNode = await graphStorage.getNode(edge.targetId);
-      
+
       if (!targetNode) {
         if (edgePattern.optional) continue;
         return null;
       }
 
       // Check if target matches the pattern
-      const targetPattern = pattern.nodes.find(n => n.alias === edgePattern.to);
+      const targetPattern = pattern.nodes.find(
+        (n) => n.alias === edgePattern.to,
+      );
       if (targetPattern?.type) {
-        const types = Array.isArray(targetPattern.type) 
-          ? targetPattern.type 
+        const types = Array.isArray(targetPattern.type)
+          ? targetPattern.type
           : [targetPattern.type];
         if (!types.includes(targetNode.type as KnowledgeNodeType)) {
           if (edgePattern.optional) continue;
@@ -496,21 +509,27 @@ export class GraphQueryEngine {
   /**
    * Detect common architectural patterns
    */
-  private async detectPatterns(appId: number): Promise<GraphAnalysisResult["patterns"]> {
+  private async detectPatterns(
+    appId: number,
+  ): Promise<GraphAnalysisResult["patterns"]> {
     const patterns: GraphAnalysisResult["patterns"] = [];
 
     // Detect MVC pattern
-    const mvcMatches = await this.findPattern(appId, {
-      nodes: [
-        { alias: "model", type: "class" },
-        { alias: "view", type: "component" },
-        { alias: "controller", type: "function" },
-      ],
-      edges: [
-        { from: "controller", to: "model", type: "uses" },
-        { from: "controller", to: "view", type: "uses" },
-      ],
-    }, { limit: 10 });
+    const mvcMatches = await this.findPattern(
+      appId,
+      {
+        nodes: [
+          { alias: "model", type: "class" },
+          { alias: "view", type: "component" },
+          { alias: "controller", type: "function" },
+        ],
+        edges: [
+          { from: "controller", to: "model", type: "uses" },
+          { from: "controller", to: "view", type: "uses" },
+        ],
+      },
+      { limit: 10 },
+    );
 
     if (mvcMatches.length > 0) {
       patterns.push({
@@ -521,15 +540,17 @@ export class GraphQueryEngine {
     }
 
     // Detect dependency injection pattern
-    const diMatches = await this.findPattern(appId, {
-      nodes: [
-        { alias: "service", type: "class" },
-        { alias: "injector", type: "function" },
-      ],
-      edges: [
-        { from: "injector", to: "service", type: "provides" },
-      ],
-    }, { limit: 10 });
+    const diMatches = await this.findPattern(
+      appId,
+      {
+        nodes: [
+          { alias: "service", type: "class" },
+          { alias: "injector", type: "function" },
+        ],
+        edges: [{ from: "injector", to: "service", type: "provides" }],
+      },
+      { limit: 10 },
+    );
 
     if (diMatches.length > 0) {
       patterns.push({
@@ -540,15 +561,17 @@ export class GraphQueryEngine {
     }
 
     // Detect hook patterns (React)
-    const hookMatches = await this.findPattern(appId, {
-      nodes: [
-        { alias: "component", type: "component" },
-        { alias: "hook", type: "function" },
-      ],
-      edges: [
-        { from: "component", to: "hook", type: "uses" },
-      ],
-    }, { limit: 20 });
+    const hookMatches = await this.findPattern(
+      appId,
+      {
+        nodes: [
+          { alias: "component", type: "component" },
+          { alias: "hook", type: "function" },
+        ],
+        edges: [{ from: "component", to: "hook", type: "uses" }],
+      },
+      { limit: 20 },
+    );
 
     if (hookMatches.length > 0) {
       patterns.push({
@@ -564,14 +587,17 @@ export class GraphQueryEngine {
   /**
    * Detect clusters/communities in the graph
    */
-  private async detectClusters(appId: number): Promise<GraphAnalysisResult["clusters"]> {
+  private async detectClusters(
+    appId: number,
+  ): Promise<GraphAnalysisResult["clusters"]> {
     const clusters: GraphAnalysisResult["clusters"] = [];
 
     // Group nodes by module/file
-    const nodesByFile = await db.select({
-      filePath: knowledgeNodes.filePath,
-      nodeId: knowledgeNodes.id,
-    })
+    const nodesByFile = await db
+      .select({
+        filePath: knowledgeNodes.filePath,
+        nodeId: knowledgeNodes.id,
+      })
       .from(knowledgeNodes)
       .where(eq(knowledgeNodes.appId, appId));
 
@@ -588,7 +614,8 @@ export class GraphQueryEngine {
     // Convert to clusters
     let clusterId = 0;
     for (const [dir, nodeIds] of fileGroups) {
-      if (nodeIds.length >= 3) { // Only include meaningful clusters
+      if (nodeIds.length >= 3) {
+        // Only include meaningful clusters
         clusters.push({
           id: `cluster-${clusterId++}`,
           nodeIds,
@@ -603,22 +630,26 @@ export class GraphQueryEngine {
   /**
    * Find important/hub nodes
    */
-  private async findImportantNodes(appId: number): Promise<GraphAnalysisResult["importantNodes"]> {
+  private async findImportantNodes(
+    appId: number,
+  ): Promise<GraphAnalysisResult["importantNodes"]> {
     const importantNodes: GraphAnalysisResult["importantNodes"] = [];
 
     // Get nodes with high degree (many connections)
-    const nodes = await db.select()
+    const nodes = await db
+      .select()
       .from(knowledgeNodes)
       .where(eq(knowledgeNodes.appId, appId));
 
-    for (const node of nodes.slice(0, 100)) { // Limit for performance
+    for (const node of nodes.slice(0, 100)) {
+      // Limit for performance
       const edges = await graphStorage.getAllEdgesForNode(node.id);
       const degree = edges.length;
 
       if (degree >= 5) {
         // Determine reason for importance
-        const incoming = edges.filter(e => e.targetId === node.id).length;
-        const outgoing = edges.filter(e => e.sourceId === node.id).length;
+        const incoming = edges.filter((e) => e.targetId === node.id).length;
+        const outgoing = edges.filter((e) => e.sourceId === node.id).length;
 
         let reason: string;
         if (incoming > outgoing * 2) {
@@ -646,19 +677,27 @@ export class GraphQueryEngine {
   /**
    * Detect potential issues in the graph
    */
-  private async detectIssues(appId: number): Promise<GraphAnalysisResult["issues"]> {
+  private async detectIssues(
+    appId: number,
+  ): Promise<GraphAnalysisResult["issues"]> {
     const issues: GraphAnalysisResult["issues"] = [];
 
     // Check for circular dependencies
-    const nodes = await db.select()
+    const nodes = await db
+      .select()
       .from(knowledgeNodes)
       .where(eq(knowledgeNodes.appId, appId));
 
-    for (const node of nodes.slice(0, 50)) { // Limit for performance
+    for (const node of nodes.slice(0, 50)) {
+      // Limit for performance
       const visited = new Set<string>();
       const path: string[] = [];
-      
-      const hasCycle = async (currentId: string, startId: string, depth: number): Promise<string[] | null> => {
+
+      const hasCycle = async (
+        currentId: string,
+        startId: string,
+        depth: number,
+      ): Promise<string[] | null> => {
         if (depth > 20) return null; // Limit search depth
         if (visited.has(currentId)) {
           if (currentId === startId && depth > 1) {
@@ -666,16 +705,19 @@ export class GraphQueryEngine {
           }
           return null;
         }
-        
+
         visited.add(currentId);
         path.push(currentId);
 
-        const edges = await db.select()
+        const edges = await db
+          .select()
           .from(knowledgeEdges)
-          .where(and(
-            eq(knowledgeEdges.sourceId, currentId),
-            inArray(knowledgeEdges.type, ["imports", "depends_on"]),
-          ));
+          .where(
+            and(
+              eq(knowledgeEdges.sourceId, currentId),
+              inArray(knowledgeEdges.type, ["imports", "depends_on"]),
+            ),
+          );
 
         for (const edge of edges) {
           if (edge.targetId === startId && depth > 0) {
@@ -704,7 +746,11 @@ export class GraphQueryEngine {
     // Check for orphan nodes (no connections)
     for (const node of nodes) {
       const edges = await graphStorage.getAllEdgesForNode(node.id);
-      if (edges.length === 0 && node.type !== "config" && node.type !== "documentation") {
+      if (
+        edges.length === 0 &&
+        node.type !== "config" &&
+        node.type !== "documentation"
+      ) {
         issues.push({
           type: "orphan",
           severity: "low",
@@ -729,26 +775,34 @@ export class GraphQueryEngine {
     nodeType: KnowledgeNodeType,
   ): Promise<{ nodes: KnowledgeNodeRow[]; edges: KnowledgeEdgeRow[] }> {
     // Get all nodes of the specified type
-    const nodes = await db.select()
+    const nodes = await db
+      .select()
       .from(knowledgeNodes)
-      .where(and(
-        eq(knowledgeNodes.appId, appId),
-        eq(knowledgeNodes.type, nodeType),
-      ));
+      .where(
+        and(eq(knowledgeNodes.appId, appId), eq(knowledgeNodes.type, nodeType)),
+      );
 
-    const nodeIds = nodes.map(n => n.id);
+    const nodeIds = nodes.map((n) => n.id);
 
     // Get dependency edges between these nodes
-    const edges = await db.select()
+    const edges = await db
+      .select()
       .from(knowledgeEdges)
-      .where(and(
-        eq(knowledgeEdges.appId, appId),
-        inArray(knowledgeEdges.type, ["imports", "depends_on", "extends", "implements"]),
-        or(
-          inArray(knowledgeEdges.sourceId, nodeIds),
-          inArray(knowledgeEdges.targetId, nodeIds),
+      .where(
+        and(
+          eq(knowledgeEdges.appId, appId),
+          inArray(knowledgeEdges.type, [
+            "imports",
+            "depends_on",
+            "extends",
+            "implements",
+          ]),
+          or(
+            inArray(knowledgeEdges.sourceId, nodeIds),
+            inArray(knowledgeEdges.targetId, nodeIds),
+          ),
         ),
-      ));
+      );
 
     return { nodes, edges };
   }

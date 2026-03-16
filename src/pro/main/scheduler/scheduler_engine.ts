@@ -1,6 +1,6 @@
 /**
  * Agent Scheduler - Core Scheduling Engine
- * 
+ *
  * Manages task scheduling, execution queues, resource allocation,
  * and retry logic for autonomous task execution.
  */
@@ -8,17 +8,14 @@
 import { v4 as uuidv4 } from "uuid";
 import type {
   ScheduleEntry,
-  ScheduleStatus,
   SchedulePriority,
   ScheduleQueue,
   ScheduleResult,
-  ScheduleQueue as Queue,
   ResourcePool,
   ResourceRequirement,
   SchedulerCallbacks,
   SchedulerEvent,
   RetryConfig,
-  DEFAULT_RETRY_CONFIGS,
   ExecutionContext,
   ExecutionHandler,
 } from "./types";
@@ -75,7 +72,7 @@ export const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
 
 /**
  * Agent Scheduler
- * 
+ *
  * Manages scheduling and execution of autonomous tasks with:
  * - Priority-based queuing
  * - Resource-aware scheduling
@@ -85,22 +82,22 @@ export const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
 export class AgentScheduler {
   private config: SchedulerConfig;
   private callbacks: SchedulerCallbacks;
-  
+
   // Storage
   private entries: Map<string, ScheduleEntry> = new Map();
   private queues: Map<string, ScheduleQueue> = new Map();
-  
+
   // Execution state
   private runningEntries: Set<string> = new Set();
   private resourcePool: ResourcePool;
-  
+
   // Timers
   private queueTimer?: ReturnType<typeof setInterval>;
   private resourceTimer?: ReturnType<typeof setInterval>;
-  
+
   // Execution handler
   private executionHandler?: ExecutionHandler;
-  
+
   // Shutdown flag
   private isShuttingDown = false;
 
@@ -110,7 +107,7 @@ export class AgentScheduler {
   ) {
     this.config = { ...DEFAULT_SCHEDULER_CONFIG, ...config };
     this.callbacks = callbacks;
-    
+
     // Initialize resource pool
     this.resourcePool = {
       totalCpuCores: 8,
@@ -135,17 +132,17 @@ export class AgentScheduler {
    */
   start(): void {
     this.isShuttingDown = false;
-    
+
     // Start queue processor
     this.queueTimer = setInterval(() => {
       this.processQueues();
     }, this.config.queueCheckInterval);
-    
+
     // Start resource monitor
     this.resourceTimer = setInterval(() => {
       this.checkResources();
     }, this.config.resourceCheckInterval);
-    
+
     this.emitEvent({
       type: "queue_resumed",
       timestamp: new Date(),
@@ -158,7 +155,7 @@ export class AgentScheduler {
    */
   async stop(): Promise<void> {
     this.isShuttingDown = true;
-    
+
     // Stop timers
     if (this.queueTimer) {
       clearInterval(this.queueTimer);
@@ -168,7 +165,7 @@ export class AgentScheduler {
       clearInterval(this.resourceTimer);
       this.resourceTimer = undefined;
     }
-    
+
     // Wait for running tasks to complete or timeout
     const runningIds = [...this.runningEntries];
     if (runningIds.length > 0) {
@@ -177,7 +174,7 @@ export class AgentScheduler {
         new Promise((resolve) => setTimeout(resolve, 30000)), // 30s grace period
       ]);
     }
-    
+
     this.emitEvent({
       type: "queue_paused",
       timestamp: new Date(),
@@ -211,7 +208,7 @@ export class AgentScheduler {
     scheduledAt?: Date;
   }): ScheduleEntry {
     const priority = request.priority || "normal";
-    
+
     // Create schedule entry
     const entry: ScheduleEntry = {
       id: uuidv4(),
@@ -230,13 +227,13 @@ export class AgentScheduler {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    
+
     // Store entry
     this.entries.set(entry.id, entry);
-    
+
     // Add to appropriate queue
     this.addToQueue(entry);
-    
+
     // Emit event
     this.callbacks.onEntryScheduled?.(entry);
     this.emitEvent({
@@ -246,7 +243,7 @@ export class AgentScheduler {
       message: `Task scheduled: ${entry.taskId}`,
       data: { priority, appId: entry.appId },
     });
-    
+
     return entry;
   }
 
@@ -256,19 +253,19 @@ export class AgentScheduler {
   cancelEntry(entryId: string): boolean {
     const entry = this.entries.get(entryId);
     if (!entry) return false;
-    
+
     // Can't cancel running tasks this way
     if (entry.status === "running") {
       return false;
     }
-    
+
     // Update status
     entry.status = "cancelled";
     entry.updatedAt = new Date();
-    
+
     // Remove from queue
     this.removeFromQueue(entry);
-    
+
     // Emit event
     this.callbacks.onEntryCancelled?.(entry);
     this.emitEvent({
@@ -277,7 +274,7 @@ export class AgentScheduler {
       timestamp: new Date(),
       message: `Task cancelled: ${entry.taskId}`,
     });
-    
+
     return true;
   }
 
@@ -287,19 +284,19 @@ export class AgentScheduler {
   updatePriority(entryId: string, priority: SchedulePriority): boolean {
     const entry = this.entries.get(entryId);
     if (!entry) return false;
-    
+
     // Can't update running tasks
     if (entry.status === "running") return false;
-    
+
     const oldPriority = entry.priority;
     entry.priority = priority;
     entry.updatedAt = new Date();
-    
+
     // Re-sort queue if needed
     if (oldPriority !== priority) {
       this.reorderQueue(entry);
     }
-    
+
     return true;
   }
 
@@ -309,10 +306,10 @@ export class AgentScheduler {
   pauseQueue(queueId: string): boolean {
     const queue = this.queues.get(queueId);
     if (!queue) return false;
-    
+
     queue.isPaused = true;
     queue.lastActivityAt = new Date();
-    
+
     this.callbacks.onQueueStateChanged?.(queue);
     this.emitEvent({
       type: "queue_paused",
@@ -320,7 +317,7 @@ export class AgentScheduler {
       timestamp: new Date(),
       message: `Queue paused: ${queue.name}`,
     });
-    
+
     return true;
   }
 
@@ -330,10 +327,10 @@ export class AgentScheduler {
   resumeQueue(queueId: string): boolean {
     const queue = this.queues.get(queueId);
     if (!queue) return false;
-    
+
     queue.isPaused = false;
     queue.lastActivityAt = new Date();
-    
+
     this.callbacks.onQueueStateChanged?.(queue);
     this.emitEvent({
       type: "queue_resumed",
@@ -341,7 +338,7 @@ export class AgentScheduler {
       timestamp: new Date(),
       message: `Queue resumed: ${queue.name}`,
     });
-    
+
     return true;
   }
 
@@ -354,31 +351,31 @@ export class AgentScheduler {
    */
   private processQueues(): void {
     if (this.isShuttingDown) return;
-    
+
     // Check global concurrency limit
     if (this.runningEntries.size >= this.config.maxGlobalConcurrency) {
       return;
     }
-    
+
     // Get all non-paused queues sorted by priority
     const activeQueues = [...this.queues.values()]
       .filter((q) => !q.isPaused && q.pendingEntries.length > 0)
       .sort((a, b) => this.compareQueuePriority(a, b));
-    
+
     for (const queue of activeQueues) {
       // Check queue concurrency
       if (queue.runningCount >= queue.maxConcurrency) continue;
-      
+
       // Get next ready entry
       const nextEntry = this.getNextReadyEntry(queue);
       if (!nextEntry) continue;
-      
+
       // Check resources
       if (!this.canAllocateResources(nextEntry)) continue;
-      
+
       // Execute entry
       this.executeEntry(nextEntry, queue);
-      
+
       // Check global limit again
       if (this.runningEntries.size >= this.config.maxGlobalConcurrency) {
         break;
@@ -390,12 +387,18 @@ export class AgentScheduler {
    * Compare queue priority
    */
   private compareQueuePriority(a: ScheduleQueue, b: ScheduleQueue): number {
-    const priorityOrder: SchedulePriority[] = ["critical", "high", "normal", "low", "background"];
-    
+    const priorityOrder: SchedulePriority[] = [
+      "critical",
+      "high",
+      "normal",
+      "low",
+      "background",
+    ];
+
     // Get highest priority entry in each queue
     const aPriority = a.priorityOrder[0] || "normal";
     const bPriority = b.priorityOrder[0] || "normal";
-    
+
     return priorityOrder.indexOf(aPriority) - priorityOrder.indexOf(bPriority);
   }
 
@@ -408,14 +411,14 @@ export class AgentScheduler {
       .map((id) => this.entries.get(id))
       .filter((e): e is ScheduleEntry => e != null && e.status === "queued")
       .sort((a, b) => this.compareEntryPriority(a, b));
-    
+
     // Find first entry with met dependencies
     for (const entry of sortedEntries) {
       if (this.areDependenciesMet(entry)) {
         return entry;
       }
     }
-    
+
     return null;
   }
 
@@ -423,8 +426,16 @@ export class AgentScheduler {
    * Compare entry priority
    */
   private compareEntryPriority(a: ScheduleEntry, b: ScheduleEntry): number {
-    const priorityOrder: SchedulePriority[] = ["critical", "high", "normal", "low", "background"];
-    return priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+    const priorityOrder: SchedulePriority[] = [
+      "critical",
+      "high",
+      "normal",
+      "low",
+      "background",
+    ];
+    return (
+      priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority)
+    );
   }
 
   /**
@@ -440,22 +451,25 @@ export class AgentScheduler {
   /**
    * Execute a scheduled entry
    */
-  private async executeEntry(entry: ScheduleEntry, queue: ScheduleQueue): Promise<void> {
+  private async executeEntry(
+    entry: ScheduleEntry,
+    queue: ScheduleQueue,
+  ): Promise<void> {
     // Allocate resources
     this.allocateResources(entry);
-    
+
     // Update status
     entry.status = "running";
     entry.startedAt = new Date();
     entry.updatedAt = new Date();
-    
+
     // Update queue
     queue.runningCount++;
     queue.pendingEntries = queue.pendingEntries.filter((id) => id !== entry.id);
-    
+
     // Track running
     this.runningEntries.add(entry.id);
-    
+
     // Emit event
     this.callbacks.onEntryStarted?.(entry);
     this.emitEvent({
@@ -465,17 +479,17 @@ export class AgentScheduler {
       timestamp: new Date(),
       message: `Task started: ${entry.taskId}`,
     });
-    
+
     // Execute
     try {
       const result = await this.executeWithTimeout(entry);
-      
+
       // Handle result
       if (result.success) {
         entry.status = "completed";
         entry.result = result;
         queue.totalSuccess++;
-        
+
         this.callbacks.onEntryCompleted?.(entry, result);
         this.emitEvent({
           type: "entry_completed",
@@ -489,24 +503,27 @@ export class AgentScheduler {
         await this.handleFailure(entry, result.error || "Unknown error", queue);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       await this.handleFailure(entry, errorMessage, queue);
     } finally {
       // Release resources
       this.releaseResources(entry);
-      
+
       // Update queue
       queue.runningCount--;
       queue.totalProcessed++;
       queue.lastActivityAt = new Date();
-      
+
       // Remove from running
       this.runningEntries.delete(entry.id);
-      
+
       // Update entry
       entry.completedAt = new Date();
       entry.actualDuration = Math.round(
-        (entry.completedAt.getTime() - (entry.startedAt?.getTime() || Date.now())) / 1000,
+        (entry.completedAt.getTime() -
+          (entry.startedAt?.getTime() || Date.now())) /
+          1000,
       );
       entry.updatedAt = new Date();
     }
@@ -515,7 +532,9 @@ export class AgentScheduler {
   /**
    * Execute with timeout
    */
-  private async executeWithTimeout(entry: ScheduleEntry): Promise<ScheduleResult> {
+  private async executeWithTimeout(
+    entry: ScheduleEntry,
+  ): Promise<ScheduleResult> {
     if (!this.executionHandler) {
       return {
         success: false,
@@ -531,7 +550,7 @@ export class AgentScheduler {
         },
       };
     }
-    
+
     const context: ExecutionContext = {
       entryId: entry.id,
       taskId: entry.taskId,
@@ -540,10 +559,12 @@ export class AgentScheduler {
       allocatedResources: entry.requiredResources,
       timeout: entry.timeout,
       startedAt: entry.startedAt || new Date(),
-      deadline: new Date((entry.startedAt?.getTime() || Date.now()) + entry.timeout * 1000),
+      deadline: new Date(
+        (entry.startedAt?.getTime() || Date.now()) + entry.timeout * 1000,
+      ),
       cancellationToken: { cancelled: false },
     };
-    
+
     return new Promise((resolve) => {
       // Set timeout
       const timeoutId = setTimeout(() => {
@@ -562,7 +583,7 @@ export class AgentScheduler {
           },
         });
       }, entry.timeout * 1000);
-      
+
       // Execute
       this.executionHandler!(context, entry)
         .then((result) => {
@@ -591,20 +612,25 @@ export class AgentScheduler {
   /**
    * Handle execution failure
    */
-  private async handleFailure(entry: ScheduleEntry, error: string, queue: ScheduleQueue): Promise<void> {
+  private async handleFailure(
+    entry: ScheduleEntry,
+    error: string,
+    queue: ScheduleQueue,
+  ): Promise<void> {
     entry.error = error;
     entry.retryCount++;
-    
-    const canRetry = entry.retryCount < entry.retryConfig.maxRetries &&
+
+    const canRetry =
+      entry.retryCount < entry.retryConfig.maxRetries &&
       this.shouldRetry(entry, error);
-    
+
     if (canRetry) {
       entry.status = "retrying";
       entry.updatedAt = new Date();
-      
+
       // Calculate delay
       const delay = this.calculateRetryDelay(entry);
-      
+
       // Re-schedule after delay
       setTimeout(() => {
         if (entry.status === "retrying") {
@@ -613,7 +639,7 @@ export class AgentScheduler {
           queue.pendingEntries.push(entry.id);
         }
       }, delay);
-      
+
       this.callbacks.onEntryRetrying?.(entry, entry.retryCount);
       this.emitEvent({
         type: "entry_retrying",
@@ -625,7 +651,7 @@ export class AgentScheduler {
     } else {
       entry.status = "failed";
       queue.totalFailed++;
-      
+
       this.callbacks.onEntryFailed?.(entry, error);
       this.emitEvent({
         type: "entry_failed",
@@ -642,17 +668,17 @@ export class AgentScheduler {
    */
   private shouldRetry(entry: ScheduleEntry, error: string): boolean {
     const config = entry.retryConfig;
-    
+
     // Check for timeout
     if (error.includes("timeout") && !config.retryOnTimeout) {
       return false;
     }
-    
+
     // Check for retryable errors
     if (config.retryableErrors && config.retryableErrors.length > 0) {
       return config.retryableErrors.some((e) => error.includes(e));
     }
-    
+
     return true;
   }
 
@@ -662,7 +688,7 @@ export class AgentScheduler {
   private calculateRetryDelay(entry: ScheduleEntry): number {
     const config = entry.retryConfig;
     const attempt = entry.retryCount;
-    
+
     switch (config.strategy) {
       case "immediate":
         return 0;
@@ -670,7 +696,10 @@ export class AgentScheduler {
         return Math.min(config.baseDelay * attempt, config.maxDelay);
       case "exponential":
         const multiplier = config.multiplier || 2;
-        return Math.min(config.baseDelay * Math.pow(multiplier, attempt - 1), config.maxDelay);
+        return Math.min(
+          config.baseDelay * Math.pow(multiplier, attempt - 1),
+          config.maxDelay,
+        );
       case "none":
       default:
         return 0;
@@ -686,29 +715,38 @@ export class AgentScheduler {
    */
   private canAllocateResources(entry: ScheduleEntry): boolean {
     if (!this.config.enableResourceAwareScheduling) return true;
-    
+
     for (const req of entry.requiredResources) {
       if (!req.hardRequirement) continue;
-      
+
       switch (req.type) {
         case "cpu":
-          if (this.resourcePool.usedCpuCores + req.amount > this.resourcePool.totalCpuCores) {
+          if (
+            this.resourcePool.usedCpuCores + req.amount >
+            this.resourcePool.totalCpuCores
+          ) {
             return false;
           }
           break;
         case "memory":
-          if (this.resourcePool.usedMemory + req.amount > this.resourcePool.totalMemory) {
+          if (
+            this.resourcePool.usedMemory + req.amount >
+            this.resourcePool.totalMemory
+          ) {
             return false;
           }
           break;
         case "agent":
-          if (this.resourcePool.activeAgents + req.amount > this.resourcePool.maxAgents) {
+          if (
+            this.resourcePool.activeAgents + req.amount >
+            this.resourcePool.maxAgents
+          ) {
             return false;
           }
           break;
       }
     }
-    
+
     return true;
   }
 
@@ -717,7 +755,7 @@ export class AgentScheduler {
    */
   private allocateResources(entry: ScheduleEntry): void {
     if (!this.config.enableResourceAwareScheduling) return;
-    
+
     for (const req of entry.requiredResources) {
       switch (req.type) {
         case "cpu":
@@ -741,20 +779,32 @@ export class AgentScheduler {
    */
   private releaseResources(entry: ScheduleEntry): void {
     if (!this.config.enableResourceAwareScheduling) return;
-    
+
     for (const req of entry.requiredResources) {
       switch (req.type) {
         case "cpu":
-          this.resourcePool.usedCpuCores = Math.max(0, this.resourcePool.usedCpuCores - req.amount);
+          this.resourcePool.usedCpuCores = Math.max(
+            0,
+            this.resourcePool.usedCpuCores - req.amount,
+          );
           break;
         case "memory":
-          this.resourcePool.usedMemory = Math.max(0, this.resourcePool.usedMemory - req.amount);
+          this.resourcePool.usedMemory = Math.max(
+            0,
+            this.resourcePool.usedMemory - req.amount,
+          );
           break;
         case "agent":
-          this.resourcePool.activeAgents = Math.max(0, this.resourcePool.activeAgents - req.amount);
+          this.resourcePool.activeAgents = Math.max(
+            0,
+            this.resourcePool.activeAgents - req.amount,
+          );
           break;
         case "process":
-          this.resourcePool.runningProcesses = Math.max(0, this.resourcePool.runningProcesses - req.amount);
+          this.resourcePool.runningProcesses = Math.max(
+            0,
+            this.resourcePool.runningProcesses - req.amount,
+          );
           break;
       }
     }
@@ -764,11 +814,16 @@ export class AgentScheduler {
    * Check resources and emit events
    */
   private checkResources(): void {
-    const memoryUsagePercent = this.resourcePool.usedMemory / this.resourcePool.totalMemory;
-    const cpuUsagePercent = this.resourcePool.usedCpuCores / this.resourcePool.totalCpuCores;
-    
+    const memoryUsagePercent =
+      this.resourcePool.usedMemory / this.resourcePool.totalMemory;
+    const cpuUsagePercent =
+      this.resourcePool.usedCpuCores / this.resourcePool.totalCpuCores;
+
     if (memoryUsagePercent > 0.9 || cpuUsagePercent > 0.9) {
-      this.callbacks.onResourceEvent?.("exhausted", memoryUsagePercent > 0.9 ? "memory" : "cpu");
+      this.callbacks.onResourceEvent?.(
+        "exhausted",
+        memoryUsagePercent > 0.9 ? "memory" : "cpu",
+      );
       this.emitEvent({
         type: "resource_exhausted",
         timestamp: new Date(),
@@ -791,21 +846,27 @@ export class AgentScheduler {
     if (!queue) {
       queue = this.createQueue(entry.appId);
     }
-    
+
     // Check queue limit
     if (queue.pendingEntries.length >= this.config.maxEntriesPerQueue) {
       throw new Error(`Queue ${queue.id} is at capacity`);
     }
-    
+
     // Add entry
     queue.pendingEntries.push(entry.id);
     queue.lastActivityAt = new Date();
-    
+
     // Update priority order
     if (!queue.priorityOrder.includes(entry.priority)) {
       queue.priorityOrder.push(entry.priority);
       queue.priorityOrder.sort((a, b) => {
-        const order: SchedulePriority[] = ["critical", "high", "normal", "low", "background"];
+        const order: SchedulePriority[] = [
+          "critical",
+          "high",
+          "normal",
+          "low",
+          "background",
+        ];
         return order.indexOf(a) - order.indexOf(b);
       });
     }
@@ -817,7 +878,7 @@ export class AgentScheduler {
   private removeFromQueue(entry: ScheduleEntry): void {
     const queue = this.getAppQueue(entry.appId);
     if (!queue) return;
-    
+
     queue.pendingEntries = queue.pendingEntries.filter((id) => id !== entry.id);
     queue.lastActivityAt = new Date();
   }
@@ -828,7 +889,7 @@ export class AgentScheduler {
   private reorderQueue(entry: ScheduleEntry): void {
     const queue = this.getAppQueue(entry.appId);
     if (!queue) return;
-    
+
     // Re-sort pending entries
     queue.pendingEntries.sort((aId, bId) => {
       const a = this.entries.get(aId);
@@ -836,7 +897,7 @@ export class AgentScheduler {
       if (!a || !b) return 0;
       return this.compareEntryPriority(a, b);
     });
-    
+
     queue.lastActivityAt = new Date();
   }
 
@@ -866,7 +927,7 @@ export class AgentScheduler {
       createdAt: new Date(),
       lastActivityAt: new Date(),
     };
-    
+
     this.queues.set(queue.id, queue);
     return queue;
   }

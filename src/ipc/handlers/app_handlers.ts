@@ -237,11 +237,60 @@ async function executeAppLocalNode({
     installCommand,
     startCommand,
   });
+
+  // On Windows/Node.js, global.localStorage is defined as an empty object {} that lacks
+  // methods like getItem, setItem, etc. This causes libraries like next-themes to crash
+  // when they check `typeof localStorage !== 'undefined'` (which passes) and then call
+  // localStorage.getItem() (which fails).
+  //
+  // We fix this by creating a cleanup script in node_modules and using NODE_OPTIONS
+  // to preload it. This ensures the cleanup runs in ALL Node processes, including those
+  // spawned by pnpm/npm. The script deletes global.localStorage so that
+  // `typeof localStorage === 'undefined'` returns true, which is the expected behavior
+  // for SSR environments.
+
+  // Create a cleanup script that deletes global.localStorage
+  const cleanupScriptPath = path.join(
+    appPath,
+    "node_modules",
+    ".dyad-localstorage-cleanup.cjs",
+  );
+  const cleanupScriptContent = `// Dyad auto-generated cleanup script\ndelete global.localStorage;\n`;
+
+  try {
+    // Ensure node_modules exists
+    const nodeModulesPath = path.join(appPath, "node_modules");
+    if (!fs.existsSync(nodeModulesPath)) {
+      await fsPromises.mkdir(nodeModulesPath, { recursive: true });
+    }
+
+    // Write the cleanup script
+    await fsPromises.writeFile(
+      cleanupScriptPath,
+      cleanupScriptContent,
+      "utf-8",
+    );
+    logger.debug(`Created localStorage cleanup script at ${cleanupScriptPath}`);
+  } catch (error) {
+    // If we can't create the cleanup script, log a warning but continue
+    logger.warn(`Failed to create localStorage cleanup script: ${error}`);
+  }
+
+  // Use NODE_OPTIONS to preload the cleanup script in all Node processes.
+  // The -r flag tells Node to require the cleanup script before anything else.
+  // This works for pnpm, npm, and any other tools that spawn Node processes.
+  const nodeOptions = `-r "${cleanupScriptPath}"`;
+
   const spawnedProcess = spawn(command, [], {
     cwd: appPath,
     shell: true,
     stdio: "pipe", // Ensure stdio is piped so we can capture output/errors and detect close
     detached: false, // Ensure child process is attached to the main process lifecycle unless explicitly backgrounded
+    env: {
+      ...process.env,
+      // Preload cleanup script in all Node processes
+      NODE_OPTIONS: nodeOptions,
+    },
   });
 
   // Check if process spawned correctly

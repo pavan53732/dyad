@@ -1,6 +1,6 @@
 /**
  * Distributed Agent Runtime - IPC Handlers
- * 
+ *
  * Provides IPC interface for renderer process to interact with the distributed runtime.
  */
 
@@ -117,7 +117,8 @@ export class DistributedIpcHandlers {
       onAgentCreated: (agent) => this.handleAgentEvent("agent_created", agent),
       onAgentStatusChanged: (agent, status) =>
         this.handleAgentStatusEvent("agent_status_changed", agent, status),
-      onAgentTerminated: (agent) => this.handleAgentEvent("agent_terminated", agent),
+      onAgentTerminated: (agent) =>
+        this.handleAgentEvent("agent_terminated", agent),
       onNodeJoined: (node) => this.handleNodeEvent("node_joined", node),
       onNodeLeft: (node) => this.handleNodeEvent("node_left", node),
       onMessageReceived: (message) => this.handleMessageEvent(message),
@@ -169,7 +170,10 @@ export class DistributedIpcHandlers {
 
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.GET_AGENT,
-      async (_, agentId: string): Promise<{ success: boolean; agent?: DistributedAgent }> => {
+      async (
+        _,
+        agentId: string,
+      ): Promise<{ success: boolean; agent?: DistributedAgent }> => {
         const agent = this.runtime.getAgent(agentId);
         return { success: !!agent, agent };
       },
@@ -177,7 +181,10 @@ export class DistributedIpcHandlers {
 
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.GET_AGENTS,
-      async (_, appId?: number): Promise<{ success: boolean; agents: DistributedAgent[] }> => {
+      async (
+        _,
+        appId?: number,
+      ): Promise<{ success: boolean; agents: DistributedAgent[] }> => {
         const agents = appId
           ? this.runtime.getAgentsForApp(appId)
           : this.runtime.getAllAgents();
@@ -203,7 +210,10 @@ export class DistributedIpcHandlers {
     // Node operations
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.GET_NODE,
-      async (_, nodeId: string): Promise<{ success: boolean; node?: DistributedNode }> => {
+      async (
+        _,
+        nodeId: string,
+      ): Promise<{ success: boolean; node?: DistributedNode }> => {
         const node = this.runtime.getNode(nodeId);
         return { success: !!node, node };
       },
@@ -228,7 +238,10 @@ export class DistributedIpcHandlers {
     // Communication operations
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.SEND_MESSAGE,
-      async (_, req: SendMessageRequest): Promise<{ success: boolean; messageId?: string }> => {
+      async (
+        _,
+        req: SendMessageRequest,
+      ): Promise<{ success: boolean; messageId?: string }> => {
         try {
           const message = this.runtime.sendMessage({
             sourceId: req.sourceId,
@@ -267,7 +280,10 @@ export class DistributedIpcHandlers {
 
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.GET_MESSAGES,
-      async (_, agentId: string): Promise<{ success: boolean; messages: DistributedMessage[] }> => {
+      async (
+        _,
+        agentId: string,
+      ): Promise<{ success: boolean; messages: DistributedMessage[] }> => {
         const messages = this.runtime.getMessagesForAgent(agentId);
         return { success: true, messages };
       },
@@ -276,7 +292,10 @@ export class DistributedIpcHandlers {
     // Distribution operations
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.DISTRIBUTE_TASK,
-      async (_, req: DistributeTaskRequest): Promise<{ success: boolean; result?: DistributionResult }> => {
+      async (
+        _,
+        req: DistributeTaskRequest,
+      ): Promise<{ success: boolean; result?: DistributionResult }> => {
         try {
           const result = this.runtime.distributeTask(req);
           return { success: true, result };
@@ -323,7 +342,10 @@ export class DistributedIpcHandlers {
 
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.GET_CHECKPOINT,
-      async (_, agentId: string): Promise<{ success: boolean; checkpoint?: Checkpoint }> => {
+      async (
+        _,
+        agentId: string,
+      ): Promise<{ success: boolean; checkpoint?: Checkpoint }> => {
         const checkpoint = this.runtime.getLatestCheckpoint(agentId);
         return { success: !!checkpoint, checkpoint };
       },
@@ -331,7 +353,10 @@ export class DistributedIpcHandlers {
 
     ipcMain.handle(
       DISTRIBUTED_IPC_CHANNELS.RESTORE_CHECKPOINT,
-      async (_, agentId: string): Promise<{ success: boolean; data?: unknown }> => {
+      async (
+        _,
+        agentId: string,
+      ): Promise<{ success: boolean; data?: unknown }> => {
         try {
           const data = this.runtime.restoreFromCheckpoint(agentId);
           return { success: data !== undefined, data };
@@ -351,23 +376,29 @@ export class DistributedIpcHandlers {
     );
 
     // Lifecycle
-    ipcMain.handle(DISTRIBUTED_IPC_CHANNELS.START_RUNTIME, async (): Promise<{ success: boolean }> => {
-      try {
-        this.runtime.start();
-        return { success: true };
-      } catch {
-        return { success: false };
-      }
-    });
+    ipcMain.handle(
+      DISTRIBUTED_IPC_CHANNELS.START_RUNTIME,
+      async (): Promise<{ success: boolean }> => {
+        try {
+          this.runtime.start();
+          return { success: true };
+        } catch {
+          return { success: false };
+        }
+      },
+    );
 
-    ipcMain.handle(DISTRIBUTED_IPC_CHANNELS.STOP_RUNTIME, async (): Promise<{ success: boolean }> => {
-      try {
-        await this.runtime.stop();
-        return { success: true };
-      } catch {
-        return { success: false };
-      }
-    });
+    ipcMain.handle(
+      DISTRIBUTED_IPC_CHANNELS.STOP_RUNTIME,
+      async (): Promise<{ success: boolean }> => {
+        try {
+          await this.runtime.stop();
+          return { success: true };
+        } catch {
+          return { success: false };
+        }
+      },
+    );
   }
 
   /**
@@ -384,7 +415,11 @@ export class DistributedIpcHandlers {
   /**
    * Handle agent status event
    */
-  private handleAgentStatusEvent(type: string, agent: DistributedAgent, status: AgentStatus): void {
+  private handleAgentStatusEvent(
+    type: string,
+    agent: DistributedAgent,
+    status: AgentStatus,
+  ): void {
     this.broadcastToRenderer({
       type,
       data: { agent, status },

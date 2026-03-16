@@ -1,6 +1,6 @@
 /**
  * Knowledge Integration Layer - Type Definitions
- * 
+ *
  * Unified types for cross-module knowledge queries and integration.
  * This module provides the type foundation for the Knowledge Integration Layer (KIL).
  */
@@ -12,19 +12,19 @@
 /**
  * Available knowledge sources in the system
  */
-export type KnowledgeSource = 
-  | "code_graph"      // Code entities from knowledge graph
-  | "vector_memory"   // Semantic embeddings
+export type KnowledgeSource =
+  | "code_graph" // Code entities from knowledge graph
+  | "vector_memory" // Semantic embeddings
   | "dependency_graph" // Package dependencies
-  | "architecture"     // Architecture decisions
-  | "reasoning"        // Reasoning traces
-  | "memory"           // Session/memory state
-  | "all";             // Query all sources
+  | "architecture" // Architecture decisions
+  | "reasoning" // Reasoning traces
+  | "memory" // Session/memory state
+  | "all"; // Query all sources
 
 /**
  * Knowledge entity types across all sources
  */
-export type KnowledgeEntityType = 
+export type KnowledgeEntityType =
   | "file"
   | "function"
   | "class"
@@ -41,7 +41,7 @@ export type KnowledgeEntityType =
 /**
  * Relationship types between knowledge entities
  */
-export type KnowledgeRelationType = 
+export type KnowledgeRelationType =
   | "imports"
   | "exports"
   | "calls"
@@ -67,25 +67,25 @@ export type KnowledgeRelationType =
 export interface UnifiedKnowledgeEntity {
   /** Unique identifier across all knowledge sources */
   id: string;
-  
+
   /** Type of the entity */
   type: KnowledgeEntityType;
-  
+
   /** Human-readable name */
   name: string;
-  
+
   /** Source system that provided this entity */
   source: KnowledgeSource;
-  
+
   /** Original source-specific ID (for reference) */
   sourceId: string;
-  
+
   /** Application this entity belongs to */
   appId: number;
-  
+
   /** File path if applicable */
   filePath?: string;
-  
+
   /** Line range in source file */
   location?: {
     startLine: number;
@@ -93,13 +93,13 @@ export interface UnifiedKnowledgeEntity {
     startColumn?: number;
     endColumn?: number;
   };
-  
+
   /** Semantic embedding vector (if available) */
   embedding?: number[];
-  
+
   /** Entity-specific properties */
   properties: Record<string, unknown>;
-  
+
   /** Metadata from the source system */
   metadata: {
     confidence: number;
@@ -107,7 +107,7 @@ export interface UnifiedKnowledgeEntity {
     accessCount: number;
     sourceSpecific: Record<string, unknown>;
   };
-  
+
   /** Relationships to other entities */
   relationships?: KnowledgeRelationship[];
 }
@@ -118,16 +118,16 @@ export interface UnifiedKnowledgeEntity {
 export interface KnowledgeRelationship {
   /** Target entity ID */
   targetId: string;
-  
+
   /** Type of relationship */
   type: KnowledgeRelationType;
-  
+
   /** Relationship weight/strength */
   weight: number;
-  
+
   /** Source of the relationship */
   source: KnowledgeSource;
-  
+
   /** Additional metadata */
   metadata?: Record<string, unknown>;
 }
@@ -142,39 +142,44 @@ export interface KnowledgeRelationship {
 export interface KnowledgeQuery {
   /** Query ID for tracking */
   id: string;
-  
+
   /** Application context */
   appId: number;
-  
+
   /** Query text (natural language or structured) */
   query: string;
-  
+
   /** Sources to query (default: all) */
   sources?: KnowledgeSource[];
-  
+
   /** Entity types to filter (optional) */
   entityTypes?: KnowledgeEntityType[];
-  
+
   /** File path filter (optional) */
   filePath?: string;
-  
+
   /** Maximum results per source */
   limit?: number;
-  
+
   /** Minimum confidence threshold (0-1) */
   minConfidence?: number;
-  
+
   /** Include relationships in results */
   includeRelationships?: boolean;
-  
+
   /** Include embeddings in results */
   includeEmbeddings?: boolean;
-  
+
   /** Query context for disambiguation */
   context?: QueryContext;
-  
+
   /** Ranking strategy */
-  rankingStrategy?: "relevance" | "confidence" | "recency" | "access" | "hybrid";
+  rankingStrategy?:
+    | "relevance"
+    | "confidence"
+    | "recency"
+    | "access"
+    | "hybrid";
 }
 
 /**
@@ -183,22 +188,22 @@ export interface KnowledgeQuery {
 export interface QueryContext {
   /** Current task/goal */
   currentTask?: string;
-  
+
   /** Active file being edited */
   activeFile?: string;
-  
+
   /** Recent files accessed */
   recentFiles?: string[];
-  
+
   /** Current git branch */
   gitBranch?: string;
-  
+
   /** Architecture context */
   architectureContext?: {
     currentPattern?: string;
     constraints?: string[];
   };
-  
+
   /** Custom context */
   custom?: Record<string, unknown>;
 }
@@ -209,13 +214,13 @@ export interface QueryContext {
 export interface KnowledgeQueryResult {
   /** Query that produced this result */
   queryId: string;
-  
+
   /** Entities found */
   entities: UnifiedKnowledgeEntity[];
-  
+
   /** Aggregated insights */
   insights: KnowledgeInsight[];
-  
+
   /** Query metadata */
   metadata: {
     totalResults: number;
@@ -223,7 +228,7 @@ export interface KnowledgeQueryResult {
     queryTimeMs: number;
     confidence: number;
   };
-  
+
   /** Source-specific results for debugging */
   sourceResults?: Map<KnowledgeSource, SourceQueryResult>;
 }
@@ -243,23 +248,28 @@ export interface SourceQueryResult {
  */
 export interface KnowledgeInsight {
   /** Insight type */
-  type: "pattern" | "anomaly" | "recommendation" | "relationship" | "dependency";
-  
+  type:
+    | "pattern"
+    | "anomaly"
+    | "recommendation"
+    | "relationship"
+    | "dependency";
+
   /** Insight title */
   title: string;
-  
+
   /** Detailed description */
   description: string;
-  
+
   /** Entities involved in this insight */
   entityIds: string[];
-  
+
   /** Confidence in this insight */
   confidence: number;
-  
+
   /** Source of this insight */
   derivedFrom: KnowledgeSource[];
-  
+
   /** Actionable suggestions */
   suggestions?: string[];
 }
@@ -274,43 +284,43 @@ export interface KnowledgeInsight {
 export interface ArchitectureDecisionRecord {
   /** Unique ID */
   id: string;
-  
+
   /** Application context */
   appId: number;
-  
+
   /** Decision title */
   title: string;
-  
+
   /** Decision description */
   description: string;
-  
+
   /** Decision type */
   type: ArchitectureDecisionType;
-  
+
   /** Context in which decision was made */
   context: DecisionContext;
-  
+
   /** Alternatives considered */
   alternatives: DecisionAlternative[];
-  
+
   /** Selected option */
   selectedOption: string;
-  
+
   /** Rationale for selection */
   rationale: string;
-  
+
   /** Decision outcome */
   outcome: DecisionOutcome;
-  
+
   /** Confidence in the decision */
   confidence: number;
-  
+
   /** Tags for categorization */
   tags: string[];
-  
+
   /** Related entities from knowledge graph */
   relatedEntities: string[];
-  
+
   /** Timestamps */
   createdAt: Date;
   updatedAt: Date;
@@ -320,7 +330,7 @@ export interface ArchitectureDecisionRecord {
 /**
  * Types of architecture decisions
  */
-export type ArchitectureDecisionType = 
+export type ArchitectureDecisionType =
   | "pattern_selection"
   | "technology_choice"
   | "structure_change"
@@ -340,16 +350,16 @@ export type ArchitectureDecisionType =
 export interface DecisionContext {
   /** Problem being solved */
   problem: string;
-  
+
   /** Constraints */
   constraints: string[];
-  
+
   /** Goals */
   goals: string[];
-  
+
   /** Relevant files/modules */
   relevantPaths: string[];
-  
+
   /** Codebase context */
   codebaseState?: {
     totalFiles: number;
@@ -365,22 +375,22 @@ export interface DecisionContext {
 export interface DecisionAlternative {
   /** Option name */
   name: string;
-  
+
   /** Option description */
   description: string;
-  
+
   /** Pros of this option */
   pros: string[];
-  
+
   /** Cons of this option */
   cons: string[];
-  
+
   /** Estimated effort */
   effort: "low" | "medium" | "high";
-  
+
   /** Risk level */
   risk: "low" | "medium" | "high";
-  
+
   /** Why it was/wasn't selected */
   selectionReason?: string;
 }
@@ -391,7 +401,7 @@ export interface DecisionAlternative {
 export interface DecisionOutcome {
   /** Outcome status */
   status: "pending" | "success" | "partial" | "failure" | "reverted";
-  
+
   /** Metrics collected */
   metrics?: {
     implementationTime?: number;
@@ -400,16 +410,16 @@ export interface DecisionOutcome {
     codeQualityScore?: number;
     userSatisfaction?: number;
   };
-  
+
   /** Lessons learned */
   lessonsLearned?: string[];
-  
+
   /** Follow-up actions */
   followUpActions?: string[];
-  
+
   /** When outcome was determined */
   determinedAt?: Date;
-  
+
   /** Who/what determined the outcome */
   determinedBy?: "user" | "system" | "test" | "review";
 }
@@ -424,32 +434,32 @@ export interface DecisionOutcome {
 export interface AggregatedKnowledgeContext {
   /** Task description */
   task: string;
-  
+
   /** Application ID */
   appId: number;
-  
+
   /** Relevant code entities */
   codeEntities: UnifiedKnowledgeEntity[];
-  
+
   /** Relevant dependencies */
   dependencies: UnifiedKnowledgeEntity[];
-  
+
   /** Related architecture decisions */
   architectureDecisions: ArchitectureDecisionRecord[];
-  
+
   /** Similar past decisions */
   similarDecisions: ArchitectureDecisionRecord[];
-  
+
   /** Reasoning context */
   reasoningContext: {
     relevantTraces: string[];
     patterns: string[];
     antiPatterns: string[];
   };
-  
+
   /** Recommendations based on context */
   recommendations: ContextRecommendation[];
-  
+
   /** Context confidence score */
   confidence: number;
 }
@@ -460,22 +470,22 @@ export interface AggregatedKnowledgeContext {
 export interface ContextRecommendation {
   /** Recommendation ID */
   id: string;
-  
+
   /** Recommendation text */
   text: string;
-  
+
   /** Recommendation type */
   type: "pattern" | "approach" | "tool" | "dependency" | "architecture";
-  
+
   /** Confidence level */
   confidence: number;
-  
+
   /** Source of this recommendation */
   sources: KnowledgeSource[];
-  
+
   /** Supporting evidence */
   evidence: string[];
-  
+
   /** Priority (1-10) */
   priority: number;
 }
@@ -490,13 +500,13 @@ export interface ContextRecommendation {
 export interface KnowledgeIntegrationEvent {
   /** Event type */
   type: KnowledgeIntegrationEventType;
-  
+
   /** Event timestamp */
   timestamp: Date;
-  
+
   /** Application context */
   appId: number;
-  
+
   /** Event payload */
   payload: unknown;
 }
@@ -504,7 +514,7 @@ export interface KnowledgeIntegrationEvent {
 /**
  * Types of knowledge integration events
  */
-export type KnowledgeIntegrationEventType = 
+export type KnowledgeIntegrationEventType =
   | "query_executed"
   | "entity_created"
   | "entity_updated"
@@ -526,25 +536,25 @@ export type KnowledgeIntegrationEventType =
 export interface KnowledgeIntegrationConfig {
   /** Enable caching */
   enableCaching: boolean;
-  
+
   /** Cache TTL in seconds */
   cacheTtl: number;
-  
+
   /** Maximum query results */
   maxQueryResults: number;
-  
+
   /** Default minimum confidence */
   defaultMinConfidence: number;
-  
+
   /** Enable cross-source analysis */
   enableCrossSourceAnalysis: boolean;
-  
+
   /** Enable learning from outcomes */
   enableLearning: boolean;
-  
+
   /** Learning confidence threshold */
   learningConfidenceThreshold: number;
-  
+
   /** Source weights for ranking */
   sourceWeights: Record<KnowledgeSource, number>;
 }

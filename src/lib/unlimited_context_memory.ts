@@ -1,9 +1,9 @@
 /**
  * Unlimited Context Memory System
- * 
+ *
  * A multi-tier memory architecture that provides effectively unlimited context
  * by combining in-context memory with semantic retrieval from long-term storage.
- * 
+ *
  * Architecture:
  * - L1: Active Context (current conversation, in LLM context window)
  * - L2: Semantic Retrieval Cache (vector store for quick retrieval)
@@ -182,7 +182,7 @@ class VectorStore {
       minScore?: number;
       types?: string[];
       tags?: string[];
-    } = {}
+    } = {},
   ): Promise<RetrievalResult[]> {
     const {
       limit = MEMORY_CONFIG.maxRetrievedItems,
@@ -206,10 +206,14 @@ class VectorStore {
 
       // Semantic similarity (if embedding exists)
       if (entry.embedding) {
-        score += MEMORY_CONFIG.relevanceWeight * this.cosineSimilarity(queryEmbedding, entry.embedding);
+        score +=
+          MEMORY_CONFIG.relevanceWeight *
+          this.cosineSimilarity(queryEmbedding, entry.embedding);
       } else {
         // Fallback to keyword matching
-        score += MEMORY_CONFIG.relevanceWeight * this.keywordMatch(query, entry.content);
+        score +=
+          MEMORY_CONFIG.relevanceWeight *
+          this.keywordMatch(query, entry.content);
       }
 
       // Importance boost
@@ -267,7 +271,10 @@ class VectorStore {
    * For production, use a proper embedding model (e.g., via ONNX)
    */
   private generateSimpleEmbedding(text: string): number[] {
-    const embedding = Array.from({ length: MEMORY_CONFIG.embeddingDimensions }, () => 0);
+    const embedding = Array.from(
+      { length: MEMORY_CONFIG.embeddingDimensions },
+      () => 0,
+    );
     const normalized = text.toLowerCase().trim();
 
     // Use trigram hashing
@@ -293,7 +300,7 @@ class VectorStore {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash;
@@ -384,7 +391,9 @@ class ContextBuilder {
       MEMORY_CONFIG.codebaseReserve;
 
     this.budget.availableTokens =
-      this.budget.maxTokens - this.budget.reservedTokens - this.budget.usedTokens;
+      this.budget.maxTokens -
+      this.budget.reservedTokens -
+      this.budget.usedTokens;
   }
 
   /**
@@ -397,14 +406,19 @@ class ContextBuilder {
       currentPlan?: string;
       activeTodos?: string[];
       maxTokens?: number;
-    } = {}
+    } = {},
   ): Promise<{
     context: string;
     retrievedMemories: RetrievalResult[];
     tokenCount: number;
     budget: ContextBudget;
   }> {
-    const { currentMessages = [], currentPlan, activeTodos = [], maxTokens } = options;
+    const {
+      currentMessages = [],
+      currentPlan,
+      activeTodos = [],
+      maxTokens,
+    } = options;
 
     if (maxTokens) {
       this.setContextWindow(maxTokens);
@@ -428,7 +442,8 @@ class ContextBuilder {
     }
 
     // 3. Retrieve relevant memories from vector store
-    const messageBudget = this.budget.availableTokens * MEMORY_CONFIG.messageHistoryBudget;
+    const messageBudget =
+      this.budget.availableTokens * MEMORY_CONFIG.messageHistoryBudget;
     const retrievalBudget = messageBudget * 0.3; // 30% for retrieved memories
 
     const retrievedMemories = await this.vectorStore.search(query, {
@@ -451,7 +466,9 @@ class ContextBuilder {
     }
 
     if (memoryContext.length > 0) {
-      contextParts.push(`<relevant-context>\n${memoryContext.join("\n\n")}\n</relevant-context>`);
+      contextParts.push(
+        `<relevant-context>\n${memoryContext.join("\n\n")}\n</relevant-context>`,
+      );
       tokenCount += memoryTokens;
     }
 
@@ -475,7 +492,9 @@ class ContextBuilder {
     }
 
     if (messageContext.length > 0) {
-      contextParts.push(`<conversation>\n${messageContext.join("\n")}\n</conversation>`);
+      contextParts.push(
+        `<conversation>\n${messageContext.join("\n")}\n</conversation>`,
+      );
       tokenCount += messageTokens;
     }
 
@@ -548,7 +567,7 @@ export class UnlimitedContextMemory {
       importance?: number;
       source?: string;
       tags?: string[];
-    } = {}
+    } = {},
   ): Promise<string> {
     await this.ensureInitialized();
 
@@ -580,7 +599,7 @@ export class UnlimitedContextMemory {
   async rememberDecision(
     decision: string,
     rationale: string,
-    options: { source?: string; tags?: string[] } = {}
+    options: { source?: string; tags?: string[] } = {},
   ): Promise<string> {
     const content = `Decision: ${decision}\n\nRationale: ${rationale}`;
     return this.remember(content, "decision", {
@@ -596,7 +615,7 @@ export class UnlimitedContextMemory {
   async rememberError(
     error: string,
     resolution: string,
-    options: { source?: string; tags?: string[] } = {}
+    options: { source?: string; tags?: string[] } = {},
   ): Promise<string> {
     const content = `Error: ${error}\n\nResolution: ${resolution}`;
     return this.remember(content, "error", {
@@ -611,7 +630,7 @@ export class UnlimitedContextMemory {
    */
   async rememberLearning(
     learning: string,
-    options: { source?: string; tags?: string[] } = {}
+    options: { source?: string; tags?: string[] } = {},
   ): Promise<string> {
     return this.remember(learning, "learning", {
       importance: 0.7,
@@ -626,7 +645,7 @@ export class UnlimitedContextMemory {
   async rememberMessage(
     role: string,
     content: string,
-    options: { source?: string; tags?: string[] } = {}
+    options: { source?: string; tags?: string[] } = {},
   ): Promise<string> {
     const messageContent = `[${role.toUpperCase()}] ${content}`;
     return this.remember(messageContent, "message", {
@@ -645,7 +664,7 @@ export class UnlimitedContextMemory {
       limit?: number;
       types?: string[];
       tags?: string[];
-    } = {}
+    } = {},
   ): Promise<RetrievalResult[]> {
     await this.ensureInitialized();
 
@@ -666,7 +685,7 @@ export class UnlimitedContextMemory {
    */
   async buildContext(
     query: string,
-    options: Parameters<ContextBuilder["buildContext"]>[1] = {}
+    options: Parameters<ContextBuilder["buildContext"]>[1] = {},
   ): Promise<ReturnType<ContextBuilder["buildContext"]>> {
     await this.ensureInitialized();
     return this.contextBuilder.buildContext(query, options);
@@ -676,7 +695,7 @@ export class UnlimitedContextMemory {
    * Create a summary of old memories
    */
   async summarizeOldMemories(
-    olderThan: number = 30 * 24 * 60 * 60 * 1000 // 30 days
+    olderThan: number = 30 * 24 * 60 * 60 * 1000, // 30 days
   ): Promise<string> {
     await this.ensureInitialized();
 
@@ -722,7 +741,9 @@ export class UnlimitedContextMemory {
 
 let instance: UnlimitedContextMemory | null = null;
 
-export function getUnlimitedContextMemory(appPath: string): UnlimitedContextMemory {
+export function getUnlimitedContextMemory(
+  appPath: string,
+): UnlimitedContextMemory {
   if (!instance) {
     instance = new UnlimitedContextMemory(appPath);
   }

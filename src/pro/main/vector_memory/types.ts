@@ -1,6 +1,6 @@
 /**
  * Vector Semantic Memory - Type Definitions
- * 
+ *
  * Defines types for code embeddings, semantic memory storage,
  * and similarity retrieval operations.
  */
@@ -12,7 +12,7 @@
 /**
  * Supported embedding models
  */
-export type EmbeddingModel = 
+export type EmbeddingModel =
   | "text-embedding-3-small"
   | "text-embedding-3-large"
   | "text-embedding-ada-002"
@@ -41,7 +41,10 @@ export interface EmbeddingConfig {
 /**
  * Default embedding configurations per model
  */
-export const DEFAULT_EMBEDDING_CONFIGS: Record<EmbeddingModel, EmbeddingConfig> = {
+export const DEFAULT_EMBEDDING_CONFIGS: Record<
+  EmbeddingModel,
+  EmbeddingConfig
+> = {
   "text-embedding-3-small": {
     model: "text-embedding-3-small",
     dimensions: 1536,
@@ -122,7 +125,7 @@ export interface EmbeddingResult {
 /**
  * Types of content that can be stored in semantic memory
  */
-export type MemoryContentType = 
+export type MemoryContentType =
   | "code_snippet"
   | "function"
   | "class"
@@ -203,7 +206,11 @@ export interface MemoryEntryInsert {
 /**
  * Similarity metric for vector comparison
  */
-export type SimilarityMetric = "cosine" | "euclidean" | "dot_product" | "manhattan";
+export type SimilarityMetric =
+  | "cosine"
+  | "euclidean"
+  | "dot_product"
+  | "manhattan";
 
 /**
  * Search query options
@@ -289,11 +296,7 @@ export interface MemoryStats {
 /**
  * Index status
  */
-export type IndexStatus = 
-  | "not_indexed"
-  | "indexing"
-  | "indexed"
-  | "error";
+export type IndexStatus = "not_indexed" | "indexing" | "indexed" | "error";
 
 /**
  * File indexing status

@@ -79,11 +79,13 @@ This document outlines a comprehensive solution to eliminate context window limi
 **Issue:** Context limit banner showing for simple "hi" messages
 
 **Root Cause Analysis:**
+
 1. The banner uses `actualMaxTokens` from last assistant message
 2. This includes system prompt + codebase context + tool definitions
 3. Even in a "new" chat, previous messages may have high token counts
 
 **Fix:**
+
 1. Add a "fresh chat" check - don't show banner for new chats with < 3 messages
 2. Calculate tokens properly using tiktoken instead of 4-char approximation
 3. Add "context age" factor - don't warn for context that was just built
@@ -171,6 +173,7 @@ This document outlines a comprehensive solution to eliminate context window limi
 **File:** `src/components/chat/ContextLimitBanner.tsx`
 
 **Changes:**
+
 ```typescript
 // Add minimum message threshold
 const MIN_MESSAGES_FOR_WARNING = 3;
@@ -194,7 +197,10 @@ export function shouldShowContextLimitBanner({
   }
 
   // Don't show if context was just built (within 1 minute)
-  if (contextBuiltAt && Date.now() - contextBuiltAt < CONTEXT_AGE_THRESHOLD_MS) {
+  if (
+    contextBuiltAt &&
+    Date.now() - contextBuiltAt < CONTEXT_AGE_THRESHOLD_MS
+  ) {
     return false;
   }
 
@@ -212,11 +218,13 @@ export function shouldShowContextLimitBanner({
 ### 2. Implement Local Vector Store
 
 **New Files:**
+
 - `src/lib/vector_store.ts` - Vector store implementation
 - `src/lib/embeddings.ts` - Embedding generation
 - `src/lib/context_retrieval.ts` - Context retrieval pipeline
 
 **Dependencies:**
+
 - `vectra` or `sqlite-vss` for vector storage
 - `@xenova/transformers` for local embeddings (ONNX runtime)
 
@@ -225,6 +233,7 @@ export function shouldShowContextLimitBanner({
 **File:** `src/ipc/utils/context_builder.ts` (new)
 
 **Functionality:**
+
 - Build context with priority scoring
 - Retrieve from vector store
 - Compress and format for LLM
@@ -232,10 +241,12 @@ export function shouldShowContextLimitBanner({
 ### 4. Memory Integration
 
 **Enhanced Files:**
+
 - `src/pro/main/ipc/handlers/local_agent/tools/memory_store.ts`
 - `src/pro/main/ipc/handlers/local_agent/tools/knowledge_base.ts`
 
 **New Capabilities:**
+
 - Automatic embedding on store
 - Semantic search support
 - Cross-reference retrieval
@@ -251,20 +262,20 @@ interface ContextMemorySettings {
   // Context limit banner
   showContextWarning: boolean;
   contextWarningThreshold: number; // tokens remaining
-  
+
   // Vector store
   enableVectorStore: boolean;
   embeddingModel: string;
   vectorStorePath: string;
-  
+
   // Retrieval
   maxRetrievedItems: number;
   retrievalThreshold: number; // similarity score
-  
+
   // Summarization
   autoSummarize: boolean;
   summarizationThreshold: number; // turns
-  
+
   // Memory
   memoryExpirationDays: number;
   maxMemorySize: number; // entries
@@ -276,26 +287,31 @@ interface ContextMemorySettings {
 ## Migration Plan
 
 ### Step 1: Deploy Banner Fix
+
 - Update `ContextLimitBanner.tsx`
 - Update `useCountTokens.ts` to include message count
 - Test with various scenarios
 
 ### Step 2: Add Vector Store
+
 - Install dependencies
 - Create vector store module
 - Integrate with context builder
 
 ### Step 3: Enable Semantic Retrieval
+
 - Create embedding pipeline
 - Update context retrieval
 - Add to agent tools
 
 ### Step 4: Integrate Memory Systems
+
 - Connect memory store to vector store
 - Enable semantic memory retrieval
 - Add memory to context building
 
 ### Step 5: Enable Hierarchical Summarization
+
 - Update compaction system
 - Add summary levels
 - Enable summary retrieval
@@ -305,15 +321,18 @@ interface ContextMemorySettings {
 ## Expected Outcomes
 
 ### Immediate (Phase 1)
+
 - No more false "context running out" warnings
 - Accurate token counting
 
 ### Short-term (Phases 2-3)
+
 - 50-70% reduction in context usage for large conversations
 - Semantic retrieval of relevant context
 - No more "forgotten" important information
 
 ### Long-term (Phases 4-5)
+
 - Unlimited conversation length
 - Cross-session memory persistence
 - Self-improving context management
@@ -323,12 +342,14 @@ interface ContextMemorySettings {
 ## Monitoring & Metrics
 
 ### Key Metrics
+
 - Context utilization rate
 - Retrieval relevance scores
 - Memory hit rate
 - User satisfaction (feedback)
 
 ### Logging
+
 - Context decisions logged
 - Retrieval queries logged
 - Memory access patterns

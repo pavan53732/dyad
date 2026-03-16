@@ -1,6 +1,6 @@
 /**
  * Embedding Service
- * 
+ *
  * Generates embeddings for code snippets and text using various models.
  * Supports OpenAI embeddings and local embedding models.
  */
@@ -13,7 +13,6 @@ import type {
   EmbeddingResult,
   TextChunk,
   ChunkingOptions,
-  DEFAULT_EMBEDDING_CONFIGS,
 } from "./types";
 
 // ============================================================================
@@ -90,11 +89,11 @@ export class EmbeddingService {
    */
   async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
     const results: EmbeddingResult[] = [];
-    
+
     // Process in batches
     for (let i = 0; i < texts.length; i += this.config.batchSize) {
       const batch = texts.slice(i, i + this.config.batchSize);
-      const batchResults = await Promise.all(batch.map(t => this.embed(t)));
+      const batchResults = await Promise.all(batch.map((t) => this.embed(t)));
       results.push(...batchResults);
     }
 
@@ -122,11 +121,11 @@ export class EmbeddingService {
     }
 
     const baseUrl = this.apiBaseUrl || "https://api.openai.com/v1";
-    
+
     const response = await fetch(`${baseUrl}/embeddings`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -158,7 +157,10 @@ export class EmbeddingService {
    */
   private async embedLocally(text: string): Promise<EmbeddingVector> {
     // Simple embedding: use word frequency and positional encoding
-    const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const words = text
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
     const dimensions = this.config.dimensions;
     const embedding = new Array(dimensions).fill(0);
 
@@ -167,10 +169,11 @@ export class EmbeddingService {
       const word = words[i];
       const hash = this.hashWord(word);
       const position = i / words.length; // Normalized position
-      
+
       // Add contribution to embedding dimensions
       for (let d = 0; d < dimensions; d++) {
-        const contribution = Math.sin(hash * (d + 1) * 0.001) * (1 - position * 0.5);
+        const contribution =
+          Math.sin(hash * (d + 1) * 0.001) * (1 - position * 0.5);
         embedding[d] += contribution;
       }
     }
@@ -192,7 +195,7 @@ export class EmbeddingService {
   private normalizeVector(vector: EmbeddingVector): EmbeddingVector {
     const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
     if (magnitude === 0) return vector;
-    return vector.map(v => v / magnitude);
+    return vector.map((v) => v / magnitude);
   }
 
   /**
@@ -209,7 +212,7 @@ export class EmbeddingService {
     let hash = 0;
     for (let i = 0; i < word.length; i++) {
       const char = word.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);
@@ -218,10 +221,7 @@ export class EmbeddingService {
   /**
    * Chunk text for embedding with overlap
    */
-  chunkText(
-    text: string,
-    options?: Partial<ChunkingOptions>,
-  ): TextChunk[] {
+  chunkText(text: string, options?: Partial<ChunkingOptions>): TextChunk[] {
     const opts = {
       maxChunkSize: options?.maxChunkSize ?? 1000,
       overlap: options?.overlap ?? 200,
@@ -246,7 +246,7 @@ export class EmbeddingService {
       if (currentLength >= opts.maxChunkSize) {
         // Try to find a good boundary
         let splitIndex = currentChunk.length - 1;
-        
+
         if (opts.respectCodeBoundaries) {
           // Look for code boundary markers
           for (let j = currentChunk.length - 1; j >= 0; j--) {
@@ -284,10 +284,7 @@ export class EmbeddingService {
           currentStartLine += splitIndex;
 
           // Keep overlap lines for context
-          const overlapLineCount = Math.min(
-            opts.overlap,
-            splitIndex,
-          );
+          const overlapLineCount = Math.min(opts.overlap, splitIndex);
           currentChunk = currentChunk.slice(splitIndex - overlapLineCount);
         } else {
           // Keep building the chunk

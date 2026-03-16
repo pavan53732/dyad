@@ -98,7 +98,11 @@ export interface AgentContext {
    * Available when isDyadPro is true.
    */
   knowledgeOrchestrator?: {
-    query: (query: string, sources?: string[], limit?: number) => Promise<{
+    query: (
+      query: string,
+      sources?: string[],
+      limit?: number,
+    ) => Promise<{
       success: boolean;
       entities: Array<{
         id: string;
@@ -111,20 +115,28 @@ export interface AgentContext {
       }>;
       error?: string;
     }>;
-    findSimilar: (entityId: string, options?: {
-      sources?: string[];
-      limit?: number;
-      minSimilarity?: number;
-    }) => Promise<Array<{
-      id: string;
-      name: string;
-      metadata: { confidence: number };
-    }>>;
-    buildContext: (task: string, options?: {
-      includeDecisions?: boolean;
-      includePatterns?: boolean;
-      maxEntities?: number;
-    }) => Promise<{
+    findSimilar: (
+      entityId: string,
+      options?: {
+        sources?: string[];
+        limit?: number;
+        minSimilarity?: number;
+      },
+    ) => Promise<
+      Array<{
+        id: string;
+        name: string;
+        metadata: { confidence: number };
+      }>
+    >;
+    buildContext: (
+      task: string,
+      options?: {
+        includeDecisions?: boolean;
+        includePatterns?: boolean;
+        maxEntities?: number;
+      },
+    ) => Promise<{
       entities: Array<{
         id: string;
         name: string;
@@ -165,10 +177,13 @@ export interface AgentContext {
       constraints?: string[];
       goals?: string[];
     }) => Promise<Array<{ suggestion: string; confidence: number }>>;
-    updateOutcome: (decisionId: string, outcome: {
-      status: "success" | "partial" | "failure";
-      lessonsLearned?: string[];
-    }) => Promise<void>;
+    updateOutcome: (
+      decisionId: string,
+      outcome: {
+        status: "success" | "partial" | "failure";
+        lessonsLearned?: string[];
+      },
+    ) => Promise<void>;
   };
 }
 

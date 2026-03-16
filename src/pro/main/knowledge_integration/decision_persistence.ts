@@ -96,7 +96,10 @@ export class DecisionPersistence {
           type: decision.type,
           status: decision.outcome.status,
           context: decision.context as unknown as Record<string, unknown>,
-          alternatives: decision.alternatives as unknown as Record<string, unknown>[],
+          alternatives: decision.alternatives as unknown as Record<
+            string,
+            unknown
+          >[],
           selectedOption: decision.selectedOption,
           rationale: decision.rationale,
           outcome: decision.outcome as unknown as Record<string, unknown>,
@@ -152,7 +155,7 @@ export class DecisionPersistence {
    */
   async loadDecisionsForApp(
     appId: number,
-    options?: LoadDecisionsOptions
+    options?: LoadDecisionsOptions,
   ): Promise<ArchitectureDecisionRecord[]> {
     try {
       const conditions = [eq(architectureDecisions.appId, appId)];
@@ -173,9 +176,12 @@ export class DecisionPersistence {
         .limit(options?.limit || 50)
         .offset(options?.offset || 0);
 
-      return rows.map(row => this.mapRowToDecision(row));
+      return rows.map((row) => this.mapRowToDecision(row));
     } catch (error) {
-      console.error("[DecisionPersistence] Failed to load decisions for app:", error);
+      console.error(
+        "[DecisionPersistence] Failed to load decisions for app:",
+        error,
+      );
       return [];
     }
   }
@@ -183,7 +189,9 @@ export class DecisionPersistence {
   /**
    * Load all decisions matching options
    */
-  async loadDecisions(options?: LoadDecisionsOptions): Promise<ArchitectureDecisionRecord[]> {
+  async loadDecisions(
+    options?: LoadDecisionsOptions,
+  ): Promise<ArchitectureDecisionRecord[]> {
     try {
       const conditions = [];
 
@@ -200,7 +208,9 @@ export class DecisionPersistence {
       }
 
       if (options?.minConfidence) {
-        conditions.push(sql`${architectureDecisions.confidence} >= ${options.minConfidence}`);
+        conditions.push(
+          sql`${architectureDecisions.confidence} >= ${options.minConfidence}`,
+        );
       }
 
       const rows = await db
@@ -211,7 +221,7 @@ export class DecisionPersistence {
         .limit(options?.limit || 100)
         .offset(options?.offset || 0);
 
-      return rows.map(row => this.mapRowToDecision(row));
+      return rows.map((row) => this.mapRowToDecision(row));
     } catch (error) {
       console.error("[DecisionPersistence] Failed to load decisions:", error);
       return [];
@@ -223,7 +233,7 @@ export class DecisionPersistence {
    */
   async updateOutcome(
     decisionId: string,
-    outcome: Partial<DecisionOutcome>
+    outcome: Partial<DecisionOutcome>,
   ): Promise<ArchitectureDecisionRecord | null> {
     try {
       const [existing] = await db
@@ -246,7 +256,8 @@ export class DecisionPersistence {
         .set({
           status: updatedOutcome.status,
           outcome: updatedOutcome as unknown as Record<string, unknown>,
-          lessonsLearned: updatedOutcome.lessonsLearned || existing.lessonsLearned,
+          lessonsLearned:
+            updatedOutcome.lessonsLearned || existing.lessonsLearned,
           updatedAt: new Date(),
           outcomeDeterminedAt: updatedOutcome.determinedAt,
         })
@@ -282,9 +293,7 @@ export class DecisionPersistence {
    */
   async getStats(appId?: number): Promise<DecisionStats> {
     try {
-      const conditions = appId
-        ? [eq(architectureDecisions.appId, appId)]
-        : [];
+      const conditions = appId ? [eq(architectureDecisions.appId, appId)] : [];
 
       const rows = await db
         .select()
@@ -378,7 +387,7 @@ export class DecisionPersistence {
    * Load patterns by type
    */
   async loadPatternsByType(
-    type: ArchitectureDecisionType
+    type: ArchitectureDecisionType,
   ): Promise<PersistedPattern[]> {
     try {
       const rows = await db
@@ -387,7 +396,7 @@ export class DecisionPersistence {
         .where(eq(learnedPatterns.type, type))
         .orderBy(desc(learnedPatterns.confidence));
 
-      return rows.map(row => this.mapRowToPattern(row));
+      return rows.map((row) => this.mapRowToPattern(row));
     } catch (error) {
       console.error("[DecisionPersistence] Failed to load patterns:", error);
       return [];
@@ -405,9 +414,12 @@ export class DecisionPersistence {
         .orderBy(desc(learnedPatterns.confidence))
         .limit(limit);
 
-      return rows.map(row => this.mapRowToPattern(row));
+      return rows.map((row) => this.mapRowToPattern(row));
     } catch (error) {
-      console.error("[DecisionPersistence] Failed to load all patterns:", error);
+      console.error(
+        "[DecisionPersistence] Failed to load all patterns:",
+        error,
+      );
       return [];
     }
   }
@@ -425,7 +437,10 @@ export class DecisionPersistence {
         })
         .where(eq(learnedPatterns.id, patternId));
     } catch (error) {
-      console.error("[DecisionPersistence] Failed to record pattern success:", error);
+      console.error(
+        "[DecisionPersistence] Failed to record pattern success:",
+        error,
+      );
     }
   }
 
@@ -442,7 +457,10 @@ export class DecisionPersistence {
         })
         .where(eq(learnedPatterns.id, patternId));
     } catch (error) {
-      console.error("[DecisionPersistence] Failed to record pattern failure:", error);
+      console.error(
+        "[DecisionPersistence] Failed to record pattern failure:",
+        error,
+      );
     }
   }
 
@@ -456,14 +474,22 @@ export class DecisionPersistence {
   async searchByContext(
     appId: number,
     context: DecisionContext,
-    options?: { limit?: number; minSimilarity?: number }
-  ): Promise<Array<{ decision: ArchitectureDecisionRecord; similarity: number }>> {
+    options?: { limit?: number; minSimilarity?: number },
+  ): Promise<
+    Array<{ decision: ArchitectureDecisionRecord; similarity: number }>
+  > {
     const decisions = await this.loadDecisionsForApp(appId, { limit: 100 });
 
-    const results: Array<{ decision: ArchitectureDecisionRecord; similarity: number }> = [];
+    const results: Array<{
+      decision: ArchitectureDecisionRecord;
+      similarity: number;
+    }> = [];
 
     for (const decision of decisions) {
-      const similarity = this.calculateContextSimilarity(context, decision.context);
+      const similarity = this.calculateContextSimilarity(
+        context,
+        decision.context,
+      );
       if (similarity >= (options?.minSimilarity || 0.3)) {
         results.push({ decision, similarity });
       }
@@ -479,7 +505,7 @@ export class DecisionPersistence {
    */
   async findByTags(
     appId: number,
-    tags: string[]
+    tags: string[],
   ): Promise<ArchitectureDecisionRecord[]> {
     try {
       // SQLite JSON array containment
@@ -490,11 +516,11 @@ export class DecisionPersistence {
         .limit(50);
 
       return rows
-        .filter(row => {
+        .filter((row) => {
           const decisionTags = row.tags as string[];
-          return tags.some(t => decisionTags.includes(t));
+          return tags.some((t) => decisionTags.includes(t));
         })
-        .map(row => this.mapRowToDecision(row));
+        .map((row) => this.mapRowToDecision(row));
     } catch (error) {
       console.error("[DecisionPersistence] Failed to find by tags:", error);
       return [];
@@ -505,7 +531,9 @@ export class DecisionPersistence {
   // Private Helpers
   // -------------------------------------------------------------------------
 
-  private mapRowToDecision(row: ArchitectureDecisionRow): ArchitectureDecisionRecord {
+  private mapRowToDecision(
+    row: ArchitectureDecisionRow,
+  ): ArchitectureDecisionRecord {
     return {
       id: row.id,
       appId: row.appId,
@@ -546,20 +574,23 @@ export class DecisionPersistence {
 
   private calculateContextSimilarity(
     context1: DecisionContext,
-    context2: DecisionContext
+    context2: DecisionContext,
   ): number {
     let score = 0;
     let totalWeight = 0;
 
     // Problem similarity (weight: 0.4)
-    const problemSimilarity = this.textSimilarity(context1.problem, context2.problem);
+    const problemSimilarity = this.textSimilarity(
+      context1.problem,
+      context2.problem,
+    );
     score += problemSimilarity * 0.4;
     totalWeight += 0.4;
 
     // Constraint overlap (weight: 0.3)
     const constraintOverlap = this.setOverlap(
       new Set(context1.constraints),
-      new Set(context2.constraints)
+      new Set(context2.constraints),
     );
     score += constraintOverlap * 0.3;
     totalWeight += 0.3;
@@ -567,16 +598,19 @@ export class DecisionPersistence {
     // Goal overlap (weight: 0.2)
     const goalOverlap = this.setOverlap(
       new Set(context1.goals),
-      new Set(context2.goals)
+      new Set(context2.goals),
     );
     score += goalOverlap * 0.2;
     totalWeight += 0.2;
 
     // Path overlap (weight: 0.1)
-    if (context1.relevantPaths.length > 0 || context2.relevantPaths.length > 0) {
+    if (
+      context1.relevantPaths.length > 0 ||
+      context2.relevantPaths.length > 0
+    ) {
       const pathOverlap = this.setOverlap(
         new Set(context1.relevantPaths),
-        new Set(context2.relevantPaths)
+        new Set(context2.relevantPaths),
       );
       score += pathOverlap * 0.1;
       totalWeight += 0.1;

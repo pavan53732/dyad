@@ -14,15 +14,15 @@
 
 A comprehensive architectural verification revealed:
 
-| Module | Path | Lines | Status |
-|--------|------|-------|--------|
-| Knowledge Integration Layer | `src/pro/main/knowledge_integration/` | 4,386 | 🔴 DEAD |
-| Planning Engine | `src/pro/main/planner/` | 2,855 | 🔴 DEAD |
-| Agent Scheduler | `src/pro/main/scheduler/` | 1,965 | 🔴 DEAD |
-| Distributed Runtime | `src/pro/main/distributed/` | 2,156 | 🔴 DEAD |
-| Knowledge Graph | `src/pro/main/knowledge_graph/` | 2,798 | 🔴 DEAD |
-| Vector Memory | `src/pro/main/vector_memory/` | 1,286 | 🔴 DEAD |
-| **Total** | | **~15,446** | **ISOLATED** |
+| Module                      | Path                                  | Lines       | Status       |
+| --------------------------- | ------------------------------------- | ----------- | ------------ |
+| Knowledge Integration Layer | `src/pro/main/knowledge_integration/` | 4,386       | 🔴 DEAD      |
+| Planning Engine             | `src/pro/main/planner/`               | 2,855       | 🔴 DEAD      |
+| Agent Scheduler             | `src/pro/main/scheduler/`             | 1,965       | 🔴 DEAD      |
+| Distributed Runtime         | `src/pro/main/distributed/`           | 2,156       | 🔴 DEAD      |
+| Knowledge Graph             | `src/pro/main/knowledge_graph/`       | 2,798       | 🔴 DEAD      |
+| Vector Memory               | `src/pro/main/vector_memory/`         | 1,286       | 🔴 DEAD      |
+| **Total**                   |                                       | **~15,446** | **ISOLATED** |
 
 ### Root Cause
 
@@ -66,6 +66,7 @@ UI
 **File:** `src/ipc/ipc_host.ts`
 
 **Changes:**
+
 ```typescript
 // Add imports
 import { initKnowledgeIntegrationIpcHandlers } from "../pro/main/knowledge_integration";
@@ -89,19 +90,32 @@ registerKnowledgeGraphHandlers();
 **File:** `src/pro/main/ipc/handlers/local_agent/tools/types.ts`
 
 **Changes:**
+
 ```typescript
 export interface AgentContext {
   // ... existing fields ...
-  
+
   knowledgeOrchestrator?: {
-    query: (query: string, sources?: string[], limit?: number) => Promise<QueryResult>;
-    findSimilar: (entityId: string, options?: SimilarOptions) => Promise<SimilarResult[]>;
-    buildContext: (task: string, options?: ContextOptions) => Promise<BuildContext>;
+    query: (
+      query: string,
+      sources?: string[],
+      limit?: number,
+    ) => Promise<QueryResult>;
+    findSimilar: (
+      entityId: string,
+      options?: SimilarOptions,
+    ) => Promise<SimilarResult[]>;
+    buildContext: (
+      task: string,
+      options?: ContextOptions,
+    ) => Promise<BuildContext>;
   };
-  
+
   learningRepository?: {
     recordDecision: (decision: DecisionInput) => Promise<{ id: string }>;
-    getRecommendations: (context: RecommendationContext) => Promise<Recommendation[]>;
+    getRecommendations: (
+      context: RecommendationContext,
+    ) => Promise<Recommendation[]>;
     updateOutcome: (decisionId: string, outcome: Outcome) => Promise<void>;
   };
 }
@@ -115,13 +129,13 @@ export interface AgentContext {
 
 **Tools to Create:**
 
-| Tool | Purpose |
-|------|---------|
-| `kil_query` | Unified knowledge queries across sources |
-| `kil_query_similar` | Find similar entities |
-| `kil_get_recommendations` | Learning-based recommendations |
-| `kil_record_decision` | Record architecture decisions |
-| `kil_build_context` | Build task context |
+| Tool                      | Purpose                                  |
+| ------------------------- | ---------------------------------------- |
+| `kil_query`               | Unified knowledge queries across sources |
+| `kil_query_similar`       | Find similar entities                    |
+| `kil_get_recommendations` | Learning-based recommendations           |
+| `kil_record_decision`     | Record architecture decisions            |
+| `kil_build_context`       | Build task context                       |
 
 **Expected Result:** Agent can call KIL through tools.
 
@@ -130,6 +144,7 @@ export interface AgentContext {
 **File:** `src/pro/main/ipc/handlers/local_agent/tool_definitions.ts`
 
 **Changes:**
+
 ```typescript
 import {
   kilQueryTool,
@@ -156,6 +171,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
 **File:** `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts`
 
 **Changes:**
+
 ```typescript
 import { QueryOrchestrator, LearningRepository } from "@/pro/main/knowledge_integration";
 
@@ -178,15 +194,15 @@ const ctx: AgentContext = {
 
 ### IPC Channels to Activate
 
-| Channel | Purpose |
-|---------|---------|
-| `kil:query` | Unified knowledge queries |
-| `kil:query-similar` | Similarity search |
-| `kil:record-decision` | Decision persistence |
+| Channel                   | Purpose                        |
+| ------------------------- | ------------------------------ |
+| `kil:query`               | Unified knowledge queries      |
+| `kil:query-similar`       | Similarity search              |
+| `kil:record-decision`     | Decision persistence           |
 | `kil:get-recommendations` | Learning-based recommendations |
-| `planner:generate-plan` | Task decomposition |
-| `scheduler:schedule-task` | Task scheduling |
-| `distributed:spawn-agent` | Agent spawning |
+| `planner:generate-plan`   | Task decomposition             |
+| `scheduler:schedule-task` | Task scheduling                |
+| `distributed:spawn-agent` | Agent spawning                 |
 
 ### Tool-to-KIL Flow
 
@@ -208,40 +224,40 @@ Tool Result
 
 ## Success Criteria
 
-| Criteria | Verification Method |
-|----------|---------------------|
-| KIL modules imported by runtime | `grep -r "knowledge_integration" src/pro/main/ipc/` |
-| IPC channels registered | Check `ipc_host.ts` for registration calls |
-| Tools appear in TOOL_DEFINITIONS | Check `tool_definitions.ts` for new entries |
-| Agent can call KIL during execution | Run agent with KIL query task |
-| Decisions persist to database | Query `architecture_decisions` table |
-| TypeScript compiles | `npx tsc --noEmit` |
-| Lint passes | `bun run lint` |
+| Criteria                            | Verification Method                                 |
+| ----------------------------------- | --------------------------------------------------- |
+| KIL modules imported by runtime     | `grep -r "knowledge_integration" src/pro/main/ipc/` |
+| IPC channels registered             | Check `ipc_host.ts` for registration calls          |
+| Tools appear in TOOL_DEFINITIONS    | Check `tool_definitions.ts` for new entries         |
+| Agent can call KIL during execution | Run agent with KIL query task                       |
+| Decisions persist to database       | Query `architecture_decisions` table                |
+| TypeScript compiles                 | `npx tsc --noEmit`                                  |
+| Lint passes                         | `bun run lint`                                      |
 
 ---
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                      | Mitigation                                               |
+| ------------------------- | -------------------------------------------------------- |
 | Breaking existing runtime | Only additive changes; no modifications to existing flow |
-| Type mismatches | Comprehensive type definitions in types.ts |
-| Performance overhead | KIL instances are lazy-loaded and cached |
-| Dyad Pro gating | KIL context only created when `isDyadPro` is true |
+| Type mismatches           | Comprehensive type definitions in types.ts               |
+| Performance overhead      | KIL instances are lazy-loaded and cached                 |
+| Dyad Pro gating           | KIL context only created when `isDyadPro` is true        |
 
 ---
 
 ## Estimated Effort
 
-| Task | Lines | Complexity |
-|------|-------|------------|
-| IPC Registration | ~30 | Low |
-| AgentContext Extension | ~70 | Medium |
-| KIL Query Tools | ~250 | Medium |
-| Tool Registration | ~20 | Low |
-| Context Integration | ~70 | Medium |
-| **Total** | **~440** | **Medium** |
+| Task                   | Lines    | Complexity |
+| ---------------------- | -------- | ---------- |
+| IPC Registration       | ~30      | Low        |
+| AgentContext Extension | ~70      | Medium     |
+| KIL Query Tools        | ~250     | Medium     |
+| Tool Registration      | ~20      | Low        |
+| Context Integration    | ~70      | Medium     |
+| **Total**              | **~440** | **Medium** |
 
 ---
 
-*Plan created for Evolution Cycle 4: Runtime Integration Phase*
+_Plan created for Evolution Cycle 4: Runtime Integration Phase_

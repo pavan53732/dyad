@@ -1,6 +1,6 @@
 /**
  * Agent Scheduler - Type Definitions
- * 
+ *
  * Defines types for task scheduling, resource management,
  * and execution prioritization.
  */
@@ -13,21 +13,26 @@
  * Schedule entry status
  */
 export type ScheduleStatus =
-  | "scheduled"     // Scheduled for future execution
-  | "queued"        // In the execution queue
-  | "running"       // Currently executing
-  | "completed"     // Successfully completed
-  | "failed"        // Failed execution
-  | "cancelled"     // Cancelled before execution
-  | "paused"        // Paused during execution
-  | "retrying"      // Retrying after failure
-  | "timeout"       // Timed out
-  | "skipped";      // Skipped due to dependencies
+  | "scheduled" // Scheduled for future execution
+  | "queued" // In the execution queue
+  | "running" // Currently executing
+  | "completed" // Successfully completed
+  | "failed" // Failed execution
+  | "cancelled" // Cancelled before execution
+  | "paused" // Paused during execution
+  | "retrying" // Retrying after failure
+  | "timeout" // Timed out
+  | "skipped"; // Skipped due to dependencies
 
 /**
  * Schedule priority (higher = more urgent)
  */
-export type SchedulePriority = "critical" | "high" | "normal" | "low" | "background";
+export type SchedulePriority =
+  | "critical"
+  | "high"
+  | "normal"
+  | "low"
+  | "background";
 
 /**
  * Recurrence pattern for scheduled tasks
@@ -37,11 +42,11 @@ export type RecurrenceType = "none" | "interval" | "cron" | "on_event";
 /**
  * Trigger condition for scheduled tasks
  */
-export type TriggerType = 
-  | "immediate"      // Execute immediately
-  | "scheduled"      // Execute at scheduled time
-  | "on_event"       // Execute on event
-  | "on_condition"   // Execute when condition is met
+export type TriggerType =
+  | "immediate" // Execute immediately
+  | "scheduled" // Execute at scheduled time
+  | "on_event" // Execute on event
+  | "on_condition" // Execute when condition is met
   | "on_dependency"; // Execute when dependencies complete
 
 // ============================================================================
@@ -127,7 +132,12 @@ export interface ScheduleResult {
 /**
  * Retry strategy
  */
-export type RetryStrategy = "none" | "immediate" | "exponential" | "linear" | "custom";
+export type RetryStrategy =
+  | "none"
+  | "immediate"
+  | "exponential"
+  | "linear"
+  | "custom";
 
 /**
  * Retry configuration
@@ -200,17 +210,17 @@ export const DEFAULT_RETRY_CONFIGS: Record<SchedulePriority, RetryConfig> = {
 /**
  * Resource types
  */
-export type ResourceType = 
-  | "cpu"           // CPU cores/percentage
-  | "memory"        // Memory in MB
-  | "disk"          // Disk I/O
-  | "network"       // Network bandwidth
-  | "file_handle"   // File handles
-  | "process"       // Process slots
-  | "agent"         // Agent instances
-  | "llm_tokens"    // LLM token budget
-  | "api_quota"     // API rate limit quota
-  | "custom";       // Custom resource
+export type ResourceType =
+  | "cpu" // CPU cores/percentage
+  | "memory" // Memory in MB
+  | "disk" // Disk I/O
+  | "network" // Network bandwidth
+  | "file_handle" // File handles
+  | "process" // Process slots
+  | "agent" // Agent instances
+  | "llm_tokens" // LLM token budget
+  | "api_quota" // API rate limit quota
+  | "custom"; // Custom resource
 
 /**
  * Resource requirement for a scheduled task
@@ -395,11 +405,11 @@ export interface IntervalTrigger {
 /**
  * Recurrence configuration
  */
-export type RecurrenceConfig = 
+export type RecurrenceConfig =
   | { type: "none" }
-  | { type: "interval" } & IntervalTrigger
-  | { type: "cron" } & CronTrigger
-  | { type: "on_event" } & EventTrigger;
+  | ({ type: "interval" } & IntervalTrigger)
+  | ({ type: "cron" } & CronTrigger)
+  | ({ type: "on_event" } & EventTrigger);
 
 // ============================================================================
 // Scheduler Callback Types
@@ -457,7 +467,10 @@ export interface SchedulerCallbacks {
   /** Called when queue state changes */
   onQueueStateChanged?: (queue: ScheduleQueue) => void;
   /** Called on resource events */
-  onResourceEvent?: (event: "exhausted" | "available", resource: ResourceType) => void;
+  onResourceEvent?: (
+    event: "exhausted" | "available",
+    resource: ResourceType,
+  ) => void;
   /** Called on any scheduler event */
   onEvent?: (event: SchedulerEvent) => void;
 }
@@ -497,7 +510,7 @@ export interface ExecutionContext {
  */
 export type ExecutionHandler = (
   context: ExecutionContext,
-  task: unknown
+  task: unknown,
 ) => Promise<ScheduleResult>;
 
 // ============================================================================

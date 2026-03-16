@@ -1,6 +1,6 @@
 /**
  * Knowledge Graph Engine - Type Definitions
- * 
+ *
  * This module defines the core types for the persistent knowledge graph
  * that represents relationships between code entities.
  */
@@ -258,7 +258,7 @@ export type KnowledgeEdgeType =
   | "queries" // A queries B (function queries table)
   | "mutates" // A mutates B (function modifies table)
   | "routes_to" // A routes to B (API route to handler)
-  | "provides" // A provides B (module provides functionality);
+  | "provides"; // A provides B (module provides functionality);
 
 /**
  * Knowledge graph edge representing a relationship between two nodes

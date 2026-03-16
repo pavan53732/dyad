@@ -1,15 +1,13 @@
 /**
  * Unlimited Context Memory Tool
- * 
+ *
  * Provides the AI agent with the ability to remember and recall information
  * across sessions without being limited by the context window.
  */
 
 import { z } from "zod";
 import type { AgentTool } from "./types";
-import {
-  getUnlimitedContextMemory,
-} from "@/lib/unlimited_context_memory";
+import { getUnlimitedContextMemory } from "@/lib/unlimited_context_memory";
 import { getDyadAppPath } from "@/paths/paths";
 
 // ============================================================================
@@ -42,7 +40,9 @@ const recallSchema = z.object({
     .default(10)
     .describe("Maximum number of memories to retrieve"),
   types: z
-    .array(z.enum(["decision", "error", "learning", "message", "code", "summary"]))
+    .array(
+      z.enum(["decision", "error", "learning", "message", "code", "summary"]),
+    )
     .optional()
     .describe("Filter by memory types"),
   tags: z.array(z.string()).optional().describe("Filter by tags"),
@@ -80,7 +80,9 @@ const forgetSchema = z.object({
     .boolean()
     .optional()
     .default(false)
-    .describe("Set to true to actually delete. False returns what would be deleted."),
+    .describe(
+      "Set to true to actually delete. False returns what would be deleted.",
+    ),
 });
 
 const unlimitedContextMemorySchema = z.discriminatedUnion("action", [
@@ -179,7 +181,9 @@ This tool provides persistent memory that survives across sessions and context l
 
           const formatted = results.map((r) => ({
             type: r.entry.metadata.type,
-            content: r.entry.content.slice(0, 500) + (r.entry.content.length > 500 ? "..." : ""),
+            content:
+              r.entry.content.slice(0, 500) +
+              (r.entry.content.length > 500 ? "..." : ""),
             score: r.score.toFixed(3),
             timestamp: new Date(r.entry.metadata.timestamp).toISOString(),
             tags: r.entry.metadata.tags,
@@ -338,7 +342,7 @@ export async function autoRemember(
     importance?: number;
     tags?: string[];
   },
-  context: { app?: { path: string } | null; chatId?: number }
+  context: { app?: { path: string } | null; chatId?: number },
 ): Promise<void> {
   if (!context.app?.path) return;
 

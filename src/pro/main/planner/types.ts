@@ -1,6 +1,6 @@
 /**
  * Autonomous Planning Engine - Type Definitions
- * 
+ *
  * Defines types for autonomous planning, goal decomposition,
  * task scheduling, and plan execution.
  */
@@ -31,16 +31,16 @@ export type ExecutionStatus =
  * Goal type categorization
  */
 export type GoalType =
-  | "feature"          // Implement a new feature
-  | "bugfix"           // Fix a bug
-  | "refactor"         // Refactor code
-  | "optimize"         // Performance optimization
-  | "test"             // Write/fix tests
-  | "documentation"    // Write documentation
-  | "deployment"       // Deploy application
-  | "maintenance"      // Maintenance tasks
-  | "exploration"      // Explore/research
-  | "custom";          // Custom goal
+  | "feature" // Implement a new feature
+  | "bugfix" // Fix a bug
+  | "refactor" // Refactor code
+  | "optimize" // Performance optimization
+  | "test" // Write/fix tests
+  | "documentation" // Write documentation
+  | "deployment" // Deploy application
+  | "maintenance" // Maintenance tasks
+  | "exploration" // Explore/research
+  | "custom"; // Custom goal
 
 /**
  * A high-level goal to be achieved
@@ -123,7 +123,13 @@ export interface SuccessCriteria {
  */
 export interface ExecutionConstraint {
   /** Constraint type */
-  type: "time_limit" | "resource_limit" | "dependency" | "ordering" | "parallelism" | "custom";
+  type:
+    | "time_limit"
+    | "resource_limit"
+    | "dependency"
+    | "ordering"
+    | "parallelism"
+    | "custom";
   /** Constraint value */
   value: string | number | boolean;
   /** Constraint description */
@@ -140,21 +146,21 @@ export interface ExecutionConstraint {
  * Task type categorization
  */
 export type TaskType =
-  | "code_generation"    // Generate code
-  | "code_modification"  // Modify existing code
-  | "code_analysis"      // Analyze code
-  | "file_operation"     // File read/write/delete
-  | "command_execution"  // Run shell command
-  | "testing"            // Run tests
-  | "git_operation"      // Git operations
-  | "dependency_mgmt"    // Dependency management
-  | "api_call"           // External API call
-  | "user_interaction"   // Require user input
-  | "planning"           // Sub-planning task
-  | "verification"       // Verify results
-  | "rollback"           // Rollback changes
-  | "notification"       // Send notification
-  | "custom";            // Custom task
+  | "code_generation" // Generate code
+  | "code_modification" // Modify existing code
+  | "code_analysis" // Analyze code
+  | "file_operation" // File read/write/delete
+  | "command_execution" // Run shell command
+  | "testing" // Run tests
+  | "git_operation" // Git operations
+  | "dependency_mgmt" // Dependency management
+  | "api_call" // External API call
+  | "user_interaction" // Require user input
+  | "planning" // Sub-planning task
+  | "verification" // Verify results
+  | "rollback" // Rollback changes
+  | "notification" // Send notification
+  | "custom"; // Custom task
 
 /**
  * A task is an atomic unit of work
@@ -330,14 +336,14 @@ export interface ExecutionAttempt {
  * Plan type categorization
  */
 export type PlanType =
-  | "development"      // Development workflow
-  | "bugfix"          // Bug fix workflow
-  | "refactoring"     // Refactoring workflow
-  | "deployment"      // Deployment workflow
-  | "testing"         // Testing workflow
-  | "migration"       // Migration workflow
-  | "exploration"     // Exploration workflow
-  | "custom";         // Custom workflow
+  | "development" // Development workflow
+  | "bugfix" // Bug fix workflow
+  | "refactoring" // Refactoring workflow
+  | "deployment" // Deployment workflow
+  | "testing" // Testing workflow
+  | "migration" // Migration workflow
+  | "exploration" // Exploration workflow
+  | "custom"; // Custom workflow
 
 /**
  * A plan is a collection of goals with execution strategy

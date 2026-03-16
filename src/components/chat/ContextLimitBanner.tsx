@@ -68,7 +68,9 @@ export function ContextLimitBanner({
 }: ContextLimitBannerProps) {
   const { handleSummarize } = useSummarizeInNewChat();
 
-  if (!shouldShowContextLimitBanner({ totalTokens, contextWindow, messageCount })) {
+  if (
+    !shouldShowContextLimitBanner({ totalTokens, contextWindow, messageCount })
+  ) {
     return null;
   }
 

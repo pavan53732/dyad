@@ -1,6 +1,6 @@
 /**
  * Knowledge Aggregator - Cross-Module Data Fusion
- * 
+ *
  * Aggregates knowledge from multiple sources, performs entity resolution,
  * deduplication, and context enrichment for unified knowledge queries.
  */
@@ -9,7 +9,6 @@ import type {
   UnifiedKnowledgeEntity,
   KnowledgeSource,
   KnowledgeRelationship,
-  KnowledgeInsight,
   AggregatedKnowledgeContext,
   ArchitectureDecisionRecord,
   ContextRecommendation,
@@ -18,7 +17,7 @@ import type {
 
 /**
  * Knowledge Aggregator
- * 
+ *
  * Performs cross-source data fusion, entity resolution, and context enrichment.
  */
 export class KnowledgeAggregator {
@@ -34,7 +33,10 @@ export class KnowledgeAggregator {
       ["vector_memory", 0.8],
       ["reasoning", 0.7],
       ["memory", 0.6],
-      ...Object.entries(sourcePriority || {}).map(([k, v]) => [k as KnowledgeSource, v as number]),
+      ...Object.entries(sourcePriority || {}).map(([k, v]) => [
+        k as KnowledgeSource,
+        v as number,
+      ]),
     ]);
   }
 
@@ -42,7 +44,7 @@ export class KnowledgeAggregator {
    * Aggregate entities from multiple sources
    */
   aggregateEntities(
-    sourceResults: Map<KnowledgeSource, UnifiedKnowledgeEntity[]>
+    sourceResults: Map<KnowledgeSource, UnifiedKnowledgeEntity[]>,
   ): UnifiedKnowledgeEntity[] {
     const allEntities: UnifiedKnowledgeEntity[] = [];
 
@@ -87,11 +89,13 @@ export class KnowledgeAggregator {
 
     // Merge properties from other sources
     const mergedProperties: Record<string, unknown> = { ...base.properties };
-    const allRelationships: KnowledgeRelationship[] = [...(base.relationships || [])];
+    const allRelationships: KnowledgeRelationship[] = [
+      ...(base.relationships || []),
+    ];
 
     for (let i = 1; i < sorted.length; i++) {
       const entity = sorted[i];
-      
+
       // Merge properties (lower priority sources fill in missing values)
       for (const [key, value] of Object.entries(entity.properties)) {
         if (mergedProperties[key] === undefined) {
@@ -106,9 +110,11 @@ export class KnowledgeAggregator {
       const baseWeight = this.sourcePriority.get(base.source) || 0.5;
       const entityWeight = this.sourcePriority.get(entity.source) || 0.5;
       const totalWeight = baseWeight + entityWeight;
-      
-      base.metadata.confidence = 
-        (base.metadata.confidence * baseWeight + entity.metadata.confidence * entityWeight) / totalWeight;
+
+      base.metadata.confidence =
+        (base.metadata.confidence * baseWeight +
+          entity.metadata.confidence * entityWeight) /
+        totalWeight;
     }
 
     // Deduplicate relationships
@@ -117,7 +123,7 @@ export class KnowledgeAggregator {
 
     // Update source to indicate fusion
     base.source = entities[0].source; // Keep primary source
-    base.metadata.sourceSpecific.fusedFrom = entities.map(e => e.source);
+    base.metadata.sourceSpecific.fusedFrom = entities.map((e) => e.source);
 
     return base;
   }
@@ -127,7 +133,7 @@ export class KnowledgeAggregator {
    */
   resolveEntityConflict(
     entities: UnifiedKnowledgeEntity[],
-    strategy: "priority" | "confidence" | "recency" | "merge" = "merge"
+    strategy: "priority" | "confidence" | "recency" | "merge" = "merge",
   ): UnifiedKnowledgeEntity {
     if (entities.length === 0) {
       throw new Error("Cannot resolve empty entity list");
@@ -156,7 +162,7 @@ export class KnowledgeAggregator {
   enrichEntity(
     entity: UnifiedKnowledgeEntity,
     source: KnowledgeSource,
-    priority: number
+    priority: number,
   ): UnifiedKnowledgeEntity {
     // Calculate enriched confidence
     const baseConfidence = entity.metadata.confidence;
@@ -181,12 +187,18 @@ export class KnowledgeAggregator {
   getRelatedEntities(
     entityId: string,
     depth: number = 2,
-    relationshipTypes?: string[]
+    relationshipTypes?: string[],
   ): UnifiedKnowledgeEntity[] {
     const visited = new Set<string>();
     const related: UnifiedKnowledgeEntity[] = [];
 
-    this.traverseRelationships(entityId, depth, visited, related, relationshipTypes);
+    this.traverseRelationships(
+      entityId,
+      depth,
+      visited,
+      related,
+      relationshipTypes,
+    );
 
     return related;
   }
@@ -202,7 +214,7 @@ export class KnowledgeAggregator {
       includePatterns?: boolean;
       includeRecommendations?: boolean;
       maxEntities?: number;
-    }
+    },
   ): AggregatedKnowledgeContext {
     const context: AggregatedKnowledgeContext = {
       task,
@@ -224,7 +236,7 @@ export class KnowledgeAggregator {
     const taskKeywords = this.extractKeywords(task);
 
     // Find relevant code entities
-    for (const [id, entity] of this.entityCache) {
+    for (const [_id, entity] of this.entityCache) {
       if (entity.appId === appId) {
         const relevance = this.calculateTaskRelevance(entity, taskKeywords);
         if (relevance > 0.3) {
@@ -235,14 +247,16 @@ export class KnowledgeAggregator {
 
     // Sort by relevance and limit
     context.codeEntities = context.codeEntities
-      .sort((a, b) => (b.metadata.confidence || 0) - (a.metadata.confidence || 0))
+      .sort(
+        (a, b) => (b.metadata.confidence || 0) - (a.metadata.confidence || 0),
+      )
       .slice(0, options?.maxEntities || 50);
 
     // Calculate overall confidence
     if (context.codeEntities.length > 0) {
       const totalConfidence = context.codeEntities.reduce(
         (sum, e) => sum + (e.metadata.confidence || 0),
-        0
+        0,
       );
       context.confidence = totalConfidence / context.codeEntities.length;
     }
@@ -254,7 +268,7 @@ export class KnowledgeAggregator {
    * Generate recommendations from knowledge context
    */
   generateRecommendations(
-    context: AggregatedKnowledgeContext
+    context: AggregatedKnowledgeContext,
   ): ContextRecommendation[] {
     const recommendations: ContextRecommendation[] = [];
 
@@ -263,13 +277,15 @@ export class KnowledgeAggregator {
     recommendations.push(...patternRecommendations);
 
     // Analyze dependencies
-    const dependencyRecommendations = this.analyzeDependencies(context.dependencies);
+    const dependencyRecommendations = this.analyzeDependencies(
+      context.dependencies,
+    );
     recommendations.push(...dependencyRecommendations);
 
     // Analyze architecture decisions
     const architectureRecommendations = this.analyzeArchitectureDecisions(
       context.architectureDecisions,
-      context.similarDecisions
+      context.similarDecisions,
     );
     recommendations.push(...architectureRecommendations);
 
@@ -294,7 +310,9 @@ export class KnowledgeAggregator {
   // PRIVATE METHODS
   // ============================================================================
 
-  private resolveEntities(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity[] {
+  private resolveEntities(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity[] {
     // Group entities by canonical ID
     const entityGroups = new Map<string, UnifiedKnowledgeEntity[]>();
 
@@ -328,7 +346,9 @@ export class KnowledgeAggregator {
     return entity.id;
   }
 
-  private resolveByPriority(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity {
+  private resolveByPriority(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity {
     return entities.reduce((best, current) => {
       const bestPriority = this.sourcePriority.get(best.source) || 0;
       const currentPriority = this.sourcePriority.get(current.source) || 0;
@@ -336,13 +356,19 @@ export class KnowledgeAggregator {
     });
   }
 
-  private resolveByConfidence(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity {
+  private resolveByConfidence(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity {
     return entities.reduce((best, current) => {
-      return current.metadata.confidence > best.metadata.confidence ? current : best;
+      return current.metadata.confidence > best.metadata.confidence
+        ? current
+        : best;
     });
   }
 
-  private resolveByRecency(entities: UnifiedKnowledgeEntity[]): UnifiedKnowledgeEntity {
+  private resolveByRecency(
+    entities: UnifiedKnowledgeEntity[],
+  ): UnifiedKnowledgeEntity {
     return entities.reduce((best, current) => {
       const bestTime = best.metadata.lastUpdated.getTime();
       const currentTime = current.metadata.lastUpdated.getTime();
@@ -361,7 +387,7 @@ export class KnowledgeAggregator {
   }
 
   private deduplicateRelationships(
-    relationships: KnowledgeRelationship[]
+    relationships: KnowledgeRelationship[],
   ): KnowledgeRelationship[] {
     const seen = new Set<string>();
     const deduped: KnowledgeRelationship[] = [];
@@ -382,7 +408,7 @@ export class KnowledgeAggregator {
     depth: number,
     visited: Set<string>,
     result: UnifiedKnowledgeEntity[],
-    relationshipTypes?: string[]
+    relationshipTypes?: string[],
   ): void {
     if (depth <= 0 || visited.has(entityId)) {
       return;
@@ -399,7 +425,13 @@ export class KnowledgeAggregator {
       const relatedEntity = this.entityCache.get(rel.targetId);
       if (relatedEntity && !visited.has(rel.targetId)) {
         result.push(relatedEntity);
-        this.traverseRelationships(rel.targetId, depth - 1, visited, result, relationshipTypes);
+        this.traverseRelationships(
+          rel.targetId,
+          depth - 1,
+          visited,
+          result,
+          relationshipTypes,
+        );
       }
     }
   }
@@ -407,37 +439,96 @@ export class KnowledgeAggregator {
   private extractKeywords(text: string): string[] {
     // Simple keyword extraction
     const stopWords = new Set([
-      "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-      "have", "has", "had", "do", "does", "did", "will", "would", "could",
-      "should", "may", "might", "must", "shall", "can", "need", "to", "of",
-      "in", "for", "on", "with", "at", "by", "from", "as", "into", "through",
-      "during", "before", "after", "above", "below", "between", "under",
-      "again", "further", "then", "once", "and", "but", "or", "nor", "so",
-      "yet", "both", "either", "neither", "not", "only", "own", "same",
+      "the",
+      "a",
+      "an",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "being",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "could",
+      "should",
+      "may",
+      "might",
+      "must",
+      "shall",
+      "can",
+      "need",
+      "to",
+      "of",
+      "in",
+      "for",
+      "on",
+      "with",
+      "at",
+      "by",
+      "from",
+      "as",
+      "into",
+      "through",
+      "during",
+      "before",
+      "after",
+      "above",
+      "below",
+      "between",
+      "under",
+      "again",
+      "further",
+      "then",
+      "once",
+      "and",
+      "but",
+      "or",
+      "nor",
+      "so",
+      "yet",
+      "both",
+      "either",
+      "neither",
+      "not",
+      "only",
+      "own",
+      "same",
     ]);
 
     return text
       .toLowerCase()
       .replace(/[^\w\s]/g, " ")
       .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word));
+      .filter((word) => word.length > 2 && !stopWords.has(word));
   }
 
   private calculateTaskRelevance(
     entity: UnifiedKnowledgeEntity,
-    taskKeywords: string[]
+    taskKeywords: string[],
   ): number {
     const entityWords = [
       entity.name.toLowerCase(),
-      ...(entity.properties.description as string)?.toLowerCase() || "",
+      ...((entity.properties.description as string)?.toLowerCase() || ""),
       entity.filePath?.toLowerCase() || "",
     ].join(" ");
 
-    const matches = taskKeywords.filter(keyword => entityWords.includes(keyword));
+    const matches = taskKeywords.filter((keyword) =>
+      entityWords.includes(keyword),
+    );
     return matches.length / Math.max(taskKeywords.length, 1);
   }
 
-  private analyzePatterns(entities: UnifiedKnowledgeEntity[]): ContextRecommendation[] {
+  private analyzePatterns(
+    entities: UnifiedKnowledgeEntity[],
+  ): ContextRecommendation[] {
     const recommendations: ContextRecommendation[] = [];
 
     // Analyze entity types distribution
@@ -465,7 +556,9 @@ export class KnowledgeAggregator {
     return recommendations;
   }
 
-  private analyzeDependencies(entities: UnifiedKnowledgeEntity[]): ContextRecommendation[] {
+  private analyzeDependencies(
+    entities: UnifiedKnowledgeEntity[],
+  ): ContextRecommendation[] {
     const recommendations: ContextRecommendation[] = [];
 
     // Check for circular dependencies
@@ -488,7 +581,10 @@ export class KnowledgeAggregator {
     return recommendations;
   }
 
-  private hasCircularDependency(entityId: string, visited: Set<string>): boolean {
+  private hasCircularDependency(
+    entityId: string,
+    visited: Set<string>,
+  ): boolean {
     if (visited.has(entityId)) {
       return true;
     }
@@ -508,13 +604,15 @@ export class KnowledgeAggregator {
 
   private analyzeArchitectureDecisions(
     decisions: ArchitectureDecisionRecord[],
-    similarDecisions: ArchitectureDecisionRecord[]
+    similarDecisions: ArchitectureDecisionRecord[],
   ): ContextRecommendation[] {
     const recommendations: ContextRecommendation[] = [];
 
     // Learn from past decisions
-    const successfulDecisions = decisions.filter(d => d.outcome.status === "success");
-    
+    const successfulDecisions = decisions.filter(
+      (d) => d.outcome.status === "success",
+    );
+
     if (successfulDecisions.length > 0) {
       const topDecision = successfulDecisions[0];
       recommendations.push({

@@ -11,12 +11,14 @@
 ## Problem Statement
 
 Current state:
+
 - KIL Query Orchestrator has stub connectors that return empty arrays
 - Knowledge Graph module exists with full functionality (`GraphStorage`, `GraphQueryEngine`)
 - Vector Memory module exists with full functionality (`VectorStorage`, `EmbeddingService`)
 - No integration between KIL and actual modules
 
 Impact:
+
 - KIL queries always return empty results
 - Cross-source queries don't work
 - Learning repository cannot store real decision contexts
@@ -110,7 +112,7 @@ class CodeGraphSourceConnector implements SourceConnector {
       name: query.query,
       type: mapEntityTypes(query.entityTypes),
     });
-    return results.items.map(node => mapNodeToEntity(node));
+    return results.items.map((node) => mapNodeToEntity(node));
   }
 
   async getById(id: string): Promise<UnifiedKnowledgeEntity | null> {
@@ -118,12 +120,18 @@ class CodeGraphSourceConnector implements SourceConnector {
     return node ? mapNodeToEntity(node) : null;
   }
 
-  async getByPath(appId: number, path: string): Promise<UnifiedKnowledgeEntity[]> {
+  async getByPath(
+    appId: number,
+    path: string,
+  ): Promise<UnifiedKnowledgeEntity[]> {
     const nodes = await graphQueryEngine.findNodesInFile(appId, path);
     return nodes.map(mapNodeToEntity);
   }
 
-  async findSimilar(entity: UnifiedKnowledgeEntity, options): Promise<UnifiedKnowledgeEntity[]> {
+  async findSimilar(
+    entity: UnifiedKnowledgeEntity,
+    options,
+  ): Promise<UnifiedKnowledgeEntity[]> {
     // Find related entities via graph traversal
     const related = await graphStorage.traverseFrom(entity.id, {
       maxDepth: 2,
@@ -146,16 +154,19 @@ class VectorMemorySourceConnector implements SourceConnector {
       limit: query.limit || 20,
       minSimilarity: 0.5,
     });
-    return searchResult.results.map(r => mapMemoryEntryToEntity(r.entry));
+    return searchResult.results.map((r) => mapMemoryEntryToEntity(r.entry));
   }
 
-  async findSimilar(entity: UnifiedKnowledgeEntity, options): Promise<UnifiedKnowledgeEntity[]> {
+  async findSimilar(
+    entity: UnifiedKnowledgeEntity,
+    options,
+  ): Promise<UnifiedKnowledgeEntity[]> {
     if (!entity.sourceId) return [];
     const similar = await vectorStorage.findSimilar(entity.sourceId, {
       limit: options?.limit || 10,
       minSimilarity: options?.minSimilarity || 0.7,
     });
-    return similar.map(r => mapMemoryEntryToEntity(r.entry));
+    return similar.map((r) => mapMemoryEntryToEntity(r.entry));
   }
 }
 ```
@@ -215,12 +226,12 @@ function mapMemoryEntryToEntity(entry: MemoryEntry): UnifiedKnowledgeEntity {
 
 ## Integration Points
 
-| Module | Import Path | Used Classes/Functions |
-|--------|-------------|------------------------|
-| Knowledge Graph | `../knowledge_graph/storage` | `graphStorage` |
-| Knowledge Graph | `../knowledge_graph/query_engine` | `graphQueryEngine` |
-| Vector Memory | `../vector_memory/vector_storage` | `vectorStorage` |
-| Vector Memory | `../vector_memory/embedding_service` | `embeddingService` |
+| Module          | Import Path                          | Used Classes/Functions |
+| --------------- | ------------------------------------ | ---------------------- |
+| Knowledge Graph | `../knowledge_graph/storage`         | `graphStorage`         |
+| Knowledge Graph | `../knowledge_graph/query_engine`    | `graphQueryEngine`     |
+| Vector Memory   | `../vector_memory/vector_storage`    | `vectorStorage`        |
+| Vector Memory   | `../vector_memory/embedding_service` | `embeddingService`     |
 
 ---
 
@@ -245,12 +256,12 @@ function mapMemoryEntryToEntity(entry: MemoryEntry): UnifiedKnowledgeEntity {
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                      | Mitigation                                        |
+| ------------------------- | ------------------------------------------------- |
 | Breaking existing modules | Only read operations, no writes to source modules |
-| Type mismatches | Comprehensive type mapping layer |
-| Performance | Existing modules already optimized |
+| Type mismatches           | Comprehensive type mapping layer                  |
+| Performance               | Existing modules already optimized                |
 
 ---
 
-*Plan created for Evolution Cycle 2*
+_Plan created for Evolution Cycle 2_

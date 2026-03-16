@@ -217,11 +217,11 @@ Located in the AI SDK integration, tools include:
 
 Dyad implements three core autonomous systems for fully autonomous operation:
 
-| System | Location | Purpose |
-|--------|----------|---------|
-| **Planning Engine** | `src/pro/main/planner/` | Goal decomposition, task planning, dependency resolution |
-| **Agent Scheduler** | `src/pro/main/scheduler/` | Priority-based execution, resource management, retry logic |
-| **Distributed Runtime** | `src/pro/main/distributed/` | Multi-agent coordination, fault tolerance, checkpointing |
+| System                  | Location                    | Purpose                                                    |
+| ----------------------- | --------------------------- | ---------------------------------------------------------- |
+| **Planning Engine**     | `src/pro/main/planner/`     | Goal decomposition, task planning, dependency resolution   |
+| **Agent Scheduler**     | `src/pro/main/scheduler/`   | Priority-based execution, resource management, retry logic |
+| **Distributed Runtime** | `src/pro/main/distributed/` | Multi-agent coordination, fault tolerance, checkpointing   |
 
 See `docs/agent_architecture.md` for detailed documentation of these systems.
 
@@ -229,13 +229,14 @@ See `docs/agent_architecture.md` for detailed documentation of these systems.
 
 The Knowledge Integration Layer provides a unified interface for accessing and correlating knowledge across multiple modules:
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **Query Orchestrator** | `src/pro/main/knowledge_integration/query_orchestrator.ts` | Unified query interface across all knowledge sources |
-| **Knowledge Aggregator** | `src/pro/main/knowledge_integration/knowledge_aggregator.ts` | Cross-module data fusion and context enrichment |
-| **Learning Repository** | `src/pro/main/knowledge_integration/learning_repository.ts` | Architecture decision recording and learning |
+| Component                | Location                                                     | Purpose                                              |
+| ------------------------ | ------------------------------------------------------------ | ---------------------------------------------------- |
+| **Query Orchestrator**   | `src/pro/main/knowledge_integration/query_orchestrator.ts`   | Unified query interface across all knowledge sources |
+| **Knowledge Aggregator** | `src/pro/main/knowledge_integration/knowledge_aggregator.ts` | Cross-module data fusion and context enrichment      |
+| **Learning Repository**  | `src/pro/main/knowledge_integration/learning_repository.ts`  | Architecture decision recording and learning         |
 
 **Key Features:**
+
 - Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
 - Parallel source queries with configurable sources
 - Multiple ranking strategies (relevance, confidence, recency, hybrid)
@@ -246,6 +247,7 @@ The Knowledge Integration Layer provides a unified interface for accessing and c
 **Database Tables:** `architecture_decisions`, `knowledge_queries`, `learned_patterns`, `knowledge_entities`, `knowledge_relationships`
 
 **Architecture:**
+
 ```
                     ┌─────────────────────────────────────┐
                     │   KNOWLEDGE INTEGRATION LAYER       │
@@ -274,16 +276,17 @@ The Knowledge Integration Layer provides a unified interface for accessing and c
 
 The Knowledge Integration Layer was implemented through a 5-cycle evolution process:
 
-| Cycle | Improvement | Lines | Date |
-|-------|-------------|-------|------|
-| 1 | Knowledge Integration Layer | 2,703 | March 2026 |
-| 2 | Source Connector Wiring | 1,019 | March 2026 |
-| 3 | Database Persistence | 664 | March 2026 |
-| 4 | Runtime Integration | 518 | March 2026 |
-| 5 | **Autonomous Execution Pipeline** | **1,957** | March 2026 |
-| **TOTAL** | | **6,861** | |
+| Cycle     | Improvement                       | Lines     | Date       |
+| --------- | --------------------------------- | --------- | ---------- |
+| 1         | Knowledge Integration Layer       | 2,703     | March 2026 |
+| 2         | Source Connector Wiring           | 1,019     | March 2026 |
+| 3         | Database Persistence              | 664       | March 2026 |
+| 4         | Runtime Integration               | 518       | March 2026 |
+| 5         | **Autonomous Execution Pipeline** | **1,957** | March 2026 |
+| **TOTAL** |                                   | **6,861** |            |
 
 **Key Achievements:**
+
 - Unified query interface across all knowledge sources
 - Real source connectors to actual modules
 - Database persistence for continuous learning
@@ -299,6 +302,7 @@ The Knowledge Integration Layer was implemented through a 5-cycle evolution proc
 The final evolution cycle connected all autonomous systems to the agent runtime:
 
 **IPC Handler Registration:**
+
 ```typescript
 // src/ipc/ipc_host.ts
 initKnowledgeIntegrationIpcHandlers();
@@ -309,6 +313,7 @@ registerKnowledgeGraphHandlers();
 ```
 
 **Agent Context Extension:**
+
 ```typescript
 // AgentContext now includes KIL components
 interface AgentContext {
@@ -326,6 +331,7 @@ interface AgentContext {
 ```
 
 **New Tools Added:**
+
 - `kil_query` - Query unified knowledge across all sources
 - `kil_query_similar` - Find similar entities across sources
 - `kil_get_recommendations` - Get learning-based recommendations
@@ -336,17 +342,17 @@ interface AgentContext {
 
 The following KIL IPC channels are now active:
 
-| Channel | Purpose |
-|---------|---------|
-| `kil:query` | Unified knowledge queries |
-| `kil:query-similar` | Similarity search |
-| `kil:get-entity` | Entity retrieval |
-| `kil:record-decision` | Decision persistence |
+| Channel                   | Purpose                        |
+| ------------------------- | ------------------------------ |
+| `kil:query`               | Unified knowledge queries      |
+| `kil:query-similar`       | Similarity search              |
+| `kil:get-entity`          | Entity retrieval               |
+| `kil:record-decision`     | Decision persistence           |
 | `kil:get-recommendations` | Learning-based recommendations |
-| `kil:build-context` | Context aggregation |
-| `planner:generate-plan` | Task decomposition |
-| `scheduler:schedule-task` | Task scheduling |
-| `distributed:spawn-agent` | Agent spawning |
+| `kil:build-context`       | Context aggregation            |
+| `planner:generate-plan`   | Task decomposition             |
+| `scheduler:schedule-task` | Task scheduling                |
+| `distributed:spawn-agent` | Agent spawning                 |
 
 ### 5.4.4 Autonomous Execution Pipeline (Cycle 5)
 
@@ -358,9 +364,9 @@ User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tool
 
 **Key Components:**
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| **Pipeline Orchestrator** | `src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts` | Coordinates all autonomous subsystems |
+| Component                      | Location                                                         | Purpose                                        |
+| ------------------------------ | ---------------------------------------------------------------- | ---------------------------------------------- |
+| **Pipeline Orchestrator**      | `src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts`      | Coordinates all autonomous subsystems          |
 | **Knowledge Context Injector** | `src/pro/main/autonomous_pipeline/knowledge_context_injector.ts` | Proactive knowledge gathering before execution |
 
 **Pipeline Phases:**
@@ -375,13 +381,13 @@ User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tool
 
 ```typescript
 interface PipelineConfig {
-  enableProactiveKnowledge: boolean;      // default: true
-  enableAutoPlanning: boolean;            // default: true
-  enableScheduledExecution: boolean;      // default: true
-  enableLearningFeedback: boolean;        // default: true
-  planningComplexityThreshold: number;    // default: 5
-  maxKnowledgeContextEntities: number;    // default: 20
-  maxParallelTasks: number;               // default: 4
+  enableProactiveKnowledge: boolean; // default: true
+  enableAutoPlanning: boolean; // default: true
+  enableScheduledExecution: boolean; // default: true
+  enableLearningFeedback: boolean; // default: true
+  planningComplexityThreshold: number; // default: 5
+  maxKnowledgeContextEntities: number; // default: 20
+  maxParallelTasks: number; // default: 4
 }
 ```
 
@@ -389,14 +395,14 @@ interface PipelineConfig {
 
 The pipeline automatically classifies user requests into intent types:
 
-| Intent Type | Keywords | Complexity Mod |
-|-------------|----------|----------------|
-| feature | implement, add, create, build, develop | +0 |
-| bugfix | fix, bug, error, issue, broken | -1 |
-| refactor | refactor, restructure, clean up | +1 |
-| test | test, spec, coverage | -1 |
-| deployment | deploy, release, ship | +1 |
-| exploration | explore, understand, analyze | -1 |
+| Intent Type | Keywords                               | Complexity Mod |
+| ----------- | -------------------------------------- | -------------- |
+| feature     | implement, add, create, build, develop | +0             |
+| bugfix      | fix, bug, error, issue, broken         | -1             |
+| refactor    | refactor, restructure, clean up        | +1             |
+| test        | test, spec, coverage                   | -1             |
+| deployment  | deploy, release, ship                  | +1             |
+| exploration | explore, understand, analyze           | -1             |
 
 **Knowledge Context Injection Format:**
 
@@ -1031,49 +1037,49 @@ Dyad implements a multi-tier memory architecture that provides effectively unlim
 
 ### 16.2 Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/lib/unlimited_context_memory.ts` | Core memory system with vector store and context builder |
-| `src/pro/main/ipc/handlers/local_agent/tools/unlimited_context_memory.ts` | Agent tool for memory operations |
-| `docs/UNLIMITED_CONTEXT_MEMORY_DESIGN.md` | Full architecture documentation |
+| File                                                                      | Purpose                                                  |
+| ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `src/lib/unlimited_context_memory.ts`                                     | Core memory system with vector store and context builder |
+| `src/pro/main/ipc/handlers/local_agent/tools/unlimited_context_memory.ts` | Agent tool for memory operations                         |
+| `docs/UNLIMITED_CONTEXT_MEMORY_DESIGN.md`                                 | Full architecture documentation                          |
 
 ### 16.3 Memory Tool Actions
 
 The `unlimited_context_memory` tool provides these actions:
 
-| Action | Description | modifiesState |
-|--------|-------------|---------------|
-| `remember` | Store content in long-term memory | Yes |
-| `recall` | Retrieve relevant memories using semantic search | No |
-| `build_context` | Build optimized context for a query | No |
-| `get_stats` | Get memory statistics | No |
-| `cleanup` | Remove old memories | Yes |
-| `forget` | Remove specific memories by query | Yes |
+| Action          | Description                                      | modifiesState |
+| --------------- | ------------------------------------------------ | ------------- |
+| `remember`      | Store content in long-term memory                | Yes           |
+| `recall`        | Retrieve relevant memories using semantic search | No            |
+| `build_context` | Build optimized context for a query              | No            |
+| `get_stats`     | Get memory statistics                            | No            |
+| `cleanup`       | Remove old memories                              | Yes           |
+| `forget`        | Remove specific memories by query                | Yes           |
 
 ### 16.4 Memory Types and Priorities
 
-| Type | Importance | Description |
-|------|------------|-------------|
-| decision | 1.0 | Important decisions and their rationale |
-| error | 0.9 | Errors encountered and their resolutions |
-| current_task | 0.95 | Active task context |
-| active_plan | 0.9 | Current execution plan |
-| message | 0.7 | Conversation messages |
-| code | 0.6 | Code snippets and patterns |
-| learning | 0.5 | Patterns and learnings discovered |
-| summary | 0.4 | Summarized content |
+| Type         | Importance | Description                              |
+| ------------ | ---------- | ---------------------------------------- |
+| decision     | 1.0        | Important decisions and their rationale  |
+| error        | 0.9        | Errors encountered and their resolutions |
+| current_task | 0.95       | Active task context                      |
+| active_plan  | 0.9        | Current execution plan                   |
+| message      | 0.7        | Conversation messages                    |
+| code         | 0.6        | Code snippets and patterns               |
+| learning     | 0.5        | Patterns and learnings discovered        |
+| summary      | 0.4        | Summarized content                       |
 
 ### 16.5 Token Budget Management
 
 The context builder manages token budgets intelligently:
 
-| Budget Area | Allocation |
-|-------------|------------|
-| System Prompt Reserve | ~20,000 tokens |
-| Tool Definitions Reserve | ~25,000 tokens |
-| Codebase Context Reserve | ~50,000 tokens |
-| Message History Budget | 50% of remaining |
-| Retrieved Memories | 30% of message budget |
+| Budget Area              | Allocation            |
+| ------------------------ | --------------------- |
+| System Prompt Reserve    | ~20,000 tokens        |
+| Tool Definitions Reserve | ~25,000 tokens        |
+| Codebase Context Reserve | ~50,000 tokens        |
+| Message History Budget   | 50% of remaining      |
+| Retrieved Memories       | 30% of message budget |
 
 ### 16.6 Integration with Context Limit Banner
 

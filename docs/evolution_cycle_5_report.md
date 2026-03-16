@@ -84,7 +84,7 @@ export class KnowledgeContextInjector {
   async buildContext(
     request: string,
     appId: number,
-    options?: { additionalFiles?: string[]; previousContext?: string }
+    options?: { additionalFiles?: string[]; previousContext?: string },
   ): Promise<KnowledgeInjectionResult>;
 
   /**
@@ -92,12 +92,13 @@ export class KnowledgeContextInjector {
    */
   injectIntoSystemPrompt(
     systemPrompt: string,
-    knowledgeContext: KnowledgeInjectionResult
+    knowledgeContext: KnowledgeInjectionResult,
   ): string;
 }
 ```
 
 **Key Features:**
+
 - **Intent Analysis**: Classifies request type (feature, bugfix, refactor, test, etc.)
 - **Entity Extraction**: Identifies files, technologies, and key terms
 - **Knowledge Querying**: Queries code graph, vector memory, architecture
@@ -106,12 +107,16 @@ export class KnowledgeContextInjector {
 - **Pattern Matching**: Finds similar patterns from past executions
 
 **Intent Classification System:**
+
 ```typescript
-const INTENT_PATTERNS: Record<IntentType, {
-  keywords: string[];
-  weight: number;
-  complexityMod: number;
-}> = {
+const INTENT_PATTERNS: Record<
+  IntentType,
+  {
+    keywords: string[];
+    weight: number;
+    complexityMod: number;
+  }
+> = {
   feature: {
     keywords: ["implement", "add", "create", "build", "develop"],
     weight: 1.0,
@@ -127,6 +132,7 @@ const INTENT_PATTERNS: Record<IntentType, {
 ```
 
 **Technology Detection:**
+
 ```typescript
 const TECHNOLOGY_PATTERNS: Record<string, RegExp> = {
   typescript: /\btypescript\b|\bts\b|\.ts\b/i,
@@ -156,21 +162,25 @@ export class PipelineOrchestrator {
   async execute(
     request: string,
     context: PlanningContext,
-    executionHandler?: (context: ExecutionContext, entry: ScheduleEntry) => Promise<ScheduleResult>
+    executionHandler?: (
+      context: ExecutionContext,
+      entry: ScheduleEntry,
+    ) => Promise<ScheduleResult>,
   ): Promise<PipelineState>;
 }
 ```
 
 **Pipeline Configuration:**
+
 ```typescript
 export interface PipelineConfig {
-  enableProactiveKnowledge: boolean;      // default: true
-  enableAutoPlanning: boolean;            // default: true
-  enableScheduledExecution: boolean;      // default: true
-  enableLearningFeedback: boolean;        // default: true
-  planningComplexityThreshold: number;    // default: 5
-  maxKnowledgeContextEntities: number;    // default: 20
-  maxParallelTasks: number;               // default: 4
+  enableProactiveKnowledge: boolean; // default: true
+  enableAutoPlanning: boolean; // default: true
+  enableScheduledExecution: boolean; // default: true
+  enableLearningFeedback: boolean; // default: true
+  planningComplexityThreshold: number; // default: 5
+  maxKnowledgeContextEntities: number; // default: 20
+  maxParallelTasks: number; // default: 4
 }
 ```
 
@@ -190,12 +200,12 @@ export type { PipelineConfig, PipelineState, ProactiveKnowledgeContext, ... } fr
 
 ## Files Created
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts` | 1,100 | Main orchestrator coordinating all subsystems |
-| `src/pro/main/autonomous_pipeline/knowledge_context_injector.ts` | 800 | Proactive knowledge gathering and injection |
-| `src/pro/main/autonomous_pipeline/index.ts` | 57 | Module exports |
-| **Total** | **~1,957** | |
+| File                                                             | Lines      | Purpose                                       |
+| ---------------------------------------------------------------- | ---------- | --------------------------------------------- |
+| `src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts`      | 1,100      | Main orchestrator coordinating all subsystems |
+| `src/pro/main/autonomous_pipeline/knowledge_context_injector.ts` | 800        | Proactive knowledge gathering and injection   |
+| `src/pro/main/autonomous_pipeline/index.ts`                      | 57         | Module exports                                |
+| **Total**                                                        | **~1,957** |                                               |
 
 ---
 
@@ -281,29 +291,37 @@ The knowledge context is injected as a structured section in the system prompt:
 
 ## Relevant Code Entities
 ```
+
 [CODE_GRAPH] UserProfile (component)
-  📁 src/components/UserProfile.tsx
-  ℹ️  Displays user profile with avatar...
+📁 src/components/UserProfile.tsx
+ℹ️ Displays user profile with avatar...
+
 ```
 
 ## Related Architecture Decisions
 ```
+
 • Use React functional components with hooks
-  → Chose: "functional components" (pattern_selection)
-  Relevance: 75%
+→ Chose: "functional components" (pattern_selection)
+Relevance: 75%
+
 ```
 
 ## Learning-Based Recommendations
 ```
+
 1. Consider using React.memo for performance
 2. Follow existing component structure patterns
+
 ```
 
 ## Similar Patterns From Past Executions
 ```
+
 WHEN: Adding new UI component
 THEN: Follow existing patterns in src/components/
 Applicability: 85%
+
 ```
 
 ═══════════════════════════════════════════════════════════════════
@@ -318,9 +336,15 @@ Applicability: 85%
 
 ```typescript
 interface PipelineState {
-  phase: "idle" | "knowledge_gathering" | "planning" | 
-         "scheduling" | "executing" | "learning" | 
-         "completed" | "failed";
+  phase:
+    | "idle"
+    | "knowledge_gathering"
+    | "planning"
+    | "scheduling"
+    | "executing"
+    | "learning"
+    | "completed"
+    | "failed";
   activePlanId?: string;
   knowledgeContext?: ProactiveKnowledgeContext;
   plan?: PlanGenerationResult;
@@ -361,35 +385,36 @@ orchestrator.subscribe((event: PipelineEvent) => {
 
 ## Verification Results
 
-| Check | Status |
-|-------|--------|
-| Pipeline orchestrator created | ✅ Verified |
+| Check                              | Status      |
+| ---------------------------------- | ----------- |
+| Pipeline orchestrator created      | ✅ Verified |
 | Knowledge context injector created | ✅ Verified |
-| Planner wired into pipeline | ✅ Verified |
-| Scheduler wired into pipeline | ✅ Verified |
-| KIL wired into pipeline | ✅ Verified |
-| Learning feedback implemented | ✅ Verified |
-| All lint checks pass | ✅ Verified |
-| Module exports correct | ✅ Verified |
+| Planner wired into pipeline        | ✅ Verified |
+| Scheduler wired into pipeline      | ✅ Verified |
+| KIL wired into pipeline            | ✅ Verified |
+| Learning feedback implemented      | ✅ Verified |
+| All lint checks pass               | ✅ Verified |
+| Module exports correct             | ✅ Verified |
 
 ---
 
 ## Evolution Cycle Summary
 
-| Cycle | Improvement | Lines | Status |
-|-------|-------------|-------|--------|
-| 1 | Knowledge Integration Layer | 2,703 | ✅ |
-| 2 | Source Connector Wiring | 1,019 | ✅ |
-| 3 | Database Persistence | 664 | ✅ |
-| 4 | Runtime Integration | 518 | ✅ |
-| 5 | **Autonomous Execution Pipeline** | **1,957** | ✅ |
-| **TOTAL** | | **6,861** | **✅** |
+| Cycle     | Improvement                       | Lines     | Status |
+| --------- | --------------------------------- | --------- | ------ |
+| 1         | Knowledge Integration Layer       | 2,703     | ✅     |
+| 2         | Source Connector Wiring           | 1,019     | ✅     |
+| 3         | Database Persistence              | 664       | ✅     |
+| 4         | Runtime Integration               | 518       | ✅     |
+| 5         | **Autonomous Execution Pipeline** | **1,957** | ✅     |
+| **TOTAL** |                                   | **6,861** | **✅** |
 
 ---
 
 ## Impact Assessment
 
 ### Before Cycle 5
+
 - Knowledge access was LLM-dependent (optional tool invocation)
 - No automatic planning for complex requests
 - No scheduled task management
@@ -397,6 +422,7 @@ orchestrator.subscribe((event: PipelineEvent) => {
 - Reactive execution model
 
 ### After Cycle 5
+
 - **Proactive knowledge injection** - context gathered before execution
 - **Automatic planning** - complex requests get task decomposition
 - **Scheduled execution** - tasks managed with dependency resolution
@@ -407,13 +433,13 @@ orchestrator.subscribe((event: PipelineEvent) => {
 
 ## Integration Points
 
-| Component | Integration Point | Status |
-|-----------|-------------------|--------|
-| Knowledge Integration Layer (KIL) | QueryOrchestrator for proactive queries | ✅ Connected |
-| Planning Engine | PlanningEngine in orchestrator | ✅ Connected |
-| Agent Scheduler | AgentScheduler in orchestrator | ✅ Connected |
-| Learning Repository | Automatic outcome recording | ✅ Connected |
-| Agent Runtime | Knowledge context injection in local_agent_handler.ts | ✅ **ACTIVE** |
+| Component                         | Integration Point                                     | Status        |
+| --------------------------------- | ----------------------------------------------------- | ------------- |
+| Knowledge Integration Layer (KIL) | QueryOrchestrator for proactive queries               | ✅ Connected  |
+| Planning Engine                   | PlanningEngine in orchestrator                        | ✅ Connected  |
+| Agent Scheduler                   | AgentScheduler in orchestrator                        | ✅ Connected  |
+| Learning Repository               | Automatic outcome recording                           | ✅ Connected  |
+| Agent Runtime                     | Knowledge context injection in local_agent_handler.ts | ✅ **ACTIVE** |
 
 ---
 
@@ -434,9 +460,9 @@ handleLocalAgentStream()
 
 ### Modified Files
 
-| File | Lines Added | Purpose |
-|------|-------------|---------|
-| `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` | ~100 | Embedded pipeline into runtime |
+| File                                                           | Lines Added | Purpose                        |
+| -------------------------------------------------------------- | ----------- | ------------------------------ |
+| `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` | ~100        | Embedded pipeline into runtime |
 
 ### Key Integration Points
 
@@ -460,7 +486,12 @@ handleLocalAgentStream()
 The integration is **Pro-only** and active for Dyad Pro users in build mode (non-read-only, non-plan-only):
 
 ```typescript
-if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && !messageOverride) {
+if (
+  isDyadProEnabled(settings) &&
+  !readOnly &&
+  !planModeOnly &&
+  !messageOverride
+) {
   // Knowledge context is built and injected
   // Learning feedback is recorded after execution
 }
@@ -480,13 +511,13 @@ if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && !messageOverride
 
 ## Completed Next Steps
 
-| Step | Status |
-|------|--------|
+| Step                               | Status                                                         |
+| ---------------------------------- | -------------------------------------------------------------- |
 | ~~Integration with Agent Runtime~~ | ✅ **COMPLETED** - Pipeline embedded in local_agent_handler.ts |
-| UI Integration | 📋 Pending |
-| Performance Monitoring | 📋 Pending |
-| A/B Testing | 📋 Pending |
+| UI Integration                     | 📋 Pending                                                     |
+| Performance Monitoring             | 📋 Pending                                                     |
+| A/B Testing                        | 📋 Pending                                                     |
 
 ---
 
-*Evolution Cycle 5 completed successfully. The autonomous execution pipeline is now **ACTIVE** and embedded in the Dyad runtime, transforming it into a proactive reasoning system.*
+_Evolution Cycle 5 completed successfully. The autonomous execution pipeline is now **ACTIVE** and embedded in the Dyad runtime, transforming it into a proactive reasoning system._

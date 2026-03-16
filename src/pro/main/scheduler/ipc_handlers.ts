@@ -1,6 +1,6 @@
 /**
  * Agent Scheduler - IPC Handlers
- * 
+ *
  * Provides IPC interface for renderer process to interact with the scheduler.
  */
 
@@ -91,17 +91,20 @@ export class SchedulerIpcHandlers {
 
   constructor() {
     this.scheduler = new AgentScheduler(DEFAULT_SCHEDULER_CONFIG, {
-      onEntryScheduled: (entry) => this.handleEntryEvent("entry_scheduled", entry),
+      onEntryScheduled: (entry) =>
+        this.handleEntryEvent("entry_scheduled", entry),
       onEntryStarted: (entry) => this.handleEntryEvent("entry_started", entry),
       onEntryCompleted: (entry, result) =>
         this.handleEntryComplete("entry_completed", entry, result),
       onEntryFailed: (entry, error) =>
         this.handleEntryFailure("entry_failed", entry, error),
-      onEntryCancelled: (entry) => this.handleEntryEvent("entry_cancelled", entry),
+      onEntryCancelled: (entry) =>
+        this.handleEntryEvent("entry_cancelled", entry),
       onEntryRetrying: (entry, attempt) =>
         this.handleRetryEvent("entry_retrying", entry, attempt),
       onQueueStateChanged: (queue) => this.handleQueueEvent(queue),
-      onResourceEvent: (event, resource) => this.handleResourceEvent(event, resource),
+      onResourceEvent: (event, resource) =>
+        this.handleResourceEvent(event, resource),
       onEvent: (event) => this.broadcastEvent(event),
     });
 
@@ -126,7 +129,9 @@ export class SchedulerIpcHandlers {
             requiredResources: req.requiredResources,
             timeout: req.timeout,
             retryConfig: req.retryConfig,
-            scheduledAt: req.scheduledAt ? new Date(req.scheduledAt) : undefined,
+            scheduledAt: req.scheduledAt
+              ? new Date(req.scheduledAt)
+              : undefined,
           });
 
           return { success: true, entry };
@@ -141,7 +146,10 @@ export class SchedulerIpcHandlers {
 
     ipcMain.handle(
       SCHEDULER_IPC_CHANNELS.CANCEL_TASK,
-      async (_, entryId: string): Promise<{ success: boolean; error?: string }> => {
+      async (
+        _,
+        entryId: string,
+      ): Promise<{ success: boolean; error?: string }> => {
         try {
           const success = this.scheduler.cancelEntry(entryId);
           return { success };
@@ -158,7 +166,10 @@ export class SchedulerIpcHandlers {
       SCHEDULER_IPC_CHANNELS.UPDATE_PRIORITY,
       async (_, req: UpdatePriorityRequest): Promise<{ success: boolean }> => {
         try {
-          const success = this.scheduler.updatePriority(req.entryId, req.priority);
+          const success = this.scheduler.updatePriority(
+            req.entryId,
+            req.priority,
+          );
           return { success };
         } catch {
           return { success: false };
@@ -169,7 +180,10 @@ export class SchedulerIpcHandlers {
     // Entry operations
     ipcMain.handle(
       SCHEDULER_IPC_CHANNELS.GET_ENTRY,
-      async (_, entryId: string): Promise<{ success: boolean; entry?: ScheduleEntry }> => {
+      async (
+        _,
+        entryId: string,
+      ): Promise<{ success: boolean; entry?: ScheduleEntry }> => {
         const entry = this.scheduler.getEntry(entryId);
         return { success: !!entry, entry };
       },
@@ -177,7 +191,10 @@ export class SchedulerIpcHandlers {
 
     ipcMain.handle(
       SCHEDULER_IPC_CHANNELS.GET_ENTRIES_FOR_APP,
-      async (_, appId: number): Promise<{ success: boolean; entries: ScheduleEntry[] }> => {
+      async (
+        _,
+        appId: number,
+      ): Promise<{ success: boolean; entries: ScheduleEntry[] }> => {
         const entries = this.scheduler.getEntriesForApp(appId);
         return { success: true, entries };
       },
@@ -186,7 +203,10 @@ export class SchedulerIpcHandlers {
     // Queue operations
     ipcMain.handle(
       SCHEDULER_IPC_CHANNELS.GET_QUEUE,
-      async (_, queueId: string): Promise<{ success: boolean; queue?: unknown }> => {
+      async (
+        _,
+        queueId: string,
+      ): Promise<{ success: boolean; queue?: unknown }> => {
         const queue = this.scheduler.getQueue(queueId);
         return { success: !!queue, queue };
       },
@@ -209,17 +229,23 @@ export class SchedulerIpcHandlers {
     );
 
     // Resource operations
-    ipcMain.handle(SCHEDULER_IPC_CHANNELS.GET_RESOURCE_POOL, async (): Promise<{
-      success: boolean;
-      pool?: ResourcePool;
-    }> => {
-      const pool = this.scheduler.getResourcePool();
-      return { success: true, pool };
-    });
+    ipcMain.handle(
+      SCHEDULER_IPC_CHANNELS.GET_RESOURCE_POOL,
+      async (): Promise<{
+        success: boolean;
+        pool?: ResourcePool;
+      }> => {
+        const pool = this.scheduler.getResourcePool();
+        return { success: true, pool };
+      },
+    );
 
     ipcMain.handle(
       SCHEDULER_IPC_CHANNELS.UPDATE_RESOURCE_LIMITS,
-      async (_, req: UpdateResourceLimitsRequest): Promise<{ success: boolean }> => {
+      async (
+        _,
+        req: UpdateResourceLimitsRequest,
+      ): Promise<{ success: boolean }> => {
         try {
           this.scheduler.updateResourceLimits(req.limits);
           return { success: true };
@@ -230,29 +256,38 @@ export class SchedulerIpcHandlers {
     );
 
     // Lifecycle
-    ipcMain.handle(SCHEDULER_IPC_CHANNELS.START_SCHEDULER, async (): Promise<{ success: boolean }> => {
-      try {
-        this.scheduler.start();
-        return { success: true };
-      } catch {
-        return { success: false };
-      }
-    });
+    ipcMain.handle(
+      SCHEDULER_IPC_CHANNELS.START_SCHEDULER,
+      async (): Promise<{ success: boolean }> => {
+        try {
+          this.scheduler.start();
+          return { success: true };
+        } catch {
+          return { success: false };
+        }
+      },
+    );
 
-    ipcMain.handle(SCHEDULER_IPC_CHANNELS.STOP_SCHEDULER, async (): Promise<{ success: boolean }> => {
-      try {
-        await this.scheduler.stop();
-        return { success: true };
-      } catch {
-        return { success: false };
-      }
-    });
+    ipcMain.handle(
+      SCHEDULER_IPC_CHANNELS.STOP_SCHEDULER,
+      async (): Promise<{ success: boolean }> => {
+        try {
+          await this.scheduler.stop();
+          return { success: true };
+        } catch {
+          return { success: false };
+        }
+      },
+    );
   }
 
   /**
    * Handle entry event
    */
-  private handleEntryEvent(type: SchedulerEvent["type"], entry: ScheduleEntry): void {
+  private handleEntryEvent(
+    type: SchedulerEvent["type"],
+    entry: ScheduleEntry,
+  ): void {
     this.broadcastEvent({
       type,
       entryId: entry.id,
@@ -328,7 +363,10 @@ export class SchedulerIpcHandlers {
   /**
    * Handle resource event
    */
-  private handleResourceEvent(event: "exhausted" | "available", resource: string): void {
+  private handleResourceEvent(
+    event: "exhausted" | "available",
+    resource: string,
+  ): void {
     this.broadcastEvent({
       type: event === "exhausted" ? "resource_exhausted" : "resource_available",
       timestamp: new Date(),

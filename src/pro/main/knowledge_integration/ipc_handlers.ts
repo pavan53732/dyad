@@ -1,6 +1,6 @@
 /**
  * Knowledge Integration Layer - IPC Handlers
- * 
+ *
  * Provides IPC interface for renderer process to access
  * the Knowledge Integration Layer capabilities.
  */
@@ -64,25 +64,64 @@ export class KnowledgeIntegrationIpcHandlers {
   register(): void {
     // Query operations
     ipcMain.handle(KIL_IPC_CHANNELS.QUERY, this.handleQuery.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.QUERY_SIMILAR, this.handleQuerySimilar.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_ENTITY, this.handleGetEntity.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_ENTITIES_BY_PATH, this.handleGetEntitiesByPath.bind(this));
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.QUERY_SIMILAR,
+      this.handleQuerySimilar.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_ENTITY,
+      this.handleGetEntity.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_ENTITIES_BY_PATH,
+      this.handleGetEntitiesByPath.bind(this),
+    );
 
     // Decision operations
-    ipcMain.handle(KIL_IPC_CHANNELS.RECORD_DECISION, this.handleRecordDecision.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.UPDATE_DECISION_OUTCOME, this.handleUpdateDecisionOutcome.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_DECISION, this.handleGetDecision.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_DECISIONS_FOR_APP, this.handleGetDecisionsForApp.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.FIND_SIMILAR_DECISIONS, this.handleFindSimilarDecisions.bind(this));
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.RECORD_DECISION,
+      this.handleRecordDecision.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.UPDATE_DECISION_OUTCOME,
+      this.handleUpdateDecisionOutcome.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_DECISION,
+      this.handleGetDecision.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_DECISIONS_FOR_APP,
+      this.handleGetDecisionsForApp.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.FIND_SIMILAR_DECISIONS,
+      this.handleFindSimilarDecisions.bind(this),
+    );
 
     // Learning operations
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_LEARNED_PATTERNS, this.handleGetLearnedPatterns.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.GET_RECOMMENDATIONS, this.handleGetRecommendations.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.ANALYZE_DECISION_QUALITY, this.handleAnalyzeDecisionQuality.bind(this));
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_LEARNED_PATTERNS,
+      this.handleGetLearnedPatterns.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.GET_RECOMMENDATIONS,
+      this.handleGetRecommendations.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.ANALYZE_DECISION_QUALITY,
+      this.handleAnalyzeDecisionQuality.bind(this),
+    );
 
     // Context operations
-    ipcMain.handle(KIL_IPC_CHANNELS.BUILD_CONTEXT, this.handleBuildContext.bind(this));
-    ipcMain.handle(KIL_IPC_CHANNELS.CLEAR_CACHE, this.handleClearCache.bind(this));
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.BUILD_CONTEXT,
+      this.handleBuildContext.bind(this),
+    );
+    ipcMain.handle(
+      KIL_IPC_CHANNELS.CLEAR_CACHE,
+      this.handleClearCache.bind(this),
+    );
     ipcMain.handle(KIL_IPC_CHANNELS.GET_STATS, this.handleGetStats.bind(this));
   }
 
@@ -101,7 +140,7 @@ export class KnowledgeIntegrationIpcHandlers {
 
   private async handleQuery(
     _event: Electron.IpcMainInvokeEvent,
-    query: Omit<KnowledgeQuery, "id">
+    query: Omit<KnowledgeQuery, "id">,
   ): Promise<KnowledgeQueryResult> {
     const fullQuery: KnowledgeQuery = {
       ...query,
@@ -118,18 +157,29 @@ export class KnowledgeIntegrationIpcHandlers {
       sources?: string[];
       limit?: number;
       minSimilarity?: number;
-    }
+    },
   ): Promise<unknown[]> {
-    return this.queryOrchestrator.findSimilar(entityId, options as {
-      sources?: ("code_graph" | "vector_memory" | "dependency_graph" | "architecture" | "reasoning" | "memory" | "all")[];
-      limit?: number;
-      minSimilarity?: number;
-    });
+    return this.queryOrchestrator.findSimilar(
+      entityId,
+      options as {
+        sources?: (
+          | "code_graph"
+          | "vector_memory"
+          | "dependency_graph"
+          | "architecture"
+          | "reasoning"
+          | "memory"
+          | "all"
+        )[];
+        limit?: number;
+        minSimilarity?: number;
+      },
+    );
   }
 
   private async handleGetEntity(
     _event: Electron.IpcMainInvokeEvent,
-    entityId: string
+    entityId: string,
   ): Promise<unknown> {
     return this.queryOrchestrator.getEntityById(entityId);
   }
@@ -138,9 +188,21 @@ export class KnowledgeIntegrationIpcHandlers {
     _event: Electron.IpcMainInvokeEvent,
     appId: number,
     filePath: string,
-    sources?: string[]
+    sources?: string[],
   ): Promise<unknown[]> {
-    return this.queryOrchestrator.getEntitiesByPath(appId, filePath, sources as ("code_graph" | "vector_memory" | "dependency_graph" | "architecture" | "reasoning" | "memory" | "all")[]);
+    return this.queryOrchestrator.getEntitiesByPath(
+      appId,
+      filePath,
+      sources as (
+        | "code_graph"
+        | "vector_memory"
+        | "dependency_graph"
+        | "architecture"
+        | "reasoning"
+        | "memory"
+        | "all"
+      )[],
+    );
   }
 
   // ============================================================================
@@ -149,7 +211,10 @@ export class KnowledgeIntegrationIpcHandlers {
 
   private async handleRecordDecision(
     _event: Electron.IpcMainInvokeEvent,
-    decision: Omit<ArchitectureDecisionRecord, "id" | "createdAt" | "updatedAt">
+    decision: Omit<
+      ArchitectureDecisionRecord,
+      "id" | "createdAt" | "updatedAt"
+    >,
   ): Promise<ArchitectureDecisionRecord> {
     return this.learningRepository.recordDecision(decision);
   }
@@ -157,14 +222,14 @@ export class KnowledgeIntegrationIpcHandlers {
   private async handleUpdateDecisionOutcome(
     _event: Electron.IpcMainInvokeEvent,
     decisionId: string,
-    outcome: Partial<ArchitectureDecisionRecord["outcome"]>
+    outcome: Partial<ArchitectureDecisionRecord["outcome"]>,
   ): Promise<ArchitectureDecisionRecord | null> {
     return this.learningRepository.updateOutcome(decisionId, outcome);
   }
 
   private async handleGetDecision(
     _event: Electron.IpcMainInvokeEvent,
-    decisionId: string
+    decisionId: string,
   ): Promise<ArchitectureDecisionRecord | null> {
     return this.learningRepository.getDecision(decisionId);
   }
@@ -176,13 +241,28 @@ export class KnowledgeIntegrationIpcHandlers {
       type?: string;
       status?: string;
       limit?: number;
-    }
+    },
   ): Promise<ArchitectureDecisionRecord[]> {
-    return this.learningRepository.getDecisionsForApp(appId, options as {
-      type?: "pattern_selection" | "technology_choice" | "structure_change" | "dependency_addition" | "api_design" | "data_model" | "security_decision" | "performance_optimization" | "refactoring_strategy" | "testing_approach" | "deployment_strategy" | "custom";
-      status?: "pending" | "success" | "partial" | "failure" | "reverted";
-      limit?: number;
-    });
+    return this.learningRepository.getDecisionsForApp(
+      appId,
+      options as {
+        type?:
+          | "pattern_selection"
+          | "technology_choice"
+          | "structure_change"
+          | "dependency_addition"
+          | "api_design"
+          | "data_model"
+          | "security_decision"
+          | "performance_optimization"
+          | "refactoring_strategy"
+          | "testing_approach"
+          | "deployment_strategy"
+          | "custom";
+        status?: "pending" | "success" | "partial" | "failure" | "reverted";
+        limit?: number;
+      },
+    );
   }
 
   private async handleFindSimilarDecisions(
@@ -192,8 +272,10 @@ export class KnowledgeIntegrationIpcHandlers {
       limit?: number;
       minSimilarity?: number;
       includeOutcomes?: boolean;
-    }
-  ): Promise<Array<{ decision: ArchitectureDecisionRecord; similarity: number }>> {
+    },
+  ): Promise<
+    Array<{ decision: ArchitectureDecisionRecord; similarity: number }>
+  > {
     return this.learningRepository.findSimilarDecisions(context, options);
   }
 
@@ -204,7 +286,7 @@ export class KnowledgeIntegrationIpcHandlers {
   private async handleGetLearnedPatterns(
     _event: Electron.IpcMainInvokeEvent,
     appId: number,
-    context?: DecisionContext
+    context?: DecisionContext,
   ): Promise<unknown[]> {
     return this.learningRepository.getLearnedPatterns(appId, context);
   }
@@ -212,14 +294,14 @@ export class KnowledgeIntegrationIpcHandlers {
   private async handleGetRecommendations(
     _event: Electron.IpcMainInvokeEvent,
     appId: number,
-    context: DecisionContext
+    context: DecisionContext,
   ): Promise<unknown[]> {
     return this.learningRepository.getRecommendations(appId, context);
   }
 
   private async handleAnalyzeDecisionQuality(
     _event: Electron.IpcMainInvokeEvent,
-    appId: number
+    appId: number,
   ): Promise<unknown> {
     return this.learningRepository.analyzeDecisionQuality(appId);
   }
@@ -237,9 +319,13 @@ export class KnowledgeIntegrationIpcHandlers {
       includePatterns?: boolean;
       includeRecommendations?: boolean;
       maxEntities?: number;
-    }
+    },
   ): Promise<AggregatedKnowledgeContext> {
-    return this.knowledgeAggregator.buildAggregatedContext(task, appId, options);
+    return this.knowledgeAggregator.buildAggregatedContext(
+      task,
+      appId,
+      options,
+    );
   }
 
   private async handleClearCache(): Promise<void> {
@@ -276,10 +362,23 @@ export function getKnowledgeIntegrationIpcHandlers(): Array<{
   handler: (...args: unknown[]) => Promise<unknown>;
 }> {
   const instance = new KnowledgeIntegrationIpcHandlers();
-  
+
   return [
-    { channel: KIL_IPC_CHANNELS.QUERY, handler: (q) => instance.handleQuery({} as Electron.IpcMainInvokeEvent, q as Omit<KnowledgeQuery, "id">) },
-    { channel: KIL_IPC_CHANNELS.CLEAR_CACHE, handler: () => instance.handleClearCache() },
-    { channel: KIL_IPC_CHANNELS.GET_STATS, handler: () => instance.handleGetStats() },
+    {
+      channel: KIL_IPC_CHANNELS.QUERY,
+      handler: (q) =>
+        instance.handleQuery(
+          {} as Electron.IpcMainInvokeEvent,
+          q as Omit<KnowledgeQuery, "id">,
+        ),
+    },
+    {
+      channel: KIL_IPC_CHANNELS.CLEAR_CACHE,
+      handler: () => instance.handleClearCache(),
+    },
+    {
+      channel: KIL_IPC_CHANNELS.GET_STATS,
+      handler: () => instance.handleGetStats(),
+    },
   ];
 }

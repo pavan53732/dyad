@@ -124,29 +124,29 @@ export type {
   KnowledgeRelationType,
   UnifiedKnowledgeEntity,
   KnowledgeRelationship,
-  
+
   // Query Types
   KnowledgeQuery,
   QueryContext,
   KnowledgeQueryResult,
   SourceQueryResult,
   KnowledgeInsight,
-  
+
   // Learning Types
   ArchitectureDecisionRecord,
   ArchitectureDecisionType,
   DecisionContext,
   DecisionAlternative,
   DecisionOutcome,
-  
+
   // Aggregation Types
   AggregatedKnowledgeContext,
   ContextRecommendation,
-  
+
   // Event Types
   KnowledgeIntegrationEvent,
   KnowledgeIntegrationEventType,
-  
+
   // Configuration Types
   KnowledgeIntegrationConfig,
 } from "./types";

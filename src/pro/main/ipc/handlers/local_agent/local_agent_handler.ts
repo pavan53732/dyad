@@ -618,7 +618,10 @@ export async function handleLocalAgentStream(
               };
             },
             findSimilar: async (entityId, options) => {
-              const results = await queryOrchestrator.findSimilar(entityId, options as any);
+              const results = await queryOrchestrator.findSimilar(
+                entityId,
+                options as any,
+              );
               return results.map((e) => ({
                 id: e.id,
                 name: e.name,
@@ -668,7 +671,10 @@ export async function handleLocalAgentStream(
               return { id: record.id };
             },
             getRecommendations: async (context) => {
-              const recs = await learningRepository.getRecommendations(chat.app.id, context as any);
+              const recs = await learningRepository.getRecommendations(
+                chat.app.id,
+                context as any,
+              );
               return recs.map((r: any) => ({
                 suggestion: typeof r === "string" ? r : JSON.stringify(r),
                 confidence: 0.8,
@@ -798,24 +804,34 @@ export async function handleLocalAgentStream(
 
     let enhancedSystemPrompt = systemPrompt;
     let knowledgeContextResult: KnowledgeInjectionResult | null = null;
-    
+
     // Extract the user's request from the last message (used for knowledge context and learning)
     const lastUserMessage = currentMessageHistory
       .filter((msg) => msg.role === "user")
       .pop();
-    const userRequest = typeof lastUserMessage?.content === "string"
-      ? lastUserMessage.content
-      : Array.isArray(lastUserMessage?.content)
-        ? lastUserMessage?.content
-            .filter((p): p is { type: "text"; text: string } => 
-              typeof p === "object" && p !== null && "type" in p && p.type === "text"
-            )
-            .map((p) => p.text)
-            .join("\n")
-        : "";
+    const userRequest =
+      typeof lastUserMessage?.content === "string"
+        ? lastUserMessage.content
+        : Array.isArray(lastUserMessage?.content)
+          ? lastUserMessage?.content
+              .filter(
+                (p): p is { type: "text"; text: string } =>
+                  typeof p === "object" &&
+                  p !== null &&
+                  "type" in p &&
+                  p.type === "text",
+              )
+              .map((p) => p.text)
+              .join("\n")
+          : "";
 
     // Only inject for Pro users with non-read-only mode
-    if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && !messageOverride) {
+    if (
+      isDyadProEnabled(settings) &&
+      !readOnly &&
+      !planModeOnly &&
+      !messageOverride
+    ) {
       try {
         if (userRequest) {
           const knowledgeInjector = new KnowledgeContextInjector({
@@ -834,25 +850,27 @@ export async function handleLocalAgentStream(
             chat.app.id,
             {
               additionalFiles: ctx.todos
-                .filter((t) => t.status === "pending" || t.status === "in_progress")
+                .filter(
+                  (t) => t.status === "pending" || t.status === "in_progress",
+                )
                 .map((t) => t.content)
                 .slice(0, 5),
-            }
+            },
           );
 
           if (knowledgeContextResult.contextString) {
             // Inject knowledge context into system prompt
             enhancedSystemPrompt = knowledgeInjector.injectIntoSystemPrompt(
               systemPrompt,
-              knowledgeContextResult
+              knowledgeContextResult,
             );
-            
+
             logger.info(
               `Proactive knowledge context injected: ${knowledgeContextResult.entities.length} entities, ` +
-              `${knowledgeContextResult.decisions.length} decisions, ` +
-              `${knowledgeContextResult.recommendations.length} recommendations, ` +
-              `~${knowledgeContextResult.tokenEstimate} tokens ` +
-              `(${knowledgeContextResult.buildTimeMs}ms)`
+                `${knowledgeContextResult.decisions.length} decisions, ` +
+                `${knowledgeContextResult.recommendations.length} recommendations, ` +
+                `~${knowledgeContextResult.tokenEstimate} tokens ` +
+                `(${knowledgeContextResult.buildTimeMs}ms)`,
             );
           }
         }
@@ -1503,14 +1521,20 @@ export async function handleLocalAgentStream(
     // This closes the autonomous learning loop.
     // ============================================================================
 
-    if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && knowledgeContextResult) {
+    if (
+      isDyadProEnabled(settings) &&
+      !readOnly &&
+      !planModeOnly &&
+      knowledgeContextResult
+    ) {
       try {
         // Record execution outcome for learning
         const learningRepo = new LearningRepository();
-        
+
         // Determine outcome status based on execution results
-        const outcome: "success" | "partial" | "failure" = 
-          fullResponse.length > 0 && ctx.todos.filter(t => t.status === "completed").length > 0
+        const outcome: "success" | "partial" | "failure" =
+          fullResponse.length > 0 &&
+          ctx.todos.filter((t) => t.status === "completed").length > 0
             ? "success"
             : fullResponse.length > 0
               ? "partial"
@@ -1518,31 +1542,36 @@ export async function handleLocalAgentStream(
 
         // Extract lessons learned from the execution
         const lessonsLearned: string[] = [];
-        
+
         // Track what worked well
         if (knowledgeContextResult.entities.length > 0) {
           lessonsLearned.push(
-            `Knowledge context helped identify ${knowledgeContextResult.entities.length} relevant entities`
+            `Knowledge context helped identify ${knowledgeContextResult.entities.length} relevant entities`,
           );
         }
-        
+
         if (knowledgeContextResult.recommendations.length > 0) {
           lessonsLearned.push(
-            `${knowledgeContextResult.recommendations.length} recommendations were applied`
+            `${knowledgeContextResult.recommendations.length} recommendations were applied`,
           );
         }
 
         // Track completion metrics
-        const completedTodos = ctx.todos.filter(t => t.status === "completed").length;
+        const completedTodos = ctx.todos.filter(
+          (t) => t.status === "completed",
+        ).length;
         const totalTodos = ctx.todos.length;
         if (totalTodos > 0) {
           lessonsLearned.push(
-            `Task completion rate: ${completedTodos}/${totalTodos} (${Math.round(completedTodos / totalTodos * 100)}%)`
+            `Task completion rate: ${completedTodos}/${totalTodos} (${Math.round((completedTodos / totalTodos) * 100)}%)`,
           );
         }
 
         // Record the decision if we have meaningful context
-        if (knowledgeContextResult.intent.type !== "custom" && fullResponse.length > 100) {
+        if (
+          knowledgeContextResult.intent.type !== "custom" &&
+          fullResponse.length > 100
+        ) {
           await learningRepo.recordDecision({
             appId: chat.app.id,
             title: `Execution: ${knowledgeContextResult.intent.type} - ${userRequest?.substring(0, 50)}...`,
@@ -1551,17 +1580,21 @@ export async function handleLocalAgentStream(
             context: {
               problem: userRequest || "",
               constraints: [],
-              goals: ctx.todos.slice(0, 3).map(t => t.content),
-              relevantPaths: knowledgeContextResult.entities.slice(0, 5).map(e => e.filePath || ""),
+              goals: ctx.todos.slice(0, 3).map((t) => t.content),
+              relevantPaths: knowledgeContextResult.entities
+                .slice(0, 5)
+                .map((e) => e.filePath || ""),
             },
-            alternatives: knowledgeContextResult.recommendations.slice(0, 3).map(rec => ({
-              name: rec,
-              pros: [],
-              cons: [],
-              description: "",
-              effort: "medium" as const,
-              risk: "low" as const,
-            })),
+            alternatives: knowledgeContextResult.recommendations
+              .slice(0, 3)
+              .map((rec) => ({
+                name: rec,
+                pros: [],
+                cons: [],
+                description: "",
+                effort: "medium" as const,
+                risk: "low" as const,
+              })),
             selectedOption: "proactive_knowledge_injection",
             rationale: `Used proactive knowledge injection with ${knowledgeContextResult.entities.length} entities`,
             outcome: {
@@ -1570,16 +1603,18 @@ export async function handleLocalAgentStream(
               determinedAt: new Date(),
             },
             confidence: knowledgeContextResult.intent.confidence,
-            relatedEntities: knowledgeContextResult.entities.slice(0, 5).map(e => e.id),
+            relatedEntities: knowledgeContextResult.entities
+              .slice(0, 5)
+              .map((e) => e.id),
             tags: [
               knowledgeContextResult.intent.type,
               "proactive_injection",
               "evolution_cycle_5",
             ],
           });
-          
+
           logger.info(
-            `Learning feedback recorded: ${outcome} outcome with ${lessonsLearned.length} lessons`
+            `Learning feedback recorded: ${outcome} outcome with ${lessonsLearned.length} lessons`,
           );
         }
       } catch (error) {
