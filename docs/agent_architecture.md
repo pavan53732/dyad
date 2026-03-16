@@ -242,7 +242,9 @@ Located in `src/pro/main/knowledge_integration/`, the KIL provides unified knowl
 | 1 | Knowledge Integration Layer | 2,703 | ✅ Complete |
 | 2 | Source Connector Wiring | 1,019 | ✅ Complete |
 | 3 | Database Persistence | 664 | ✅ Complete |
-| **TOTAL** | | **4,386** | **✅** |
+| 4 | Runtime Integration | 518 | ✅ Complete |
+| 5 | **Autonomous Execution Pipeline** | **1,957** | ✅ Complete |
+| **TOTAL** | | **6,861** | **✅** |
 
 **Key Features:**
 - Unified query interface for Code Graph, Vector Memory, Dependency Graph, Architecture, and Reasoning
@@ -302,3 +304,121 @@ The KIL connects to the following knowledge sources:
 | Dependency Graph | `dependency_analyzer.ts` | Package dependencies, version info |
 | Architecture | `architecture_knowledge_graph.ts` | Patterns, decisions, constraints |
 | Reasoning | `reasoning_infrastructure.ts` | Traces, insights, learned patterns |
+
+---
+
+## Autonomous Execution Pipeline (Cycle 5)
+
+Located in `src/pro/main/autonomous_pipeline/`, the Autonomous Execution Pipeline transforms the tool-based execution model into a proactive autonomous reasoning pipeline:
+
+```
+User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tools → Knowledge Layer
+```
+
+### Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Pipeline Orchestrator | `pipeline_orchestrator.ts` | Coordinates all autonomous subsystems |
+| Knowledge Context Injector | `knowledge_context_injector.ts` | Proactive knowledge gathering before execution |
+| Module Index | `index.ts` | Clean exports for the pipeline |
+
+### Pipeline Phases
+
+1. **Proactive Knowledge Gathering**
+   - Extract task intent from request (feature, bugfix, refactor, etc.)
+   - Query all knowledge sources (code graph, vector memory, architecture)
+   - Retrieve related architecture decisions
+   - Get recommendations from learning repository
+   - Build comprehensive knowledge context
+
+2. **Planning** (for complex requests with complexity ≥ 5)
+   - Enhance planning context with gathered knowledge
+   - Generate task decomposition plan
+   - Persist plan to database
+
+3. **Scheduling**
+   - Schedule all tasks from the plan
+   - Resolve dependencies between tasks
+   - Start the scheduler for execution
+
+4. **Execution**
+   - Scheduler dispatches ready tasks
+   - Track execution results
+   - Handle failures with retry logic
+
+5. **Learning**
+   - Record execution outcomes
+   - Extract lessons learned
+   - Update decision outcomes in repository
+
+### Intent Classification System
+
+The pipeline automatically classifies user requests:
+
+| Intent Type | Keywords | Complexity Mod |
+|-------------|----------|----------------|
+| feature | implement, add, create, build, develop | +0 |
+| bugfix | fix, bug, error, issue, broken | -1 |
+| refactor | refactor, restructure, clean up | +1 |
+| test | test, spec, coverage | -1 |
+| deployment | deploy, release, ship | +1 |
+| exploration | explore, understand, analyze | -1 |
+| documentation | document, docs, readme | -2 |
+| maintenance | update, upgrade, migrate | +0 |
+
+### Configuration
+
+```typescript
+interface PipelineConfig {
+  enableProactiveKnowledge: boolean;      // default: true
+  enableAutoPlanning: boolean;            // default: true
+  enableScheduledExecution: boolean;      // default: true
+  enableLearningFeedback: boolean;        // default: true
+  planningComplexityThreshold: number;    // default: 5
+  maxKnowledgeContextEntities: number;    // default: 20
+  maxParallelTasks: number;               // default: 4
+}
+```
+
+### Knowledge Context Injection
+
+Before agent execution, the pipeline injects a structured knowledge context:
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║           PROACTIVE KNOWLEDGE CONTEXT INJECTION                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+## Task Intent Analysis
+**Type:** FEATURE (confidence: 80%)
+**Complexity:** 7/10
+**Technologies:** react, typescript
+
+## Relevant Code Entities
+[CODE_GRAPH] UserProfile (component) in src/components/UserProfile.tsx
+
+## Related Architecture Decisions
+• Use React functional components with hooks
+
+## Learning-Based Recommendations
+1. Consider using React.memo for performance
+2. Follow existing component structure patterns
+```
+
+### Pipeline Events
+
+The pipeline emits events for monitoring:
+
+| Event | Description |
+|-------|-------------|
+| `pipeline_started` | Pipeline execution begins |
+| `knowledge_context_built` | Knowledge gathering complete |
+| `plan_generated` | Task decomposition created |
+| `task_scheduled` | Task added to scheduler |
+| `task_started` | Task execution begins |
+| `task_completed` | Task finished successfully |
+| `task_failed` | Task execution failed |
+| `learning_recorded` | Outcome recorded |
+| `pipeline_completed` | All phases complete |
+| `pipeline_failed` | Pipeline error occurred |

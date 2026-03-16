@@ -19,6 +19,231 @@
 
 The Runtime Integration Phase connected the isolated autonomous subsystems (Phases 1-5, Evolution Cycles 1-3) to the agent runtime pipeline. Before this phase, approximately 15,446 lines of code existed as isolated infrastructure that was never executed.
 
+---
+
+# AUTONOMOUS EXECUTION PIPELINE PHASE
+
+**Date:** March 16, 2026  
+**Status:** ✅ COMPLETED
+
+## Overview
+
+The Autonomous Execution Pipeline Phase transformed the tool-based execution model into a proactive autonomous reasoning pipeline. Previously, knowledge access was optional and reactive, depending entirely on the LLM deciding to call KIL tools. This phase converted the system from:
+
+```
+LLM → Tool Selection (optional) → KIL Tool → Knowledge
+```
+
+Into:
+
+```
+User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tools → Knowledge Layer
+```
+
+## Implementation Summary
+
+| Component | Implementation | Status |
+|-----------|----------------|--------|
+| Pipeline Orchestrator | NEW: `/src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts` | ✅ Created |
+| Knowledge Context Injector | NEW: `/src/pro/main/autonomous_pipeline/knowledge_context_injector.ts` | ✅ Created |
+| Module Index | NEW: `/src/pro/main/autonomous_pipeline/index.ts` | ✅ Created |
+| Planner Integration | Wired into pipeline orchestrator | ✅ Connected |
+| Scheduler Integration | Wired into pipeline orchestrator | ✅ Connected |
+| KIL Integration | Wired into pipeline orchestrator | ✅ Connected |
+| Learning Feedback | Wired into pipeline orchestrator | ✅ Connected |
+
+## New Files Created
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `pipeline_orchestrator.ts` | ~900 | Coordinates Planner, Scheduler, KIL, Learning |
+| `knowledge_context_injector.ts` | ~600 | Injects KIL context before agent execution |
+| `index.ts` | ~57 | Module exports |
+| **Total** | **~1,557** | |
+
+## Pipeline Phases
+
+### Phase 1: Proactive Knowledge Gathering
+Before any agent execution, the system:
+1. Extracts task intent from the request
+2. Queries all knowledge sources (code graph, vector memory, architecture)
+3. Retrieves related architecture decisions
+4. Gets recommendations from learning repository
+5. Builds a comprehensive knowledge context
+
+### Phase 2: Planning
+For complex requests (complexity ≥ 5):
+1. Enhances planning context with gathered knowledge
+2. Generates a task decomposition plan
+3. Persists plan to database
+
+### Phase 3: Scheduling
+1. Schedules all tasks from the plan
+2. Resolves dependencies between tasks
+3. Starts the scheduler for execution
+
+### Phase 4: Execution
+1. Scheduler dispatches ready tasks
+2. Tracks execution results
+3. Handles failures with retry logic
+
+### Phase 5: Learning
+1. Records execution outcomes
+2. Extracts lessons learned
+3. Updates decision outcomes in repository
+
+## Key Classes
+
+### PipelineOrchestrator
+```typescript
+class PipelineOrchestrator {
+  async execute(request, context, handler): Promise<PipelineState>
+  buildProactiveKnowledgeContext(): Promise<ProactiveKnowledgeContext>
+  shouldGeneratePlan(): boolean
+  schedulePlan(): Promise<void>
+  recordLearningOutcomes(): Promise<void>
+}
+```
+
+### KnowledgeContextInjector
+```typescript
+class KnowledgeContextInjector {
+  buildContext(request, appId): Promise<KnowledgeInjectionResult>
+  analyzeIntent(request): IntentAnalysis
+  queryKnowledgeSources(): Promise<UnifiedKnowledgeEntity[]>
+  getRelatedDecisions(): Promise<DecisionSummary[]>
+  getRecommendations(): Promise<string[]>
+  buildContextString(): string
+  injectIntoSystemPrompt(): string
+}
+```
+
+## Configuration
+
+```typescript
+interface PipelineConfig {
+  enableProactiveKnowledge: boolean;      // default: true
+  enableAutoPlanning: boolean;            // default: true
+  enableScheduledExecution: boolean;      // default: true
+  enableLearningFeedback: boolean;        // default: true
+  planningComplexityThreshold: number;    // default: 5
+  maxKnowledgeContextEntities: number;    // default: 20
+  maxParallelTasks: number;               // default: 4
+}
+```
+
+## Execution Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    AUTONOMOUS EXECUTION PIPELINE                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  User Request                                                            │
+│       │                                                                  │
+│       ▼                                                                  │
+│  ┌──────────────────────────────────────────┐                           │
+│  │   PHASE 1: Proactive Knowledge Gathering  │                           │
+│  │                                            │                           │
+│  │   • Extract Task Intent                    │                           │
+│  │   • Query Code Graph                       │                           │
+│  │   • Query Vector Memory                    │                           │
+│  │   • Get Related Decisions                  │                           │
+│  │   • Get Recommendations                    │                           │
+│  └────────────────────────┬─────────────────┘                           │
+│                           │                                              │
+│                           ▼                                              │
+│  ┌──────────────────────────────────────────┐                           │
+│  │   PHASE 2: Planning (if complex)          │                           │
+│  │                                            │                           │
+│  │   • Enhance Context with Knowledge         │                           │
+│  │   • Generate Task Decomposition            │                           │
+│  │   • Persist Plan to Database               │                           │
+│  └────────────────────────┬─────────────────┘                           │
+│                           │                                              │
+│                           ▼                                              │
+│  ┌──────────────────────────────────────────┐                           │
+│  │   PHASE 3: Scheduling                     │                           │
+│  │                                            │                           │
+│  │   • Schedule Tasks from Plan               │                           │
+│  │   • Resolve Dependencies                   │                           │
+│  │   • Start Scheduler                        │                           │
+│  └────────────────────────┬─────────────────┘                           │
+│                           │                                              │
+│                           ▼                                              │
+│  ┌──────────────────────────────────────────┐                           │
+│  │   PHASE 4: Execution                      │                           │
+│  │                                            │                           │
+│  │   • Dispatch Ready Tasks                   │                           │
+│  │   • Track Results                          │                           │
+│  │   • Handle Failures                        │                           │
+│  └────────────────────────┬─────────────────┘                           │
+│                           │                                              │
+│                           ▼                                              │
+│  ┌──────────────────────────────────────────┐                           │
+│  │   PHASE 5: Learning                       │                           │
+│  │                                            │                           │
+│  │   • Record Execution Outcomes              │                           │
+│  │   • Extract Lessons Learned                │                           │
+│  │   • Update Decision Outcomes               │                           │
+│  └────────────────────────┬─────────────────┘                           │
+│                           │                                              │
+│                           ▼                                              │
+│                    Pipeline Complete                                     │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## Knowledge Context Injection
+
+The knowledge context is injected as a structured section in the system prompt:
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║           PROACTIVE KNOWLEDGE CONTEXT INJECTION                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+## Task Intent Analysis
+**Type:** FEATURE (confidence: 80%)
+**Complexity:** 7/10
+**Technologies:** react, typescript
+
+## Relevant Code Entities
+```
+[CODE_GRAPH] UserProfile (component)
+  📁 src/components/UserProfile.tsx
+  ℹ️  Displays user profile with avatar...
+```
+
+## Related Architecture Decisions
+• Use React functional components with hooks
+  → Chose: "functional components" (pattern_selection)
+  Relevance: 75%
+
+## Learning-Based Recommendations
+1. Consider using React.memo for performance
+2. Follow existing component structure patterns
+```
+
+## Verification Checklist
+
+- [x] Pipeline orchestrator created
+- [x] Knowledge context injector created
+- [x] Planner wired into pipeline
+- [x] Scheduler wired into pipeline
+- [x] KIL wired into pipeline
+- [x] Learning feedback implemented
+- [x] All lint checks pass
+- [x] Module exports correct
+
+## Impact
+
+This phase transforms Dyad from a reactive tool-based system into a proactive autonomous agent that:
+- **Gathers knowledge automatically** before reasoning
+- **Plans complex tasks** with task decomposition
+- **Schedules execution** with dependency management
+- **Learns from outcomes** for continuous improvement
+
 ## Integration Summary
 
 | Component | Integration Point | Status |

@@ -272,21 +272,25 @@ The Knowledge Integration Layer provides a unified interface for accessing and c
 
 ### 5.4.1 Evolution History
 
-The Knowledge Integration Layer was implemented through a 4-cycle evolution process:
+The Knowledge Integration Layer was implemented through a 5-cycle evolution process:
 
 | Cycle | Improvement | Lines | Date |
 |-------|-------------|-------|------|
 | 1 | Knowledge Integration Layer | 2,703 | March 2026 |
 | 2 | Source Connector Wiring | 1,019 | March 2026 |
 | 3 | Database Persistence | 664 | March 2026 |
-| 4 | **Runtime Integration** | 518 | March 2026 |
-| **TOTAL** | | **4,904** | |
+| 4 | Runtime Integration | 518 | March 2026 |
+| 5 | **Autonomous Execution Pipeline** | **1,957** | March 2026 |
+| **TOTAL** | | **6,861** | |
 
 **Key Achievements:**
 - Unified query interface across all knowledge sources
 - Real source connectors to actual modules
 - Database persistence for continuous learning
-- **Full runtime integration with agent tools**
+- Full runtime integration with agent tools
+- **Proactive knowledge context injection**
+- **Autonomous planning and scheduling**
+- **Learning feedback loop**
 - Cross-source entity resolution and deduplication
 - Architecture decision recording with outcome tracking
 
@@ -343,6 +347,79 @@ The following KIL IPC channels are now active:
 | `planner:generate-plan` | Task decomposition |
 | `scheduler:schedule-task` | Task scheduling |
 | `distributed:spawn-agent` | Agent spawning |
+
+### 5.4.4 Autonomous Execution Pipeline (Cycle 5)
+
+The Autonomous Execution Pipeline transforms the tool-based execution model into a proactive autonomous reasoning pipeline:
+
+```
+User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tools → Knowledge Layer
+```
+
+**Key Components:**
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **Pipeline Orchestrator** | `src/pro/main/autonomous_pipeline/pipeline_orchestrator.ts` | Coordinates all autonomous subsystems |
+| **Knowledge Context Injector** | `src/pro/main/autonomous_pipeline/knowledge_context_injector.ts` | Proactive knowledge gathering before execution |
+
+**Pipeline Phases:**
+
+1. **Proactive Knowledge Gathering** - Automatically queries knowledge sources before execution
+2. **Planning** - Generates task decomposition for complex requests (complexity ≥ 5)
+3. **Scheduling** - Schedules tasks with dependency resolution
+4. **Execution** - Dispatches and tracks task execution
+5. **Learning** - Records outcomes and extracts lessons learned
+
+**Configuration:**
+
+```typescript
+interface PipelineConfig {
+  enableProactiveKnowledge: boolean;      // default: true
+  enableAutoPlanning: boolean;            // default: true
+  enableScheduledExecution: boolean;      // default: true
+  enableLearningFeedback: boolean;        // default: true
+  planningComplexityThreshold: number;    // default: 5
+  maxKnowledgeContextEntities: number;    // default: 20
+  maxParallelTasks: number;               // default: 4
+}
+```
+
+**Intent Classification System:**
+
+The pipeline automatically classifies user requests into intent types:
+
+| Intent Type | Keywords | Complexity Mod |
+|-------------|----------|----------------|
+| feature | implement, add, create, build, develop | +0 |
+| bugfix | fix, bug, error, issue, broken | -1 |
+| refactor | refactor, restructure, clean up | +1 |
+| test | test, spec, coverage | -1 |
+| deployment | deploy, release, ship | +1 |
+| exploration | explore, understand, analyze | -1 |
+
+**Knowledge Context Injection Format:**
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║           PROACTIVE KNOWLEDGE CONTEXT INJECTION                 ║
+╚════════════════════════════════════════════════════════════════╝
+
+## Task Intent Analysis
+**Type:** FEATURE (confidence: 80%)
+**Complexity:** 7/10
+**Technologies:** react, typescript
+
+## Relevant Code Entities
+[CODE_GRAPH] UserProfile (component) in src/components/UserProfile.tsx
+
+## Related Architecture Decisions
+• Use React functional components with hooks
+
+## Learning-Based Recommendations
+1. Consider using React.memo for performance
+2. Follow existing component structure patterns
+```
 
 ### 5.5 State Management
 
