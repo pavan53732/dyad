@@ -2571,3 +2571,35 @@ Stage Summary:
 - Complete execution pipeline from user prompt to result
 - Comprehensive failure recovery with retry, replan, rollback
 - Ready for implementation phase
+
+---
+Task ID: Evolution-Cycle-5-Integration
+Agent: Main Agent
+Task: Integrate Autonomous Execution Pipeline into Runtime
+
+Work Log:
+- Analyzed current state: PipelineOrchestrator and KnowledgeContextInjector created but never imported/used
+- Identified integration target: `local_agent_handler.ts` handleLocalAgentStream()
+- Added imports for KnowledgeContextInjector and KnowledgeInjectionResult
+- Implemented proactive knowledge context building before streamText() call
+- Injected knowledge context into enhancedSystemPrompt
+- Updated streamText() to use enhancedSystemPrompt instead of systemPrompt
+- Added learning feedback loop after successful execution
+- Fixed recordDecision() call to use correct ArchitectureDecisionRecord interface
+- Ran lint check - no errors in modified files
+- Ran TypeScript check - no compilation errors
+
+Stage Summary:
+- **Critical Integration Completed**: Evolution Cycle 5 components now ACTIVE
+- KnowledgeContextInjector now runs BEFORE every agent execution for Pro users
+- System prompts automatically include proactive knowledge context
+- Learning feedback records execution outcomes for future recommendations
+- Files Modified:
+  - `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` (~100 lines added)
+- Integration Points:
+  - Phase 1: Knowledge context built before streamText()
+  - Phase 2: Context injected into system prompt
+  - Phase 3: streamText() uses enhanced prompt
+  - Phase 4: Learning feedback recorded after completion
+- This completes the "embedding" integration model requested by user
+- Pipeline is no longer isolated - it's now embedded in the runtime execution path

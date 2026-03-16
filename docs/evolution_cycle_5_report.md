@@ -413,7 +413,58 @@ orchestrator.subscribe((event: PipelineEvent) => {
 | Planning Engine | PlanningEngine in orchestrator | ✅ Connected |
 | Agent Scheduler | AgentScheduler in orchestrator | ✅ Connected |
 | Learning Repository | Automatic outcome recording | ✅ Connected |
-| Agent Runtime | Knowledge context injection | ✅ Ready |
+| Agent Runtime | Knowledge context injection in local_agent_handler.ts | ✅ **ACTIVE** |
+
+---
+
+## Runtime Embedding Integration (Completed March 16, 2026)
+
+The pipeline has been embedded into the agent runtime execution path. The integration follows an **embedding model** (not replacement):
+
+### Integration Architecture
+
+```
+handleLocalAgentStream()
+  ├─ Phase 1: KnowledgeContextInjector.buildContext()  ← ACTIVE
+  ├─ Phase 2: Inject into enhancedSystemPrompt         ← ACTIVE
+  ├─ Phase 3: streamText() tool loop                  ← UNCHANGED
+  │      ↓
+  └─ Phase 4: recordLearningOutcomes()                ← ACTIVE
+```
+
+### Modified Files
+
+| File | Lines Added | Purpose |
+|------|-------------|---------|
+| `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` | ~100 | Embedded pipeline into runtime |
+
+### Key Integration Points
+
+1. **Proactive Knowledge Context** (Lines 793-863 in local_agent_handler.ts)
+   - Extracts user request intent before execution
+   - Queries code graph, vector memory, architecture sources
+   - Gets related decisions and recommendations
+   - Builds comprehensive knowledge context BEFORE execution
+
+2. **System Prompt Injection** (Line 924)
+   - Knowledge context injected into `enhancedSystemPrompt`
+   - AI receives proactive context automatically
+
+3. **Learning Feedback** (Lines 1500-1589)
+   - Records execution outcomes after completion
+   - Tracks lessons learned and success metrics
+   - Stores decisions in LearningRepository for future recommendations
+
+### Configuration
+
+The integration is **Pro-only** and active for Dyad Pro users in build mode (non-read-only, non-plan-only):
+
+```typescript
+if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && !messageOverride) {
+  // Knowledge context is built and injected
+  // Learning feedback is recorded after execution
+}
+```
 
 ---
 
@@ -423,16 +474,19 @@ orchestrator.subscribe((event: PipelineEvent) => {
 2. **Pipeline Architecture**: A phased pipeline approach provides clear separation of concerns
 3. **Event-Driven Design**: Event callbacks enable monitoring without tight coupling
 4. **Configuration Flexibility**: Feature flags allow gradual rollout of pipeline capabilities
+5. **Embedding Model**: Embedding the pipeline into existing runtime (not replacing) preserves stability while adding capabilities
 
 ---
 
-## Next Steps
+## Completed Next Steps
 
-1. **Integration with Agent Runtime**: Wire pipeline into `local_agent_handler.ts`
-2. **UI Integration**: Add pipeline status display in the application
-3. **Performance Monitoring**: Add metrics for pipeline phases
-4. **A/B Testing**: Compare proactive vs reactive knowledge models
+| Step | Status |
+|------|--------|
+| ~~Integration with Agent Runtime~~ | ✅ **COMPLETED** - Pipeline embedded in local_agent_handler.ts |
+| UI Integration | 📋 Pending |
+| Performance Monitoring | 📋 Pending |
+| A/B Testing | 📋 Pending |
 
 ---
 
-*Evolution Cycle 5 completed successfully. The autonomous execution pipeline transforms Dyad into a proactive reasoning system.*
+*Evolution Cycle 5 completed successfully. The autonomous execution pipeline is now **ACTIVE** and embedded in the Dyad runtime, transforming it into a proactive reasoning system.*

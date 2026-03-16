@@ -315,6 +315,30 @@ Located in `src/pro/main/autonomous_pipeline/`, the Autonomous Execution Pipelin
 User Request → Planner → Task Graph → Scheduler → Agent Runtime → Tools → Knowledge Layer
 ```
 
+### Runtime Embedding Integration (ACTIVE)
+
+**The pipeline is now EMBEDDED in the agent runtime** as of March 16, 2026. The integration follows an embedding model (not replacement) in `local_agent_handler.ts`:
+
+```
+handleLocalAgentStream()
+  ├─ Phase 1: KnowledgeContextInjector.buildContext()  ← ACTIVE
+  ├─ Phase 2: Inject into enhancedSystemPrompt         ← ACTIVE
+  ├─ Phase 3: streamText() tool loop                  ← UNCHANGED
+  │      ↓
+  └─ Phase 4: recordLearningOutcomes()                ← ACTIVE
+```
+
+**Key Integration Points in `local_agent_handler.ts`:**
+
+1. **Lines 793-863**: Proactive knowledge context building before execution
+2. **Line 924**: Knowledge context injected into `enhancedSystemPrompt`
+3. **Lines 1500-1589**: Learning feedback recorded after execution
+
+**Configuration:**
+- Pro-only feature
+- Active for build mode (non-read-only, non-plan-only)
+- Configurable via `KnowledgeContextInjector` options
+
 ### Components
 
 | Component | File | Purpose |

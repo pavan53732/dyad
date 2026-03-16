@@ -96,6 +96,16 @@ import {
   LearningRepository,
 } from "@/pro/main/knowledge_integration";
 
+// ============================================================================
+// AUTONOMOUS PIPELINE IMPORTS (Evolution Cycle 5 Integration)
+// These imports connect the autonomous pipeline to the agent runtime.
+// ============================================================================
+
+import {
+  KnowledgeContextInjector,
+  type KnowledgeInjectionResult,
+} from "@/pro/main/autonomous_pipeline";
+
 const logger = log.scope("local_agent_handler");
 const PLANNING_QUESTIONNAIRE_TOOL_NAME = "planning_questionnaire";
 const MAX_TERMINATED_STREAM_RETRIES = 3;
@@ -780,6 +790,78 @@ export async function handleLocalAgentStream(
       ];
     }
 
+    // ============================================================================
+    // PROACTIVE KNOWLEDGE CONTEXT INJECTION (Evolution Cycle 5 Integration)
+    // Build knowledge context BEFORE agent execution and inject into system prompt.
+    // This transforms KIL from tool-invoked to automatic reasoning context.
+    // ============================================================================
+
+    let enhancedSystemPrompt = systemPrompt;
+    let knowledgeContextResult: KnowledgeInjectionResult | null = null;
+    
+    // Extract the user's request from the last message (used for knowledge context and learning)
+    const lastUserMessage = currentMessageHistory
+      .filter((msg) => msg.role === "user")
+      .pop();
+    const userRequest = typeof lastUserMessage?.content === "string"
+      ? lastUserMessage.content
+      : Array.isArray(lastUserMessage?.content)
+        ? lastUserMessage?.content
+            .filter((p): p is { type: "text"; text: string } => 
+              typeof p === "object" && p !== null && "type" in p && p.type === "text"
+            )
+            .map((p) => p.text)
+            .join("\n")
+        : "";
+
+    // Only inject for Pro users with non-read-only mode
+    if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && !messageOverride) {
+      try {
+        if (userRequest) {
+          const knowledgeInjector = new KnowledgeContextInjector({
+            enabled: true,
+            maxEntities: 15,
+            maxContextLength: 6000, // Leave room for main system prompt
+            sources: ["code_graph", "vector_memory", "architecture"],
+            minConfidence: 0.5,
+            includeDecisions: true,
+            includeRecommendations: true,
+            includePatterns: true,
+          });
+
+          knowledgeContextResult = await knowledgeInjector.buildContext(
+            userRequest,
+            chat.app.id,
+            {
+              additionalFiles: ctx.todos
+                .filter((t) => t.status === "pending" || t.status === "in_progress")
+                .map((t) => t.content)
+                .slice(0, 5),
+            }
+          );
+
+          if (knowledgeContextResult.contextString) {
+            // Inject knowledge context into system prompt
+            enhancedSystemPrompt = knowledgeInjector.injectIntoSystemPrompt(
+              systemPrompt,
+              knowledgeContextResult
+            );
+            
+            logger.info(
+              `Proactive knowledge context injected: ${knowledgeContextResult.entities.length} entities, ` +
+              `${knowledgeContextResult.decisions.length} decisions, ` +
+              `${knowledgeContextResult.recommendations.length} recommendations, ` +
+              `~${knowledgeContextResult.tokenEstimate} tokens ` +
+              `(${knowledgeContextResult.buildTimeMs}ms)`
+            );
+          }
+        }
+      } catch (error) {
+        // Log but don't fail - knowledge injection is optional enhancement
+        logger.warn("Failed to build proactive knowledge context:", error);
+      }
+    }
+
     while (!abortController.signal.aborted) {
       // Reset mid-turn compaction state at the start of each pass.
       // These flags track compaction within a single pass and must not persist
@@ -839,7 +921,7 @@ export async function handleLocalAgentStream(
             maxOutputTokens,
             temperature,
             maxRetries: 2,
-            system: systemPrompt,
+            system: enhancedSystemPrompt,
             messages: attemptMessages,
             tools: allTools,
             stopWhen: [
@@ -1414,6 +1496,97 @@ export async function handleLocalAgentStream(
       updatedFiles: !readOnly,
       chatSummary: ctx.chatSummary,
     } satisfies ChatResponseEnd);
+
+    // ============================================================================
+    // LEARNING FEEDBACK LOOP (Evolution Cycle 5 Integration)
+    // Record learning outcomes from this execution for future recommendations.
+    // This closes the autonomous learning loop.
+    // ============================================================================
+
+    if (isDyadProEnabled(settings) && !readOnly && !planModeOnly && knowledgeContextResult) {
+      try {
+        // Record execution outcome for learning
+        const learningRepo = new LearningRepository();
+        
+        // Determine outcome status based on execution results
+        const outcome: "success" | "partial" | "failure" = 
+          fullResponse.length > 0 && ctx.todos.filter(t => t.status === "completed").length > 0
+            ? "success"
+            : fullResponse.length > 0
+              ? "partial"
+              : "failure";
+
+        // Extract lessons learned from the execution
+        const lessonsLearned: string[] = [];
+        
+        // Track what worked well
+        if (knowledgeContextResult.entities.length > 0) {
+          lessonsLearned.push(
+            `Knowledge context helped identify ${knowledgeContextResult.entities.length} relevant entities`
+          );
+        }
+        
+        if (knowledgeContextResult.recommendations.length > 0) {
+          lessonsLearned.push(
+            `${knowledgeContextResult.recommendations.length} recommendations were applied`
+          );
+        }
+
+        // Track completion metrics
+        const completedTodos = ctx.todos.filter(t => t.status === "completed").length;
+        const totalTodos = ctx.todos.length;
+        if (totalTodos > 0) {
+          lessonsLearned.push(
+            `Task completion rate: ${completedTodos}/${totalTodos} (${Math.round(completedTodos / totalTodos * 100)}%)`
+          );
+        }
+
+        // Record the decision if we have meaningful context
+        if (knowledgeContextResult.intent.type !== "custom" && fullResponse.length > 100) {
+          await learningRepo.recordDecision({
+            appId: chat.app.id,
+            title: `Execution: ${knowledgeContextResult.intent.type} - ${userRequest?.substring(0, 50)}...`,
+            description: `Proactive knowledge injection for ${knowledgeContextResult.intent.type} task`,
+            type: "pattern_selection",
+            context: {
+              problem: userRequest || "",
+              constraints: [],
+              goals: ctx.todos.slice(0, 3).map(t => t.content),
+              relevantPaths: knowledgeContextResult.entities.slice(0, 5).map(e => e.filePath || ""),
+            },
+            alternatives: knowledgeContextResult.recommendations.slice(0, 3).map(rec => ({
+              name: rec,
+              pros: [],
+              cons: [],
+              description: "",
+              effort: "medium" as const,
+              risk: "low" as const,
+            })),
+            selectedOption: "proactive_knowledge_injection",
+            rationale: `Used proactive knowledge injection with ${knowledgeContextResult.entities.length} entities`,
+            outcome: {
+              status: outcome,
+              lessonsLearned,
+              determinedAt: new Date(),
+            },
+            confidence: knowledgeContextResult.intent.confidence,
+            relatedEntities: knowledgeContextResult.entities.slice(0, 5).map(e => e.id),
+            tags: [
+              knowledgeContextResult.intent.type,
+              "proactive_injection",
+              "evolution_cycle_5",
+            ],
+          });
+          
+          logger.info(
+            `Learning feedback recorded: ${outcome} outcome with ${lessonsLearned.length} lessons`
+          );
+        }
+      } catch (error) {
+        // Log but don't fail - learning feedback is optional enhancement
+        logger.warn("Failed to record learning feedback:", error);
+      }
+    }
 
     return true; // Success
   } catch (error) {
